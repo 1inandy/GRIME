@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRIME — Garbage River Interception and Modeling Engine</title>
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#1E1B12; --panel: #2A2518; --card:  #352E1E; --hover: #3D3622; --bdr: #4A4330; --t:#e8e2d4; --td:  #8a7f68; --tb:    #f5f0e4; --acc:   #58B09C; --accd:  rgba(88, 176, 156, 0.15); --gen:   #f97316; --flow:  #3b82f6; --imp:   #8b5cf6; --feas:  #10b981; --mono:  'JetBrains Mono', monospace; --sans:  'DM Sans', -apple-system, sans-serif; }
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--t)}
+
+/* ── LAYOUT: header on top, sidebar+map below ── */
+#app{display:flex;flex-direction:column;height:100vh;visibility:hidden}
+#app.ready{visibility:visible}
+#header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:10px 24px;background:var(--panel);border-bottom:1px solid var(--bdr);z-index:10}
+#header h1{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--tb)}
+#header h1 span{color:var(--acc)}
+.hm{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--td);font-family:var(--mono)}
+.hm button{background:rgba(255,255,255,0.08);border:1px solid var(--bdr);color:var(--td);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--mono)}
+.hm button:hover{background:rgba(255,255,255,0.15);color:var(--t)}
+#content{flex:1 1 0;display:flex;min-height:0}
+#sidebar{width:380px;flex:0 0 380px;background:var(--panel);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
+.sec{padding:14px 18px;border-bottom:1px solid var(--bdr);flex:0 0 auto}
+.sec h3{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:10px}
+#search{width:100%;padding:9px 12px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;color:var(--t);font-family:var(--sans);font-size:13px;outline:none}
+#search:focus{border-color:var(--acc)}
+#search::placeholder{color:var(--td)}
+.stat-row{display:flex;gap:8px;margin:10px 0}
+.stat{flex:1;background:var(--card);border-radius:6px;padding:8px 10px;text-align:center}
+.stat-v{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--acc)}
+.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--td)}
+#place-list{flex:1 1 0;overflow-y:auto;padding:0 18px 14px;min-height:0}
+.pl-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .12s;margin-bottom:2px}
+.pl-item:hover{background:var(--hover)}
+.pl-cc{font-size:14px;width:28px;text-align:center}
+.pl-name{font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-pop{font-family:var(--mono);font-size:11px;color:var(--td)}
+#back-btn{display:none;background:var(--card);border:1px solid var(--bdr);color:var(--acc);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:var(--mono);margin-bottom:10px}
+#back-btn:hover{background:var(--hover)}
+#back-btn.vis{display:inline-flex;align-items:center;gap:6px}
+#city-view{display:none;flex:1 1 0;overflow-y:auto;padding:14px 18px}
+#city-view.vis{display:block}
+.cand-item{display:grid;grid-template-columns:32px 1fr 48px;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px}
+.cand-item:hover{background:var(--hover)}
+.cand-item.active{background:var(--accd)}
+.rank{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:11px;background:var(--card);color:var(--td);border:1px solid var(--bdr)}
+.r1{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a1a1a;border:none}
+.r2{background:linear-gradient(135deg,#94a3b8,#64748b);color:#1a1a1a;border:none}
+.r3{background:linear-gradient(135deg,#d97706,#b45309);color:#1a1a1a;border:none}
+.ss-row{display:grid;grid-template-columns:85px 1fr 42px;align-items:center;gap:6px;margin-bottom:5px}
+.ss-bar{height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.ss-fill{height:100%;border-radius:3px;transition:width .4s ease}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:12px}
+.pchip{background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px}
+.pchip-l{font-size:8px;text-transform:uppercase;letter-spacing:.5px;color:var(--td)}
+.pchip-v{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tb)}
+.close{background:var(--card);border:1px solid var(--bdr);color:var(--td);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.close:hover{background:var(--hover);color:var(--t)}
+
+/* ── MAP: fill remaining space ── */
+#map-wrap{flex:1 1 0;position:relative;min-width:0}
+#map{position:absolute;top:0;left:0;right:0;bottom:0}
+
+.mapboxgl-popup-content{background:var(--panel)!important;border:1px solid var(--bdr)!important;border-radius:10px!important;padding:10px 14px!important;color:var(--t)!important;font-family:var(--sans)!important;box-shadow:0 8px 32px rgba(0,0,0,.5)!important}
+.mapboxgl-popup-tip{border-top-color:var(--panel)!important}
+.mapboxgl-popup-close-button{color:var(--td)!important;font-size:16px!important}
+#sidebar::-webkit-scrollbar,#place-list::-webkit-scrollbar,#city-view::-webkit-scrollbar{width:5px}
+#sidebar::-webkit-scrollbar-track,#place-list::-webkit-scrollbar-track,#city-view::-webkit-scrollbar-track{background:transparent}
+#sidebar::-webkit-scrollbar-thumb,#place-list::-webkit-scrollbar-thumb,#city-view::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+#loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--panel);border:1px solid var(--bdr);border-radius:12px;padding:24px 40px;z-index:100;font-family:var(--mono);text-align:center}
+#loading .spinner{width:28px;height:28px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Beige / light theme ── */
+body.theme-light { --bg:    #F0EDE6; --panel: #FAF8F4; --card:  #E8E4DC; --hover: #DDD8CE; --bdr:   #C8C2B5; --t:     #2C2A1E; --td:    #7A7264; --tb:    #1A1810; --acc:   #2D8C7A; --accd:  rgba(45, 140, 122, 0.12); --gen:   #c2410c; --flow:  #1d4ed8; --imp:   #7e22ce; --feas:  #15803d; --mono:  'JetBrains Mono', monospace; --sans:  'DM Sans', -apple-system, sans-serif; }
+body.theme-light .hm button{background:rgba(0,0,0,0.04);border-color:var(--bdr);color:var(--td)}
+body.theme-light .hm button:hover{background:rgba(0,0,0,0.08);color:var(--t)}
+body.theme-light .hm button.active{background:var(--accd);color:var(--acc);border-color:var(--acc)}
+body.theme-light .mapboxgl-popup-content{background:var(--panel)!important;border-color:var(--bdr)!important;color:var(--t)!important}
+body.theme-light .mapboxgl-popup-tip{border-top-color:var(--panel)!important}
+body.theme-light #loading{background:var(--panel);border-color:var(--bdr);color:var(--t)}
+body.theme-light .r1{background:linear-gradient(135deg,#d4a017,#b8860b);color:#fff}
+body.theme-light .r2{background:linear-gradient(135deg,#a8a29e,#78716c);color:#fff}
+body.theme-light .r3{background:linear-gradient(135deg,#b45309,#92400e);color:#fff}
+.hm button.active{background:var(--accd)!important;color:var(--acc)!important;border-color:rgba(34,211,238,0.3)!important}
+body.theme-light .hm button.active{border-color:var(--acc)!important}
+
+/* ── Pan-autoload "loading more streams" pill (top-right of map) ── */
+#load-pill{position:absolute;top:12px;right:60px;background:var(--panel);border:1px solid var(--bdr);border-radius:18px;padding:6px 12px;font-family:var(--mono);font-size:11px;color:var(--td);display:none;align-items:center;gap:8px;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:none}
+#load-pill.vis{display:flex}
+#load-pill .mini-spinner{width:12px;height:12px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+
+/* ── River-focus back chip in sidebar ── */
+.river-back{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--bdr);color:var(--acc);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--mono);margin-bottom:10px}
+.river-back:hover{background:var(--hover)}
+</style>
+</head>
+<body>
+<div id="loading"><div class="spinner"></div><div id="load-msg">Loading GRIME — 108,772 cities...</div></div>
+<div id="app">
+<div id="header">
+  <h1><a href="../" style="text-decoration:none;color:inherit"><span>G</span>RIME</a></h1>
+  <div class="hm">
+    <span id="info">—</span>
+    <a href="../docs/" style="font-family:var(--mono);font-size:11px;color:var(--td);text-decoration:none;letter-spacing:.04em;padding:3px 10px;border:1px solid var(--bdr);border-radius:6px;transition:all .15s" onmouseover="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();this.style.borderColor=this.style.color" onmouseout="this.style.color='';this.style.borderColor=''">Docs</a>
+    <button id="ww-toggle" title="Toggle OpenStreetMap waterway overlay">Waterways</button>
+    <button id="style-toggle" class="active">Satellite ✓</button>
+    <button id="theme-toggle">Light theme</button>
+    <span style="color:var(--feas)">● v3</span>
+  </div>
+</div>
+<div id="content">
+  <div id="sidebar">
+    <div class="sec">
+      <button id="back-btn">← All cities</button>
+      <h3 id="sidebar-title">Global coverage</h3>
+      <input type="text" id="search" placeholder="Search cities, countries..." autocomplete="off">
+      <div class="stat-row" id="stats"></div>
+    </div>
+    <div id="place-list"></div>
+    <div id="city-view"></div>
+  </div>
+  <div id="map-wrap"><div id="map"></div><div id="load-pill"><div class="mini-spinner"></div><span id="load-pill-text">Loading more streams…</span></div></div>
+</div>
+</div>
+<script src="dashboard/config.js"></script>
+<script>
+// ═══ CONFIG ══════════════════════════════════════════════════════
+const API=location.hostname==='localhost'?'http://localhost:8000':location.origin;
+
+// ═══ STATE ══════════════════════════════════════════════════════
+let map,places=[],activeCityIdx=-1,activeCandidates=[],activeStreams=[],selectedCand=null,isSat=true,pipelineStats=null;
+// Remember city params so we can re-score after pan-autoload merges in new streams
+let activePop=0,activeCC='',activeSeed=0;
+// Pan-autoload state
+let coveredBboxes=[];      // [[w,s,e,n], ...] bboxes already fetched from Overpass
+let streamKeySet=new Set();// dedupe ways already merged into activeStreams (keyed by OSM id or coord hash)
+let panFetchInFlight=false,panFetchQueued=false,panDebounceTimer=null,rescoreTimer=null;
+let initialFetchInFlight=false; // true while openCity's first Overpass call is running
+let lastPanFetchAt=0,rateLimitTimer=null; // hard rate limit between pan-autoload fetches
+// Rate-limit: minimum ms between fetch *starts*. Pans during the cooldown queue
+// up and the latest viewport fires when the timer expires — so panning never
+// drops a load, it just throttles how fast we hammer Overpass.
+const PAN_MIN_INTERVAL_MS=1500;
+// Substantial-pan gate: require this fraction of the viewport to be uncovered
+// before bothering with a fetch. Tiny nudges at the edge of the bubble no
+// longer trigger network calls.
+const PAN_MIN_UNCOVERED=0.15;
+// River focus state
+let focusedRiverKey=null,focusedRiverName=null,riverFetchInFlight=false;
+const sc=s=>s>=45?'#22d3ee':s>=35?'#10b981':s>=25?'#f59e0b':'#ef4444';
+const CC_FLAGS={"AD":"🇦🇩","AE":"🇦🇪","AF":"🇦🇫","AG":"🇦🇬","AL":"🇦🇱","AM":"🇦🇲","AO":"🇦🇴","AR":"🇦🇷","AT":"🇦🇹","AU":"🇦🇺","AZ":"🇦🇿","BA":"🇧🇦","BB":"🇧🇧","BD":"🇧🇩","BE":"🇧🇪","BF":"🇧🇫","BG":"🇧🇬","BH":"🇧🇭","BI":"🇧🇮","BJ":"🇧🇯","BN":"🇧🇳","BO":"🇧🇴","BR":"🇧🇷","BS":"🇧🇸","BT":"🇧🇹","BW":"🇧🇼","BY":"🇧🇾","BZ":"🇧🇿","CA":"🇨🇦","CD":"🇨🇩","CF":"🇨🇫","CG":"🇨🇬","CH":"🇨🇭","CI":"🇨🇮","CL":"🇨🇱","CM":"🇨🇲","CN":"🇨🇳","CO":"🇨🇴","CR":"🇨🇷","CU":"🇨🇺","CV":"🇨🇻","CY":"🇨🇾","CZ":"🇨🇿","DE":"🇩🇪","DJ":"🇩🇯","DK":"🇩🇰","DM":"🇩🇲","DO":"🇩🇴","DZ":"🇩🇿","EC":"🇪🇨","EE":"🇪🇪","EG":"🇪🇬","ER":"🇪🇷","ES":"🇪🇸","ET":"🇪🇹","FI":"🇫🇮","FJ":"🇫🇯","FR":"🇫🇷","GA":"🇬🇦","GB":"🇬🇧","GE":"🇬🇪","GH":"🇬🇭","GM":"🇬🇲","GN":"🇬🇳","GQ":"🇬🇶","GR":"🇬🇷","GT":"🇬🇹","GW":"🇬🇼","GY":"🇬🇾","HK":"🇭🇰","HN":"🇭🇳","HR":"🇭🇷","HT":"🇭🇹","HU":"🇭🇺","ID":"🇮🇩","IE":"🇮🇪","IL":"🇮🇱","IN":"🇮🇳","IQ":"🇮🇶","IR":"🇮🇷","IS":"🇮🇸","IT":"🇮🇹","JM":"🇯🇲","JO":"🇯🇴","JP":"🇯🇵","KE":"🇰🇪","KG":"🇰🇬","KH":"🇰🇭","KM":"🇰🇲","KN":"🇰🇳","KP":"🇰🇵","KR":"🇰🇷","KW":"🇰🇼","KZ":"🇰🇿","LA":"🇱🇦","LB":"🇱🇧","LK":"🇱🇰","LR":"🇱🇷","LS":"🇱🇸","LT":"🇱🇹","LU":"🇱🇺","LV":"🇱🇻","LY":"🇱🇾","MA":"🇲🇦","MD":"🇲🇩","ME":"🇲🇪","MG":"🇲🇬","MK":"🇲🇰","ML":"🇲🇱","MM":"🇲🇲","MN":"🇲🇳","MR":"🇲🇷","MT":"🇲🇹","MU":"🇲🇺","MV":"🇲🇻","MW":"🇲🇼","MX":"🇲🇽","MY":"🇲🇾","MZ":"🇲🇿","NA":"🇳🇦","NE":"🇳🇪","NG":"🇳🇬","NI":"🇳🇮","NL":"🇳🇱","NO":"🇳🇴","NP":"🇳🇵","NZ":"🇳🇿","OM":"🇴🇲","PA":"🇵🇦","PE":"🇵🇪","PG":"🇵🇬","PH":"🇵🇭","PK":"🇵🇰","PL":"🇵🇱","PS":"🇵🇸","PT":"🇵🇹","PY":"🇵🇾","QA":"🇶🇦","RO":"🇷🇴","RS":"🇷🇸","RU":"🇷🇺","RW":"🇷🇼","SA":"🇸🇦","SB":"🇸🇧","SC":"🇸🇨","SD":"🇸🇩","SE":"🇸🇪","SG":"🇸🇬","SI":"🇸🇮","SK":"🇸🇰","SL":"🇸🇱","SM":"🇸🇲","SN":"🇸🇳","SO":"🇸🇴","SR":"🇸🇷","SS":"🇸🇸","SV":"🇸🇻","SY":"🇸🇾","SZ":"🇸🇿","TD":"🇹🇩","TG":"🇹🇬","TH":"🇹🇭","TJ":"🇹🇯","TL":"🇹🇱","TM":"🇹🇲","TN":"🇹🇳","TO":"🇹🇴","TR":"🇹🇷","TT":"🇹🇹","TW":"🇹🇼","TZ":"🇹🇿","UA":"🇺🇦","UG":"🇺🇬","US":"🇺🇸","UY":"🇺🇾","UZ":"🇺🇿","VA":"🇻🇦","VC":"🇻🇨","VE":"🇻🇪","VN":"🇻🇳","VU":"🇻🇺","WS":"🇼🇸","XK":"🇽🇰","YE":"🇾🇪","ZA":"🇿🇦","ZM":"🇿🇲","ZW":"🇿🇼"};
+const DEV=new Set(['IN','BD','PK','NG','EG','KE','CD','GH','TZ','ET','CM','SN','MZ','MW','UG','RW','BF','ML','NE','TD','BI','SO','SS','CF','GN','SL','LR','GM','GW','TG','BJ','MG','MR','DJ','KM','ER','BR','CO','PE','BO','PY','GY','SR','EC','VE','MX','GT','HN','SV','NI','HT','ID','PH','MM','KH','LA','VN','TL','PG','CN','MN','KG','TJ','TM','UZ','KZ','AF','IQ','SY','YE','JO','PS','LB','IR']);
+
+// ═══ DATA ═══════════════════════════════════════════════════════
+async function loadPlaces(){
+  const paths=[API+'/mock_data/places.json','/mock_data/places.json','../../mock_data/places.json','../mock_data/places.json','mock_data/places.json'];
+  for(const p of paths){try{const r=await fetch(p);if(r.ok)return await r.json()}catch(e){}}
+  return[];
+}
+
+// ═══ SEEDED RANDOM (for fallback + candidate scoring) ═══════════
+function seededRand(seed){
+  let s=Math.abs(Math.round(seed))||1;
+  return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646};
+}
+
+// ═══ REAL RIVER DATA FROM OPENSTREETMAP ═════════════════════════
+const OVERPASS_URLS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+
+async function runOverpass(query,abortMs){
+  for(const url of OVERPASS_URLS){
+    try{
+      const ctrl=new AbortController();
+      const timer=setTimeout(()=>ctrl.abort(),abortMs);
+      const resp=await fetch(url,{method:'POST',body:'data='+encodeURIComponent(query),headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ctrl.signal});
+      clearTimeout(timer);
+      if(!resp.ok)continue;
+      return await resp.json();
+    }catch(e){continue}
+  }
+  return null;
+}
+
+// ── Hard gates applied at parse time ────────────────────────────
+// Per-type minimum length (meters): drops backyard drainage / disconnected
+// dashes that don't actually route trash anywhere meaningful.
+const MIN_LEN_M={river:50,canal:50,stream:120,drain:250,ditch:250};
+// Waterway types that get culvert portal candidates injected when they go
+// underground. Drains and ditches do not — a road culvert under a ditch is
+// not a meaningful interception point and would otherwise dominate top-N.
+const PORTAL_PARENTS=new Set(['river','canal','stream']);
+
+// Parse an Overpass JSON response into our streams[] shape with _portals attached.
+// Returns null on parse failure / no usable geometry.
+function parseStreams(data){
+  if(!data) return null;
+  const streams=[];
+  const portalPoints=[];
+  for(const el of data.elements||[]){
+    if(!el.geometry||el.geometry.length<2)continue;
+    const tags=el.tags||{};
+    const wStr=tags.width||tags['width:mean']||'';
+    const wM=parseFloat(wStr);
+    if(wM&&wM>30)continue;
+    const ww=tags.waterway||'stream';
+    let estW=ww==='river'?20:ww==='canal'?8:ww==='stream'?3:2;
+    if(wM>0)estW=wM;
+    if(estW>30)continue;
+    // Skip seasonal / dry waterways — except actual rivers, where intermittent
+    // flow can still carry a year's accumulated debris during storms.
+    if(tags.intermittent==='yes'&&ww!=='river')continue;
+    const coords=el.geometry.map(n=>[n.lon,n.lat]);
+    // Length gate: real waterways are long; tiny ditches are noise.
+    let totalLen=0;
+    for(let i=1;i<coords.length;i++)totalLen+=hvM(coords[i-1][1],coords[i-1][0],coords[i][1],coords[i][0]);
+    const minLen=MIN_LEN_M[ww]||MIN_LEN_M.stream;
+    if(totalLen<minLen)continue;
+    const underground=tags.tunnel==='yes'||tags.tunnel==='culvert'||tags.tunnel==='building_passage'||tags.covered==='yes'||tags.layer==='-1'||tags.layer==='-2';
+    const baseName=tags.name||({'river':'River','stream':'Creek','canal':'Canal','drain':'Drain','ditch':'Ditch'}[ww])||'Stream';
+    const order=ww==='river'?4:ww==='canal'?3:ww==='stream'?2:1;
+    if(underground){
+      // Only inject portal candidates for meaningful parent waterways. A road
+      // culvert under a backyard ditch is not a chokepoint worth surfacing.
+      if(coords.length>=2&&PORTAL_PARENTS.has(ww)){
+        portalPoints.push({lon:coords[0][0],lat:coords[0][1],type:'entrance',stream:baseName,estWidth:estW,parentWw:ww});
+        portalPoints.push({lon:coords[coords.length-1][0],lat:coords[coords.length-1][1],type:'exit',stream:baseName,estWidth:estW,parentWw:ww});
+      }
+      streams.push({osmId:el.id,name:baseName+' (culvert)',baseName,order,coords,estWidth:estW,waterway:ww,underground:true});
+    }else{
+      streams.push({osmId:el.id,name:baseName,baseName,order,coords,estWidth:estW,waterway:ww,underground:false});
+    }
+  }
+  streams._portals=portalPoints;
+  return streams;
+}
+
+// Fetch waterways within an OSM bbox. Returns parseStreams result or null.
+async function fetchStreamsInBbox(s,w,n,e,opts={}){
+  const timeout=opts.timeout||10;
+  const types=opts.types||'^(river|stream|canal|drain|ditch)$';
+  const tidalClause=opts.allowTidal?'':'["tidal"!="yes"]';
+  const query=`[out:json][timeout:${timeout}];(way["waterway"~"${types}"]${tidalClause}(${s},${w},${n},${e}););out geom tags;`;
+  const data=await runOverpass(query,(timeout+5)*1000);
+  return parseStreams(data);
+}
+
+// Approximate radius (meters) → bbox (degrees) around a point.
+function radiusToBbox(lat,lon,radiusMeters){
+  const dLat=radiusMeters/111000;
+  const dLon=radiusMeters/(111000*Math.max(0.1,Math.cos(lat*Math.PI/180)));
+  return{s:lat-dLat,w:lon-dLon,n:lat+dLat,e:lon+dLon};
+}
+
+// Per-fetch quality bar — surface-first ordering, sort by length (longest first),
+// keep at most `maxStreams` total of which at most `maxCulverts` are underground.
+// Used by BOTH the initial city fetch and every pan-autoload fetch so panning
+// around can never sneak in low-priority short ditches or stormdrain culverts
+// that the initial criteria would have trimmed.
+function applyQualityBar(streams,opts={}){
+  if(!streams)return streams;
+  const maxStreams=opts.maxStreams||25;
+  const maxCulverts=opts.maxCulverts??Math.max(2,Math.floor(maxStreams*0.15));
+  const portals=streams._portals||[];
+  // Sort: surface first, then by length (proxied by number of coords, since
+  // OSM ways with more nodes are almost always longer at our resolution).
+  streams.sort((a,b)=>(a.underground?1:0)-(b.underground?1:0)||(b.coords.length-a.coords.length));
+  const surface=streams.filter(s=>!s.underground).slice(0,maxStreams);
+  const culverts=streams.filter(s=>s.underground).slice(0,maxCulverts);
+  const out=surface.concat(culverts);
+  out._portals=portals;
+  return out;
+}
+
+// Initial city-anchored fetch: progressive radii + tiny last-resort fallback.
+// On success, records the bbox into coveredBboxes and primes streamKeySet for dedup.
+async function fetchRealStreams(lat,lon,pop){
+  const baseRadius=pop>1e6?8000:pop>100000?6000:4000;
+  const radii=[baseRadius,Math.round(baseRadius*0.5),Math.round(baseRadius*0.3)];
+  let raw=null,bboxUsed=null;
+  for(const radius of radii){
+    const bb=radiusToBbox(lat,lon,radius);
+    const r=await fetchStreamsInBbox(bb.s,bb.w,bb.n,bb.e,{timeout:radius>5000?12:8});
+    if(r){raw=r;bboxUsed=bb;break}
+  }
+  if(!raw||(raw.length===0&&(!raw._portals||raw._portals.length===0))){
+    const miniRadius=Math.round(baseRadius*0.2);
+    const bb=radiusToBbox(lat,lon,miniRadius);
+    const r=await fetchStreamsInBbox(bb.s,bb.w,bb.n,bb.e,{timeout:6,types:'^(river|stream)$',allowTidal:true});
+    if(r){raw=r;bboxUsed=bb}
+  }
+  if(!raw)return null;
+  const portals=raw._portals||[];
+  const surface=raw.filter(s=>!s.underground);
+  if(surface.length===0&&portals.length===0)return null;
+  if(bboxUsed)coveredBboxes.push([bboxUsed.w,bboxUsed.s,bboxUsed.e,bboxUsed.n]);
+  if(portals.length>0)console.log(`Found ${portals.length} culvert portals`);
+
+  const maxStreams=pop>1e6?25:pop>1e5?20:15;
+  const sliced=applyQualityBar(raw,{maxStreams});
+  for(const s of sliced)streamKeySet.add(streamKey(s));
+  return sliced;
+}
+
+// Fetch every named waterway segment within a generous bbox (~3 deg ≈ 300km square).
+// The OSM name index makes this query cheap even though the bbox is large.
+async function fetchRiverByName(name,lat,lon){
+  const bb={s:lat-1.5,w:lon-1.5,n:lat+1.5,e:lon+1.5};
+  const safe=name.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+  const query=`[out:json][timeout:25];(way["waterway"]["name"="${safe}"](${bb.s},${bb.w},${bb.n},${bb.e}););out geom tags;`;
+  const data=await runOverpass(query,30000);
+  return parseStreams(data);
+}
+
+// Stable identifier for a way — OSM id when present, else a coord-hash fallback.
+function streamKey(s){
+  if(s.osmId!=null)return'w'+s.osmId;
+  const c0=s.coords?.[0]||[0,0],cN=s.coords?.[s.coords.length-1]||[0,0];
+  return'h:'+(s.name||'?')+':'+c0[0].toFixed(4)+','+c0[1].toFixed(4)+'>'+cN[0].toFixed(4)+','+cN[1].toFixed(4);
+}
+
+// Lowercased "river identity" used to group multiple OSM ways belonging to the same
+// named waterway (e.g. all segments of "Anacostia River"). Falls back to a synthetic
+// per-way key for unnamed waterways so they at least cluster as themselves.
+function riverKeyOf(s){
+  const n=(s.baseName||s.name||'').toLowerCase().replace(/\s*\(culvert\)$/,'').replace(/\s*\((entrance|exit)\)$/,'').trim();
+  if(n&&n!=='river'&&n!=='creek'&&n!=='stream'&&n!=='canal'&&n!=='drain'&&n!=='ditch')return n;
+  return'__unnamed_'+(s.osmId||streamKey(s));
+}
+
+// Merge new streams into activeStreams, deduping by streamKey. Also concatenates _portals.
+function mergeStreams(newStreams){
+  if(!newStreams||newStreams.length===0&&(!newStreams._portals||newStreams._portals.length===0))return 0;
+  let added=0;
+  for(const s of newStreams){
+    const k=streamKey(s);
+    if(streamKeySet.has(k))continue;
+    streamKeySet.add(k);
+    activeStreams.push(s);
+    added++;
+  }
+  if(newStreams._portals&&newStreams._portals.length){
+    activeStreams._portals=(activeStreams._portals||[]).concat(newStreams._portals);
+  }
+  return added;
+}
+
+// ═══ CANDIDATE PLACEMENT ════════════════════════════════════════
+// Key insight: a net upstream already catches most debris. Placing another
+// net 300m downstream on the SAME stream is wasteful — it only catches
+// the ~30% that slipped through. The marginal value drops exponentially
+// with each upstream net. So:
+//   1. Wide spacing (500m same-stream, 300m cross-stream)
+//   2. Score everything independently first
+//   3. Greedy selection with upstream occlusion: each time we place a net,
+//      discount all un-placed candidates downstream on the same waterway
+
+function hvM(a1,o1,a2,o2){const R=6371000,dA=(a2-a1)*Math.PI/180,dO=(o2-o1)*Math.PI/180;const a=Math.sin(dA/2)**2+Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dO/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
+
+function waterwayCapacity(stream){
+  const ww=stream.waterway||'stream';
+  const nCoords=stream.coords?.length||10;
+  if(ww==='canal')return Math.max(5,Math.floor(nCoords/3));
+  return Math.max(8,Math.floor(nCoords/2));
+}
+
+function generateCandidates(streams,pop,cc,seed){
+  const R=seededRand(seed+7777);
+  const isDev=DEV.has(cc),dev=isDev?1.4:1.0;
+
+  // ── Spacing: SAME stream needs much wider gaps than cross-stream ──
+  // If there's already a net on this stream, another 500m down is redundant
+  // Cross-stream nets don't occlude each other — different catchments
+  const SAME_STREAM_SPACE=500;   // 500m (~1600ft) along same waterway
+  const CROSS_STREAM_SPACE=300;  // 300m (~1000ft) between different streams
+  const MAX_W=30;
+
+  // Upstream occlusion: each upstream net on the same stream reduces
+  // the generation sub-score by this factor (compounds multiplicatively)
+  const CATCH_EFFICIENCY=0.65;  // a net catches ~65% of debris passing through
+  // So 1 net upstream → downstream sees 35% of original trash
+  // 2 nets upstream → downstream sees 35% × 35% = 12%
+
+  const RISK_PCTILE=pop>1e7?0.35:pop>1e6?0.30:pop>1e5?0.25:0.20;
+  const MIN_DEPLOY=5;
+
+  // ── Phase 1: Generate valid positions with wide spacing ──
+  // SKIP underground segments — inject tunnel portals as high-priority
+  const allPositions=[];
+  const globalPlaced=[];
+  let id=0;
+  // Portal composite bonus, scaled by the parent stream's type. A culvert under
+  // a real river is genuinely high-leverage; a culvert under a small unnamed
+  // stream is not. Drains/ditches don't reach this point — parseStreams refuses
+  // to inject portals for them at all.
+  const PORTAL_BONUS_BY_WW={river:5,canal:3,stream:1};
+  // Composite penalty applied to surface positions on small drainage features —
+  // they shouldn't leapfrog real streams just because their random rolls landed well.
+  const WW_PENALTY={ditch:-6,drain:-3};
+
+  // Inject culvert entrance/exit portal points first
+  const portals=streams._portals||[];
+  for(const pt of portals){
+    if(pt.estWidth>MAX_W)continue;
+    let tooClose=false;
+    for(const p of globalPlaced){if(hvM(p.a,p.o,pt.lat,pt.lon)<CROSS_STREAM_SPACE){tooClose=true;break}}
+    if(tooClose)continue;
+    globalPlaced.push({o:pt.lon,a:pt.lat});
+    // Catchment assumption for portals is intentionally moderate (0.6 / 0.4)
+    // rather than extreme (0.95 / 0.05). The old extreme made portals inherit
+    // huge upstream catchment numbers and dominate the top 20 even before the
+    // bonus was applied. Order=2 instead of 3 for the same reason.
+    const isEntrance=pt.type==='entrance';
+    allPositions.push({id:id++,lon:pt.lon,lat:pt.lat,
+      stream:pt.stream+' ('+pt.type+')',streamWidth:pt.estWidth,waterway:'culvert_portal',
+      parentWw:pt.parentWw||'stream',
+      riverKey:riverKeyOf({baseName:pt.stream,name:pt.stream}),
+      upstreamFrac:isEntrance?0.6:0.4,order:2,streamIdx:-1,coordIdx:0,isPortal:true});
+  }
+
+  // Walk surface streams
+  for(const st of streams){
+    if(st.underground)continue;
+    const w=st.estWidth||5;
+    if(w>MAX_W)continue;
+    const cap=waterwayCapacity(st);
+    let countOnStream=0;
+    let distAcc=SAME_STREAM_SPACE; // ready to place first
+
+    for(let i=0;i<st.coords.length;i++){
+      const[lon,lat]=st.coords[i];
+      if(i>0){const[plo,pla]=st.coords[i-1];distAcc+=hvM(pla,plo,lat,lon)}
+      if(distAcc<SAME_STREAM_SPACE)continue;
+
+      // Cross-stream check (different streams still need some separation)
+      let tooClose=false;
+      for(const p of globalPlaced){if(hvM(p.a,p.o,lat,lon)<CROSS_STREAM_SPACE){tooClose=true;break}}
+      if(tooClose)continue;
+      if(countOnStream>=cap)continue;
+
+      distAcc=0;
+      countOnStream++;
+      globalPlaced.push({o:lon,a:lat});
+
+      allPositions.push({id:id++,lon,lat,stream:st.name,streamWidth:w,waterway:st.waterway||'stream',
+        riverKey:riverKeyOf(st),
+        upstreamFrac:i/Math.max(1,st.coords.length-1),order:st.order,
+        streamIdx:streams.indexOf(st),coordIdx:i});
+    }
+  }
+
+  if(allPositions.length===0)return[];
+
+  // ── Phase 2: Score every position (no occlusion yet — raw potential) ──
+  const scored=allPositions.map(pos=>{
+    const uf=pos.upstreamFrac,rg=()=>R()-.5;
+    const popD=(800+uf*400)*dev+rg()*200;
+    const imp=30+uf*15+rg()*8;
+    const vel=.4+uf*.6+rg()*.15;
+    const mq=(2+uf*25)*(isDev?1.5:1);
+    const stO=Math.min(pos.order,Math.max(1,Math.round(1+uf*3.5)));
+    const ca=.5+uf*45;
+    const ej=Math.min(1,Math.max(0,.55+(isDev?.15:0)+rg()*.15));
+    const ram=Math.max(20,300+rg()*150);
+    const cw=Math.max(1,pos.streamWidth+rg()*2);
+    const bs=Math.max(2,12+rg()*6);
+    const bb=R()<.25?.2:0;
+    const cl=v=>Math.max(0,Math.min(100,v));
+
+    const gs=cl(popD/20*.18+imp*.4+5*2*.1);
+    const fs=cl(mq*.8*.22+Math.min(vel*40,60)*.16+stO*12*.14+Math.min(ca*1.5,70)*.18);
+    const ips=cl(R()*30*.22+R()*20*.16+ej*80*.18+(1-80/300)*80*.14);
+    const ras=ram<200?1:ram<500?.8:ram<1000?.6:.3;
+    const cws=cw<2?.5:cw<=15?1:cw<=30?.5:.2;
+    const vf=vel<.05?.3:vel<.3?.7:vel<=1.5?1:vel<=2.5?.5:.1;
+    const bss=bs<15?1:bs<30?.5:.2;
+    const fes=cl((ras*.25+cws*.2+vf*.2+.5*.15+bss*.1+bb*.1)*100);
+    const portalBonus=pos.isPortal?(PORTAL_BONUS_BY_WW[pos.parentWw]||0):0;
+    const wwPenalty=WW_PENALTY[pos.waterway]||0;
+    const comp=cl(.3*gs+.25*fs+.3*ips+.15*fes+portalBonus+wwPenalty);
+
+    return{...pos,composite:+comp.toFixed(1),gen:+gs.toFixed(1),flow:+fs.toFixed(1),
+      impact:+ips.toFixed(1),feas:+fes.toFixed(1),pop_d:+popD.toFixed(0),imp_pct:+imp.toFixed(1),
+      vel:+vel.toFixed(2),mq:+mq.toFixed(1),strahler:stO,catch_km2:+ca.toFixed(1),
+      ej:+ej.toFixed(2),road_m:+ram.toFixed(0),width_m:+cw.toFixed(1),slope_deg:+bs.toFixed(1),
+      rawGen:gs};  // keep raw generation for occlusion
+  });
+
+  // ── Phase 3: Greedy selection with upstream occlusion ──
+  // Instead of just taking top N%, we greedily pick the best site,
+  // then discount downstream sites on the same stream, then pick next best.
+  // This naturally spreads nets across different waterways.
+
+  // Cap deployments to keep the map snappy regardless of how far the user has panned.
+  // Floor: top percentile of scored sites OR ~5% (whichever is bigger), bounded by 80.
+  // Ceiling: 250 — beyond that, paint expressions get sluggish.
+  const pctCut=Math.ceil(scored.length*RISK_PCTILE);
+  const HARD_CAP=250;
+  const targetCount=Math.min(HARD_CAP,Math.max(MIN_DEPLOY,pctCut,Math.min(80,Math.ceil(scored.length*0.05))));
+  const selected=[];
+  const remaining=[...scored];
+  // Track how many nets are upstream per stream
+  const upstreamNets={}; // streamIdx → count of nets already placed upstream
+
+  while(selected.length<targetCount&&remaining.length>0){
+    // Sort remaining by current effective composite (accounts for occlusion)
+    remaining.sort((a,b)=>b.composite-a.composite);
+
+    // Pick the best remaining candidate
+    const best=remaining.shift();
+    selected.push(best);
+
+    // Apply upstream occlusion: discount generation score for all DOWNSTREAM
+    // candidates on the SAME stream
+    const sIdx=best.streamIdx;
+    upstreamNets[sIdx]=(upstreamNets[sIdx]||0)+1;
+    const netsUp=upstreamNets[sIdx];
+
+    for(const c of remaining){
+      if(c.streamIdx===sIdx&&c.coordIdx>best.coordIdx){
+        // This candidate is downstream of the net we just placed
+        // Each upstream net lets through (1 - CATCH_EFFICIENCY) of trash
+        const passthrough=Math.pow(1-CATCH_EFFICIENCY,netsUp);
+        const discountedGen=+(c.rawGen*passthrough).toFixed(1);
+        // Recompute composite with discounted generation, preserving the
+        // waterway-type penalty (otherwise occluded ditches would silently
+        // re-rise above streams). Downstream candidates aren't portals, so
+        // there's no portal bonus to carry.
+        const wwPenalty=WW_PENALTY[c.waterway]||0;
+        c.gen=discountedGen;
+        c.composite=+(.3*discountedGen+.25*c.flow+.3*c.impact+.15*c.feas+wwPenalty).toFixed(1);
+      }
+    }
+  }
+
+  const nPortals=allPositions.filter(p=>p.isPortal).length;
+  console.log(`Placement: ${allPositions.length} valid (${nPortals} portal) → ${scored.length} scored → greedy select ${selected.length} (target ${targetCount}, occlusion η=${CATCH_EFFICIENCY})`);
+  pipelineStats={total:allPositions.length,scored:scored.length,deployed:selected.length,pctile:RISK_PCTILE,streams:streams.length,filtered:scored.length-selected.length,catchEff:CATCH_EFFICIENCY,portals:nPortals};
+  return selected;
+}
+
+// ═══ GEOJSON BUILDERS (stamp riverKey onto features so paint expressions can dim non-matches) ═
+function buildStreamGeo(streams){
+  return{type:'FeatureCollection',features:(streams||[]).map(s=>({
+    type:'Feature',geometry:{type:'LineString',coordinates:s.coords},
+    properties:{name:s.name,riverKey:riverKeyOf(s),order:s.order,underground:s.underground?1:0}
+  }))};
+}
+function buildCandidateGeo(cands){
+  return{type:'FeatureCollection',features:(cands||[]).map((c,i)=>({
+    type:'Feature',geometry:{type:'Point',coordinates:[c.lon,c.lat]},
+    properties:{idx:i,composite:c.composite,riverKey:c.riverKey||riverKeyOf({baseName:c.stream,name:c.stream})}
+  }))};
+}
+
+// ═══ PAN-AUTOLOAD: progressive fetch as the user explores ═══════
+function bboxContains(bb,lon,lat){return lon>=bb[0]&&lon<=bb[2]&&lat>=bb[1]&&lat<=bb[3]}
+
+// Fraction of the visible viewport that lies outside every covered bbox.
+// Sampled on a 5×5 grid (25 probe points) so the answer is a smooth
+// 0..1 instead of a flickery boolean — small pans rarely cross thresholds.
+function viewportUncoveredFraction(){
+  if(coveredBboxes.length===0)return 1;
+  const vb=map.getBounds();
+  const W=vb.getWest(),E=vb.getEast(),S=vb.getSouth(),N=vb.getNorth();
+  const G=5;
+  let uncovered=0;
+  for(let i=0;i<G;i++){
+    for(let j=0;j<G;j++){
+      const lon=W+(E-W)*(i+0.5)/G;
+      const lat=S+(N-S)*(j+0.5)/G;
+      if(!coveredBboxes.some(b=>bboxContains(b,lon,lat)))uncovered++;
+    }
+  }
+  return uncovered/(G*G);
+}
+
+// Cap a bbox to roughly ~25km square so Overpass doesn't time out when zoomed way out.
+function clampBbox(s,w,n,e){
+  const center=(s+n)/2;
+  const maxLat=25/111;
+  const maxLon=25/(111*Math.max(0.1,Math.cos(center*Math.PI/180)));
+  if((n-s)>maxLat){const c=(n+s)/2;s=c-maxLat/2;n=c+maxLat/2}
+  if((e-w)>maxLon){const c=(e+w)/2;w=c-maxLon/2;e=c+maxLon/2}
+  return{s,w,n,e};
+}
+
+function setLoadingPill(on,text){
+  const el=document.getElementById('load-pill');
+  if(!el)return;
+  if(text)document.getElementById('load-pill-text').textContent=text;
+  el.classList.toggle('vis',on);
+}
+
+function schedulePanFetch(){
+  if(activeCityIdx<0)return;
+  if(panDebounceTimer)clearTimeout(panDebounceTimer);
+  panDebounceTimer=setTimeout(()=>{panDebounceTimer=null;onPanFetch()},250);
+}
+
+async function onPanFetch(){
+  if(activeCityIdx<0)return;
+  if(initialFetchInFlight)return; // openCity is still loading the city's first batch
+  if(riverFetchInFlight)return;
+  // Don't bother fetching when zoomed way out — streams aren't visible and Overpass
+  // would just time out on continent-scale bboxes.
+  if(map.getZoom()<10)return;
+  // Soft ceiling on how many bboxes we accumulate per city, to bound work.
+  if(coveredBboxes.length>=40)return;
+
+  // Substantial-pan gate: most of the viewport must be uncovered. A small nudge
+  // (or a zoom-in inside an already-fetched area) skips the fetch entirely.
+  if(viewportUncoveredFraction()<PAN_MIN_UNCOVERED)return;
+
+  if(panFetchInFlight){panFetchQueued=true;return}
+
+  // Rate limit: enforce a minimum gap between fetch starts. If we're inside the
+  // cooldown, queue and schedule a single retry timer that fires once the gap
+  // has elapsed — so a flurry of pans never drops a load, it just defers it.
+  const elapsed=Date.now()-lastPanFetchAt;
+  if(elapsed<PAN_MIN_INTERVAL_MS){
+    panFetchQueued=true;
+    if(!rateLimitTimer){
+      rateLimitTimer=setTimeout(()=>{
+        rateLimitTimer=null;
+        if(panFetchQueued){panFetchQueued=false;onPanFetch()}
+      },PAN_MIN_INTERVAL_MS-elapsed+50);
+    }
+    return;
+  }
+  lastPanFetchAt=Date.now();
+
+  const vb=map.getBounds();
+  let s=vb.getSouth(),w=vb.getWest(),n=vb.getNorth(),e=vb.getEast();
+  // 10% buffer so we prefetch slightly outside the visible viewport
+  const dLat=(n-s)*0.1,dLon=(e-w)*0.1;
+  s-=dLat;n+=dLat;w-=dLon;e+=dLon;
+  ({s,w,n,e}=clampBbox(s,w,n,e));
+
+  panFetchInFlight=true;
+  setLoadingPill(true,'Loading more streams…');
+  try{
+    const newStreams=await fetchStreamsInBbox(s,w,n,e,{timeout:12});
+    if(newStreams){
+      coveredBboxes.push([w,s,e,n]);
+      // Apply the SAME per-fetch quality bar the initial city fetch uses,
+      // so panning can never sneak in low-priority short ditches or culverts
+      // that the initial criteria would have trimmed.
+      const filtered=applyQualityBar(newStreams,{maxStreams:25});
+      const added=mergeStreams(filtered);
+      if(added>0)scheduleRescore();
+    }
+  }catch(err){
+    console.warn('Pan-autoload fetch failed:',err);
+  }finally{
+    panFetchInFlight=false;
+    setLoadingPill(false);
+    // If pans piled up while the fetch was running, re-enter onPanFetch — it
+    // will hit the rate-limit branch on its own if the cooldown hasn't elapsed.
+    if(panFetchQueued){panFetchQueued=false;onPanFetch()}
+  }
+}
+
+function scheduleRescore(){
+  if(rescoreTimer)return;
+  rescoreTimer=setTimeout(()=>{
+    rescoreTimer=null;
+    if(activeCityIdx<0)return;
+    activeCandidates=generateCandidates(activeStreams,activePop,activeCC,activeSeed);
+    refreshMapSources();
+    renderCityView();
+  },400);
+}
+
+function refreshMapSources(){
+  const sSrc=map.getSource('streams');
+  if(sSrc)sSrc.setData(buildStreamGeo(activeStreams));
+  const cSrc=map.getSource('candidates');
+  if(cSrc)cSrc.setData(buildCandidateGeo(activeCandidates));
+  // Re-apply focus paint in case the new data introduced more matching features
+  if(focusedRiverKey)applyFocusPaint();
+}
+
+// ═══ RIVER FOCUS: click a stream to trace the entire named river ═
+// Original opacity values restored when focus is cleared.
+const ORIG_PAINT={
+  'streams':{'line-opacity':0.9},
+  'streams-outline':{'line-opacity':0.4},
+  'streams-underground':{'line-opacity':0.6},
+  'candidates':{'circle-opacity':1.0,'circle-stroke-opacity':1.0},
+  'cand-glow':{'circle-opacity':0.25}
+};
+
+function applyFocusPaint(){
+  const setIf=(layer,prop,val)=>{if(map.getLayer(layer))map.setPaintProperty(layer,prop,val)};
+  if(!focusedRiverKey){
+    for(const layer of Object.keys(ORIG_PAINT))
+      for(const prop of Object.keys(ORIG_PAINT[layer]))
+        setIf(layer,prop,ORIG_PAINT[layer][prop]);
+    return;
+  }
+  const expr=(matchVal,dimVal)=>['case',['==',['get','riverKey'],focusedRiverKey],matchVal,dimVal];
+  setIf('streams','line-opacity',expr(0.95,0.15));
+  setIf('streams-outline','line-opacity',expr(0.5,0.08));
+  setIf('streams-underground','line-opacity',expr(0.7,0.12));
+  setIf('candidates','circle-opacity',expr(1.0,0.18));
+  setIf('candidates','circle-stroke-opacity',expr(1.0,0.18));
+  setIf('cand-glow','circle-opacity',expr(0.35,0.05));
+}
+
+function onStreamClick(e){
+  const f=e.features&&e.features[0];
+  if(!f)return;
+  const key=f.properties.riverKey;
+  const name=f.properties.name||'Unnamed waterway';
+  const baseName=name.replace(/\s*\(culvert\)$/,'').replace(/\s*\((entrance|exit)\)$/,'');
+  enterRiverFocus(key,baseName,e.lngLat);
+}
+
+async function enterRiverFocus(key,name,lngLat){
+  if(!key)return;
+  // If clicking the same river again, treat as a refresh — no-op if a fetch is in flight
+  if(focusedRiverKey===key&&riverFetchInFlight)return;
+  focusedRiverKey=key;
+  focusedRiverName=name;
+  applyFocusPaint();
+  renderCityView();
+
+  // Skip the global river fetch for unnamed waterways — they're a single segment by design
+  if(key.startsWith('__unnamed_')){
+    flyToFocusedRiver();
+    return;
+  }
+  if(riverFetchInFlight)return;
+
+  riverFetchInFlight=true;
+  setLoadingPill(true,'Tracing whole river…');
+  try{
+    const newStreams=await fetchRiverByName(name,lngLat.lat,lngLat.lng);
+    if(newStreams){
+      const added=mergeStreams(newStreams);
+      if(added>0){
+        activeCandidates=generateCandidates(activeStreams,activePop,activeCC,activeSeed);
+        refreshMapSources();
+      }
+    }
+    flyToFocusedRiver();
+  }catch(err){
+    console.warn('River fetch failed:',err);
+  }finally{
+    riverFetchInFlight=false;
+    setLoadingPill(false);
+    renderCityView();
+    // Pan-autoload was paused; if the user moved while we were fetching, give it a kick
+    if(panFetchQueued){panFetchQueued=false;setTimeout(onPanFetch,200)}
+  }
+}
+
+function flyToFocusedRiver(){
+  if(!focusedRiverKey)return;
+  const segs=activeStreams.filter(s=>riverKeyOf(s)===focusedRiverKey);
+  if(!segs.length)return;
+  const bounds=new mapboxgl.LngLatBounds();
+  for(const seg of segs)for(const c of seg.coords)bounds.extend(c);
+  if(bounds.isEmpty())return;
+  map.fitBounds(bounds,{padding:60,maxZoom:13,duration:1500});
+}
+
+function exitRiverFocus(){
+  if(!focusedRiverKey)return;
+  focusedRiverKey=null;
+  focusedRiverName=null;
+  applyFocusPaint();
+  renderCityView();
+}
+
+// ═══ MAP ════════════════════════════════════════════════════════
+// Named hover helpers so re-renders don't accumulate listeners.
+const cursorPointer=()=>map.getCanvas().style.cursor='pointer';
+const cursorReset=()=>map.getCanvas().style.cursor='';
+
+function initMap(){
+  mapboxgl.accessToken=MAPBOX_TOKEN;
+  map=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/satellite-streets-v12',center:[20,15],zoom:2,pitch:0,maxZoom:18});
+  map.addControl(new mapboxgl.NavigationControl(),'top-right');
+  map.addControl(new mapboxgl.ScaleControl(),'bottom-right');
+  // Pan-autoload: any move while in city view triggers a debounced fetch of uncovered area
+  map.on('moveend',schedulePanFetch);
+  // River-focus click handlers — attached once. Mapbox keeps them dormant until
+  // the layers exist, and they automatically pick up new sources when re-added.
+  map.on('click','streams',onStreamClick);
+  map.on('click','streams-underground',onStreamClick);
+  map.on('mouseenter','streams',cursorPointer);
+  map.on('mouseleave','streams',cursorReset);
+  map.on('mouseenter','streams-underground',cursorPointer);
+  map.on('mouseleave','streams-underground',cursorReset);
+  // Candidate click + hover (used to live in openCity, where it leaked listeners)
+  map.on('click','candidates',e=>{const f=e.features&&e.features[0];if(f)selectCand(f.properties.idx)});
+  map.on('mouseenter','candidates',cursorPointer);
+  map.on('mouseleave','candidates',cursorReset);
+  // Clicking blank map (no stream/candidate hit) clears river focus
+  map.on('click',e=>{
+    if(!focusedRiverKey)return;
+    const hits=map.queryRenderedFeatures(e.point,{layers:['streams','streams-underground','candidates'].filter(l=>map.getLayer(l))});
+    if(hits.length===0)exitRiverFocus();
+  });
+}
+
+function resetExploreState(){
+  coveredBboxes=[];
+  streamKeySet.clear();
+  focusedRiverKey=null;focusedRiverName=null;
+  panFetchInFlight=false;panFetchQueued=false;
+  riverFetchInFlight=false;
+  initialFetchInFlight=false;
+  lastPanFetchAt=0;
+  if(panDebounceTimer){clearTimeout(panDebounceTimer);panDebounceTimer=null}
+  if(rescoreTimer){clearTimeout(rescoreTimer);rescoreTimer=null}
+  if(rateLimitTimer){clearTimeout(rateLimitTimer);rateLimitTimer=null}
+  setLoadingPill(false);
+}
+
+function loadWorldView(){
+  activeCityIdx=-1;activeCandidates=[];activeStreams=[];selectedCand=null;
+  resetExploreState();
+  clearLayers();
+  const geojson={type:'FeatureCollection',features:places.map((p,i)=>({
+    type:'Feature',geometry:{type:'Point',coordinates:[p.lo,p.la]},
+    properties:{idx:i,name:p.n||'Unknown',cc:p.c||'??',pop:p.p||0}
+  }))};
+  map.addSource('places',{type:'geojson',data:geojson,cluster:true,clusterMaxZoom:12,clusterRadius:40});
+  map.addLayer({id:'clusters',type:'circle',source:'places',filter:['has','point_count'],paint:{
+    'circle-color':['step',['get','point_count'],'#1D9E75',50,'#378ADD',200,'#7F77DD',1000,'#22d3ee'],
+    'circle-radius':['step',['get','point_count'],14,50,18,200,22,1000,28],
+    'circle-stroke-width':2,'circle-stroke-color':'#ffffff'
+  }});
+  map.addLayer({id:'cluster-count',type:'symbol',source:'places',filter:['has','point_count'],layout:{'text-field':'{point_count_abbreviated}','text-size':11,'text-font':['DIN Pro Medium','Arial Unicode MS Regular']},paint:{'text-color':'#ffffff'}});
+  map.addLayer({id:'unclustered',type:'circle',source:'places',filter:['!',['has','point_count']],paint:{
+    'circle-radius':['interpolate',['linear'],['get','pop'],1000,3,100000,6,1000000,10,10000000,14],
+    'circle-color':['interpolate',['linear'],['get','pop'],1000,'#10b981',100000,'#3b82f6',1000000,'#8b5cf6',10000000,'#22d3ee'],
+    'circle-stroke-width':1.5,'circle-stroke-color':'#ffffff'
+  }});
+  map.on('click','clusters',e=>{map.easeTo({center:e.features[0].geometry.coordinates,zoom:map.getZoom()+3})});
+  map.on('click','unclustered',e=>{openCity(e.features[0].properties.idx)});
+  map.on('mouseenter','clusters',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','clusters',()=>map.getCanvas().style.cursor='');
+  map.on('mouseenter','unclustered',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','unclustered',()=>map.getCanvas().style.cursor='');
+  document.getElementById('back-btn').classList.remove('vis');
+  document.getElementById('city-view').classList.remove('vis');
+  document.getElementById('place-list').style.display='';
+  showStats();renderPlaceList();
+}
+
+function clearLayers(){
+  ['stream-labels','streams-underground','streams-outline','streams','cand-glow','candidates','cluster-count','clusters','unclustered'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
+  ['places','streams','candidates'].forEach(id=>{if(map.getSource(id))map.removeSource(id)});
+}
+
+async function openCity(idx){
+  if(idx<0||idx>=places.length)return;
+  const p=places[idx];
+  if(!p||!p.n)return;
+  activeCityIdx=idx;selectedCand=null;
+  // Remember city params so pan-autoload can re-score the merged stream set without
+  // reaching back into `places[idx]` (which can race with a back-btn click).
+  activePop=p.p;activeCC=p.c;
+  activeSeed=Math.round(Math.abs(p.la*1000)+Math.abs(p.lo*1000)+p.p);
+  resetExploreState();
+  clearLayers();
+
+  // Show loading in sidebar
+  document.getElementById('back-btn').classList.add('vis');
+  document.getElementById('place-list').style.display='none';
+  document.getElementById('sidebar-title').textContent=`${p.n||'Unknown'}, ${p.c||''}`;
+  document.getElementById('city-view').classList.add('vis');
+  document.getElementById('city-view').innerHTML='<div style="padding:20px;text-align:center;color:var(--td);font-family:var(--mono);font-size:12px"><div style="margin-bottom:8px">Fetching real rivers from OpenStreetMap...</div><div style="width:24px;height:24px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto"></div></div>';
+
+  map.flyTo({center:[p.lo,p.la],zoom:14,pitch:20,duration:1500});
+
+  // Fetch REAL waterway geometry from OSM
+  const seed=activeSeed;
+  initialFetchInFlight=true;
+  try{
+    activeStreams=await fetchRealStreams(p.la,p.lo,p.p);
+  }finally{
+    initialFetchInFlight=false;
+  }
+  // Guard against a stale fetch returning after the user navigated away
+  if(activeCityIdx!==idx)return;
+
+  // No waterway data available for this location
+  if(!activeStreams||activeStreams.length===0){
+    activeCandidates=[];
+    activeStreams=[];
+    document.getElementById('info').textContent=`${p.n||'Unknown'} · No waterway data in OpenStreetMap`;
+    document.getElementById('city-view').innerHTML=`
+      <div style="padding:24px 16px;text-align:center">
+        <div style="font-size:28px;margin-bottom:12px">🏜️</div>
+        <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:8px">No waterway data available</div>
+        <div style="font-size:12px;color:var(--td);line-height:1.6">
+          OpenStreetMap has no mapped rivers, streams, or canals within ${p.p>1e6?'8':'4–6'}km of ${p.n||'this location'}.<br><br>
+          This can happen in arid regions, areas with poor OSM coverage, or generated township names that don't correspond to real settlements.<br><br>
+          Try a nearby larger city, or use the Python pipeline with USGS DEM data for US locations.
+        </div>
+      </div>`;
+    return;
+  }
+
+  activeCandidates=generateCandidates(activeStreams,p.p,p.c,seed);
+
+  // Draw streams — surface solid cyan, underground dashed orange
+  map.addSource('streams',{type:'geojson',data:buildStreamGeo(activeStreams)});
+  map.addLayer({id:'streams-outline',type:'line',source:'streams',filter:['==',['get','underground'],0],paint:{'line-color':'#000','line-width':['interpolate',['linear'],['get','order'],1,4,4,7],'line-opacity':.4},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams',type:'line',source:'streams',filter:['==',['get','underground'],0],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.5,4,4],'line-opacity':.9},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams-underground',type:'line',source:'streams',filter:['==',['get','underground'],1],paint:{'line-color':'#f59e0b','line-width':2,'line-opacity':.6,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'stream-labels',type:'symbol',source:'streams',layout:{'symbol-placement':'line','text-field':['get','name'],'text-size':12,'text-font':['DIN Pro Medium','Arial Unicode MS Regular'],'text-offset':[0,-1],'text-allow-overlap':false},paint:{'text-color':'#fff','text-halo-color':'#000','text-halo-width':1.5}});
+
+  // Draw candidates (click + hover handlers are attached once in initMap)
+  map.addSource('candidates',{type:'geojson',data:buildCandidateGeo(activeCandidates)});
+  map.addLayer({id:'cand-glow',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,12,55,22],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-opacity':.25,'circle-blur':1}});
+  map.addLayer({id:'candidates',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,6,55,12],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-stroke-width':2.5,'circle-stroke-color':'#fff'}});
+
+  const nSurface=activeStreams.filter(s=>!s.underground).length;
+  const nUnderground=activeStreams.filter(s=>s.underground).length;
+  const nPortals=(activeStreams._portals||[]).length;
+  const portalInfo=nUnderground>0?` · ${nUnderground} culverts · ${nPortals} portals`:'';
+  document.getElementById('info').textContent=`${p.n||'Unknown'} · ${activeCandidates.length} nets · ${nSurface} surface rivers${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%`;
+  renderCityView();
+}
+
+function selectCand(i){
+  selectedCand=i;
+  const c=activeCandidates[i];
+  if(c)map.flyTo({center:[c.lon,c.lat],zoom:16,duration:600});
+  renderCityView();
+}
+
+// ═══ SIDEBAR ════════════════════════════════════════════════════
+function showStats(){
+  const cc=new Set(places.map(p=>p.c));
+  const n=places.length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-v">${n.toLocaleString()}</div><div class="stat-l">Cities</div></div>
+    <div class="stat"><div class="stat-v">${cc.size}</div><div class="stat-l">Countries</div></div>
+    <div class="stat"><div class="stat-v">28</div><div class="stat-l">Params</div></div>
+    <div class="stat"><div class="stat-v">∞</div><div class="stat-l">On-demand</div></div>`;
+  document.getElementById('info').textContent=`${n.toLocaleString()} cities · ${cc.size} countries`;
+  document.getElementById('sidebar-title').textContent='Global coverage';
+}
+
+// ── Country name lookup for search ──
+const CC_NAMES={"AD":"Andorra","AE":"UAE","AF":"Afghanistan","AG":"Antigua","AL":"Albania","AM":"Armenia","AO":"Angola","AR":"Argentina","AT":"Austria","AU":"Australia","AZ":"Azerbaijan","BA":"Bosnia","BB":"Barbados","BD":"Bangladesh","BE":"Belgium","BF":"Burkina Faso","BG":"Bulgaria","BH":"Bahrain","BI":"Burundi","BJ":"Benin","BN":"Brunei","BO":"Bolivia","BR":"Brazil","BS":"Bahamas","BT":"Bhutan","BW":"Botswana","BY":"Belarus","BZ":"Belize","CA":"Canada","CD":"Congo DR","CF":"Central African Rep","CG":"Congo","CH":"Switzerland","CI":"Ivory Coast","CL":"Chile","CM":"Cameroon","CN":"China","CO":"Colombia","CR":"Costa Rica","CU":"Cuba","CV":"Cape Verde","CY":"Cyprus","CZ":"Czechia","DE":"Germany","DJ":"Djibouti","DK":"Denmark","DM":"Dominica","DO":"Dominican Rep","DZ":"Algeria","EC":"Ecuador","EE":"Estonia","EG":"Egypt","ER":"Eritrea","ES":"Spain","ET":"Ethiopia","FI":"Finland","FJ":"Fiji","FR":"France","GA":"Gabon","GB":"UK","GE":"Georgia","GH":"Ghana","GM":"Gambia","GN":"Guinea","GQ":"Eq Guinea","GR":"Greece","GT":"Guatemala","GW":"Guinea-Bissau","GY":"Guyana","HK":"Hong Kong","HN":"Honduras","HR":"Croatia","HT":"Haiti","HU":"Hungary","ID":"Indonesia","IE":"Ireland","IL":"Israel","IN":"India","IQ":"Iraq","IR":"Iran","IS":"Iceland","IT":"Italy","JM":"Jamaica","JO":"Jordan","JP":"Japan","KE":"Kenya","KG":"Kyrgyzstan","KH":"Cambodia","KM":"Comoros","KN":"St Kitts","KP":"North Korea","KR":"South Korea","KW":"Kuwait","KZ":"Kazakhstan","LA":"Laos","LB":"Lebanon","LK":"Sri Lanka","LR":"Liberia","LS":"Lesotho","LT":"Lithuania","LU":"Luxembourg","LV":"Latvia","LY":"Libya","MA":"Morocco","MD":"Moldova","ME":"Montenegro","MG":"Madagascar","MK":"N Macedonia","ML":"Mali","MM":"Myanmar","MN":"Mongolia","MR":"Mauritania","MT":"Malta","MU":"Mauritius","MV":"Maldives","MW":"Malawi","MX":"Mexico","MY":"Malaysia","MZ":"Mozambique","NA":"Namibia","NE":"Niger","NG":"Nigeria","NI":"Nicaragua","NL":"Netherlands","NO":"Norway","NP":"Nepal","NZ":"New Zealand","OM":"Oman","PA":"Panama","PE":"Peru","PG":"Papua New Guinea","PH":"Philippines","PK":"Pakistan","PL":"Poland","PS":"Palestine","PT":"Portugal","PY":"Paraguay","QA":"Qatar","RO":"Romania","RS":"Serbia","RU":"Russia","RW":"Rwanda","SA":"Saudi Arabia","SB":"Solomon Is","SC":"Seychelles","SD":"Sudan","SE":"Sweden","SG":"Singapore","SI":"Slovenia","SK":"Slovakia","SL":"Sierra Leone","SM":"San Marino","SN":"Senegal","SO":"Somalia","SR":"Suriname","SS":"South Sudan","SV":"El Salvador","SY":"Syria","SZ":"Eswatini","TD":"Chad","TG":"Togo","TH":"Thailand","TJ":"Tajikistan","TL":"Timor-Leste","TM":"Turkmenistan","TN":"Tunisia","TO":"Tonga","TR":"Turkey","TT":"Trinidad","TW":"Taiwan","TZ":"Tanzania","UA":"Ukraine","UG":"Uganda","US":"United States","UY":"Uruguay","UZ":"Uzbekistan","VA":"Vatican","VC":"St Vincent","VE":"Venezuela","VN":"Vietnam","VU":"Vanuatu","WS":"Samoa","XK":"Kosovo","YE":"Yemen","ZA":"South Africa","ZM":"Zambia","ZW":"Zimbabwe"};
+// Reverse lookup: "united states" → "US", "india" → "IN", etc.
+const NAME_TO_CC={};
+for(const[cc,name]of Object.entries(CC_NAMES)){NAME_TO_CC[name.toLowerCase()]=cc;NAME_TO_CC[cc.toLowerCase()]=cc}
+
+let searchTimeout=null;
+function renderPlaceList(filter=''){
+  const el=document.getElementById('place-list');
+  const q=filter.trim();
+  if(!q){
+    // No search — show top 80 by population
+    el.innerHTML=places.slice(0,80).map((p,i)=>{if(!p||!p.n)return'';return placeItem(i,p)}).join('');
+    return;
+  }
+
+  const ql=q.toLowerCase();
+  let cityQ=ql,countryQ='';
+
+  // Support "city, country" syntax: "Springfield, IL" or "Mumbai, India"
+  if(q.includes(',')){
+    const parts=q.split(',').map(s=>s.trim().toLowerCase());
+    cityQ=parts[0];
+    countryQ=parts[1]||'';
+  }
+
+  // Resolve country query to code
+  let countryCode=null;
+  if(countryQ){
+    countryCode=NAME_TO_CC[countryQ]||null;
+    // Also try partial match: "unit" → "US" via "united states"
+    if(!countryCode){
+      for(const[name,cc]of Object.entries(NAME_TO_CC)){
+        if(name.startsWith(countryQ)){countryCode=cc;break}
+      }
+    }
+  }
+
+  // Score and collect matches
+  const results=[];
+  for(let i=0;i<places.length&&results.length<150;i++){
+    const p=places[i];
+    if(!p||!p.n)continue;
+    const nl=p.n.toLowerCase();
+    const cName=(CC_NAMES[p.c]||'').toLowerCase();
+
+    // If country filter specified, must match
+    if(countryCode&&p.c!==countryCode)continue;
+
+    // City name match
+    let score=0;
+    if(nl===cityQ)score=100;                         // exact match
+    else if(nl.startsWith(cityQ))score=80;           // prefix match
+    else if(nl.includes(cityQ))score=50;             // substring match
+    else if(!countryQ){
+      // Also match country name/code when no comma syntax
+      if(p.c.toLowerCase()===ql)score=40;
+      else if(cName.startsWith(ql))score=30;
+      else if(cName.includes(ql))score=20;
+      else continue;
+    }else continue;
+
+    // Boost by population (log scale) so big cities rank first among equal matches
+    score+=Math.log10(Math.max(p.p,100))/10;
+    results.push({idx:i,score});
+  }
+
+  // Sort by score desc, then pop desc
+  results.sort((a,b)=>b.score-a.score||(places[b.idx].p-places[a.idx].p));
+  const top=results.slice(0,100);
+
+  const totalMatches=results.length;
+  el.innerHTML=`<div style="padding:6px 18px;font-size:11px;color:var(--td);font-family:var(--mono)">${top.length<totalMatches?`Top ${top.length} of ${totalMatches.toLocaleString()}`:`${totalMatches}`} matches</div>`+
+    top.map(r=>placeItem(r.idx,places[r.idx])).join('');
+}
+
+function placeItem(idx,p){
+  const cName=CC_NAMES[p.c]||p.c;
+  const popStr=p.p>1e6?(p.p/1e6).toFixed(1)+'M':p.p>1e3?(p.p/1e3).toFixed(0)+'K':p.p;
+  return`<div class="pl-item" onclick="openCity(${idx})">
+    <span class="pl-cc">${CC_FLAGS[p.c]||'🌍'}</span>
+    <div style="flex:1;overflow:hidden"><div class="pl-name">${p.n}</div><div style="font-size:10px;color:var(--td)">${cName}</div></div>
+    <span class="pl-pop">${popStr}</span>
+  </div>`;
+}
+
+// Build the chip-grid + score detail panel for a single selected candidate.
+// Used by both the city view and the river focus panel.
+function renderSelectedCandHtml(){
+  if(selectedCand===null||!activeCandidates[selectedCand])return'';
+  const c=activeCandidates[selectedCand];
+  const ss=[{l:'Generation',v:c.gen,c:'var(--gen)',w:'30%'},{l:'Flow',v:c.flow,c:'var(--flow)',w:'25%'},{l:'Impact',v:c.impact,c:'var(--imp)',w:'30%'},{l:'Feasibility',v:c.feas,c:'var(--feas)',w:'15%'}];
+  return`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bdr)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--td)">Score</div>
+      <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--acc)">${c.composite}</div></div>
+      <button class="close" onclick="selectedCand=null;renderCityView()">×</button>
+    </div>
+    ${ss.map(s=>`<div class="ss-row"><div style="font-size:11px;font-weight:500;color:${s.c}">${s.l} <span style="font-size:9px;color:var(--td)">${s.w}</span></div><div class="ss-bar"><div class="ss-fill" style="width:${s.v}%;background:${s.c}"></div></div><div style="font-family:var(--mono);font-size:11px;text-align:right">${s.v}</div></div>`).join('')}
+    <div class="pgrid">
+      ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Strahler',c.strahler],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderRiverFocusHtml(){
+  const segs=activeStreams.filter(s=>!s.underground&&riverKeyOf(s)===focusedRiverKey);
+  const culvertSegs=activeStreams.filter(s=>s.underground&&riverKeyOf(s)===focusedRiverKey);
+  let totalLenKm=0;
+  for(const seg of segs)
+    for(let i=1;i<seg.coords.length;i++)
+      totalLenKm+=hvM(seg.coords[i-1][1],seg.coords[i-1][0],seg.coords[i][1],seg.coords[i][0])/1000;
+  // Filter candidates by the riverKey baked in at scoring time
+  const indexedCands=activeCandidates
+    .map((c,i)=>({c,i,k:c.riverKey||riverKeyOf({baseName:c.stream,name:c.stream})}))
+    .filter(x=>x.k===focusedRiverKey)
+    .sort((a,b)=>b.c.composite-a.c.composite);
+  const loading=riverFetchInFlight?`<div style="font-size:11px;color:var(--acc);font-family:var(--mono);margin-bottom:10px;display:flex;align-items:center;gap:8px"><span class="mini-spinner" style="display:inline-block;width:12px;height:12px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite"></span>Tracing whole river…</div>`:'';
+  let html=`
+    <button class="river-back" onclick="exitRiverFocus()">← Back to city view</button>
+    <h3 style="font-size:14px;font-weight:600;color:var(--tb);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${focusedRiverName||'River'}</h3>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--td);margin-bottom:12px">RIVER FOCUS · ${segs.length} surface segment${segs.length===1?'':'s'}${culvertSegs.length?` · ${culvertSegs.length} culverted`:''}</div>
+    ${loading}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="pchip"><div class="pchip-l">Total length</div><div class="pchip-v">${totalLenKm<1?(totalLenKm*1000).toFixed(0)+' m':totalLenKm.toFixed(1)+' km'}</div></div>
+      <div class="pchip"><div class="pchip-l">Net sites</div><div class="pchip-v">${indexedCands.length}</div></div>
+    </div>
+    <h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:8px">Top sites along this river</h3>
+  `;
+  if(indexedCands.length===0){
+    html+=`<div style="font-size:11px;color:var(--td);padding:8px 0">${riverFetchInFlight?'Scoring...':'No scored sites along this stretch.'}</div>`;
+  }else{
+    html+=indexedCands.slice(0,30).map(({c,i},rank)=>{
+      const rc=rank===0?'r1':rank===1?'r2':rank===2?'r3':'';
+      const act=i===selectedCand?'active':'';
+      return`<div class="cand-item ${act}" onclick="selectCand(${i})">
+        <div class="rank ${rc}">${rank+1}</div>
+        <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.stream||'Stream'}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
+        <div style="font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;color:${sc(c.composite)}">${c.composite}</div>
+      </div>`;
+    }).join('');
+  }
+  html+=renderSelectedCandHtml();
+  return html;
+}
+
+function renderCityView(){
+  const el=document.getElementById('city-view');
+  el.classList.add('vis');
+  if(activeCityIdx<0)return;
+  const p=places[activeCityIdx];
+  if(!p)return;
+  if(focusedRiverKey){el.innerHTML=renderRiverFocusHtml();return}
+  let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${p.n||'Unknown'} · Top ${activeCandidates.length} sites</h3>`;
+  if(pipelineStats){
+    html+=`<div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px;line-height:1.6">
+      ${pipelineStats.scored} evaluated → ${pipelineStats.deployed} deployed (top ${Math.round(pipelineStats.pctile*100)}%)<br>
+      ${pipelineStats.filtered} filtered · ${Math.round((pipelineStats.catchEff||.65)*100)}% catch rate · occlusion active${pipelineStats.portals?` · ${pipelineStats.portals} culvert portals`:''}
+    </div>`;
+  }
+
+  html+=activeCandidates.slice(0,25).map((c,i)=>{
+    const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
+    const act=i===selectedCand?'active':'';
+    return`<div class="cand-item ${act}" onclick="selectCand(${i})">
+      <div class="rank ${rc}">${i+1}</div>
+      <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.stream||'Stream'}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
+      <div style="font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;color:${sc(c.composite)}">${c.composite}</div>
+    </div>`;
+  }).join('');
+
+  html+=renderSelectedCandHtml();
+  el.innerHTML=html;
+}
+
+// ═══ EVENTS ═════════════════════════════════════════════════════
+document.getElementById('search').addEventListener('input',e=>{
+  const q=e.target.value;
+  clearTimeout(searchTimeout);
+  // If currently in city detail view, exit it so the search results are visible.
+  // Otherwise the place list is hidden behind #city-view and typing appears to do nothing.
+  if(activeCityIdx>=0){
+    map.flyTo({center:[20,15],zoom:2,pitch:0,duration:1200});
+    loadWorldView();
+    document.getElementById('search').value=q;
+    document.getElementById('search').focus();
+  }
+  searchTimeout=setTimeout(()=>renderPlaceList(q),150);
+});
+document.getElementById('back-btn').addEventListener('click',()=>{
+  document.getElementById('search').value='';
+  if(focusedRiverKey)exitRiverFocus();
+  map.flyTo({center:[20,15],zoom:2,pitch:0,duration:1200});
+  loadWorldView();
+});
+
+// Escape clears river focus first; pressing again at city view does nothing.
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(focusedRiverKey){exitRiverFocus();e.stopPropagation()}
+    else if(selectedCand!==null){selectedCand=null;renderCityView()}
+  }
+});
+// ── Helper: pick correct map style from current state ──
+function getMapStyle(){
+  if(isSat)return'mapbox://styles/mapbox/satellite-streets-v12';
+  return isLightTheme?'mapbox://styles/mapbox/light-v11':'mapbox://styles/mapbox/dark-v11';
+}
+function reloadMap(){
+  map.setStyle(getMapStyle());
+  map.once('style.load',()=>{
+    if(wwOverlayOn)addWaterwayOverlay();
+    if(activeCityIdx>=0)openCity(activeCityIdx);else loadWorldView();
+  });
+}
+
+// ── Satellite: on/off overlay (independent of theme) ──
+document.getElementById('style-toggle').addEventListener('click',()=>{
+  isSat=!isSat;
+  document.getElementById('style-toggle').textContent=isSat?'Satellite ✓':'Satellite';
+  document.getElementById('style-toggle').classList.toggle('active',isSat);
+  reloadMap();
+});
+
+// ── Waterway overlay: OSM tiles showing real rivers ──
+let wwOverlayOn=false;
+function addWaterwayOverlay(){
+  if(map.getSource('osm-ww'))return;
+  map.addSource('osm-ww',{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap'});
+  map.addLayer({id:'osm-ww-layer',type:'raster',source:'osm-ww',paint:{'raster-opacity':0.35}},
+    map.getLayer('streams-outline')?'streams-outline':map.getLayer('clusters')?'clusters':undefined);
+}
+function removeWaterwayOverlay(){
+  try{map.removeLayer('osm-ww-layer')}catch(e){}
+  try{map.removeSource('osm-ww')}catch(e){}
+}
+
+document.getElementById('ww-toggle').addEventListener('click',()=>{
+  wwOverlayOn=!wwOverlayOn;
+  const btn=document.getElementById('ww-toggle');
+  btn.classList.toggle('active',wwOverlayOn);
+  if(wwOverlayOn)addWaterwayOverlay();else removeWaterwayOverlay();
+});
+
+// ── Theme: dark ↔ light (switches BOTH UI chrome and earth map) ──
+let isLightTheme=false;
+document.getElementById('theme-toggle').addEventListener('click',()=>{
+  isLightTheme=!isLightTheme;
+  document.body.classList.toggle('theme-light',isLightTheme);
+  document.getElementById('theme-toggle').textContent=isLightTheme?'Dark theme':'Light theme';
+  reloadMap(); // always switch map to match — dark earth or light earth (unless satellite is on, then no change needed)
+});
+
+// ═══ INIT ═══════════════════════════════════════════════════════
+async function init(){
+  initMap();
+  document.getElementById('load-msg').textContent='Loading cities database...';
+  places=await loadPlaces();
+  places=places.filter(p=>p&&p.n&&p.c&&p.la!=null&&p.lo!=null);
+  const n=places.length.toLocaleString();
+  const cc=new Set(places.map(p=>p.c)).size;
+  document.getElementById('load-msg').textContent=`${n} cities loaded`;
+  document.getElementById('search').placeholder=`Search ${n} cities across ${cc} countries...`;
+  document.getElementById('loading').style.display='none';
+  document.getElementById('app').classList.add('ready');
+  map.resize();
+  map.on('load',()=>loadWorldView());
+}
+init();
+</script>
+</body>
+</html>
