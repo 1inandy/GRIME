@@ -1,0 +1,11 @@
+# GRIME — Web server dependencies (Render / production)
+# For the full hydrology pipeline, use: pip install -r requirements-full.txt
+
+fastapi>=0.110
+uvicorn[standard]>=0.29
+websockets>=12.0
+python-dotenv>=1.0
+requests>=2.31
+aiohttp>=3.9
+geojson>=3.1
+geonamescache>=2.0

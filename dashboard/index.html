@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRIME — Garbage River Interception & Modeling Engine</title>
+<link rel="icon" type="image/png" href="https://grime.world/dashboard/images/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+:root{
+  --bg:#1E1B12;--panel:#2A2518;--card:#352E1E;--hover:#3D3622;--bdr:#4A4330;
+  --t:#e8e2d4;--td:#8a7f68;--tb:#f5f0e4;
+  --acc:#58B09C;--acc-dim:rgba(88,176,156,0.12);--acc-glow:rgba(88,176,156,0.22);
+  --mono:'JetBrains Mono',monospace;--sans:'DM Sans',-apple-system,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);overflow-x:hidden}
+
+/* grain overlay */
+body::after{
+  content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;pointer-events:none;z-index:9999;
+  opacity:.032;animation:gr .12s steps(1) infinite;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:160px 160px;
+}
+@keyframes gr{0%{transform:translate(0,0)}25%{transform:translate(2px,-2px)}50%{transform:translate(-2px,2px)}75%{transform:translate(1px,1px)}}
+
+/* ── HERO ── */
+#hero{position:relative;width:100%;height:100vh;overflow:hidden;display:flex;align-items:flex-end}
+#globe-canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
+#globe-canvas:active{cursor:grabbing}
+
+.hero-content{position:relative;z-index:2;padding:0 64px 68px;max-width:680px}
+.hero-eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--acc);
+  margin-bottom:18px;display:flex;align-items:center;gap:10px;
+  opacity:0;transform:translateY(10px);
+}
+.ping{position:relative;width:8px;height:8px;display:inline-block;flex-shrink:0}
+.ping-dot,.ping-ring{width:8px;height:8px;border-radius:50%;background:var(--acc);position:absolute}
+.ping-ring{animation:pr 1.8s ease-out infinite;opacity:0}
+@keyframes pr{0%{transform:scale(1);opacity:.8}100%{transform:scale(3);opacity:0}}
+
+.hero-title{
+  font-family:var(--mono);font-size:clamp(80px,13vw,168px);font-weight:700;
+  line-height:.86;letter-spacing:-.03em;color:var(--tb);margin-bottom:26px;
+  opacity:0;transform:translateY(22px);
+}
+.hero-title .acc{color:var(--acc)}
+.hero-sub{
+  font-size:clamp(16px,1.6vw,21px);font-weight:300;color:var(--td);
+  line-height:1.55;margin-bottom:40px;max-width:440px;
+  opacity:0;transform:translateY(16px);
+}
+.hero-sub em{color:var(--t);font-style:normal;font-weight:400}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;
+  color:var(--acc);border:1px solid var(--acc);padding:13px 30px;border-radius:3px;
+  text-decoration:none;transition:background .18s,color .18s;
+  opacity:0;transform:translateY(12px);
+}
+.cta-btn:hover{background:var(--acc);color:var(--bg)}
+
+.scroll-ind{
+  position:absolute;bottom:36px;right:52px;z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;
+}
+.scroll-ind-lbl{
+  font-family:var(--mono);font-size:8px;letter-spacing:.18em;color:var(--td);
+  writing-mode:vertical-lr;text-transform:uppercase;
+}
+.scroll-line{width:1px;height:52px;background:var(--bdr);position:relative;overflow:hidden}
+.scroll-line::after{
+  content:'';position:absolute;top:0;width:100%;height:45%;background:var(--acc);
+  animation:sl 2s ease-in-out infinite;
+}
+@keyframes sl{0%{transform:translateY(-100%)}100%{transform:translateY(230%)}}
+
+/* ── SHARED ── */
+section{padding:112px 64px}
+.section-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--acc);
+  text-transform:uppercase;margin-bottom:52px;display:flex;align-items:center;gap:14px;
+}
+.section-label::after{content:'';width:48px;height:1px;background:var(--acc);opacity:.4}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .75s ease,transform .75s ease}
+.reveal.vis{opacity:1;transform:translateY(0)}
+.rd1{transition-delay:.1s}.rd2{transition-delay:.2s}.rd3{transition-delay:.3s}.rd4{transition-delay:.4s}
+
+/* ── PROBLEM STATS ── */
+#stats{background:var(--bg);border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr);padding:0}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr)}
+.stat-item{padding:80px 56px;border-right:1px solid var(--bdr)}
+.stat-item:last-child{border-right:none}
+.stat-num{
+  font-family:var(--mono);font-size:clamp(52px,7vw,88px);font-weight:700;
+  color:var(--tb);line-height:1;margin-bottom:16px;
+}
+.stat-num.acc{color:var(--acc)}
+.stat-label{font-size:14px;color:var(--td);line-height:1.7;max-width:240px}
+
+/* ── HOW IT WORKS ── */
+#how{background:var(--panel);padding-bottom:0}
+.how-title{
+  font-family:var(--mono);font-size:clamp(32px,4vw,58px);font-weight:700;
+  color:var(--tb);line-height:1.08;margin-bottom:64px;
+}
+.how-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:0 -64px}
+.how-card{background:var(--card);padding:44px 40px 52px;position:relative;overflow:hidden}
+.how-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--acc);
+  transform:scaleX(0);transform-origin:left;transition:transform .5s ease;
+}
+.how-card:hover::before{transform:scaleX(1)}
+.card-num{font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.1em;margin-bottom:28px}
+.card-title{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--tb);margin-bottom:14px}
+.card-body{font-size:14px;color:var(--td);line-height:1.75}
+.card-icon{width:44px;height:44px;margin-bottom:30px}
+
+/* ── DASHBOARD ── */
+#dashboard{background:var(--bg);text-align:center}
+.dash-title{font-family:var(--mono);font-size:clamp(28px,4vw,52px);font-weight:700;color:var(--tb);margin-bottom:14px;line-height:1.1}
+.dash-sub{font-size:15px;color:var(--td);margin-bottom:60px}
+.dash-frame{
+  max-width:1060px;margin:0 auto;border-radius:10px;overflow:hidden;
+  border:1px solid var(--bdr);
+  transform:perspective(1400px) rotateX(5deg) scale(.98);
+  transition:transform .7s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 48px 120px rgba(0,0,0,.6),0 0 100px var(--acc-glow);
+}
+.dash-frame:hover{transform:perspective(1400px) rotateX(0deg) scale(1)}
+#dash-globe .mapboxgl-ctrl-bottom-left,#dash-globe .mapboxgl-ctrl-bottom-right,#dash-globe .mapboxgl-ctrl-top-right,#dash-globe .mapboxgl-ctrl-top-left{display:none!important}
+
+/* ── REACH ── */
+#reach{background:var(--panel);border-top:1px solid var(--bdr)}
+.reach-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:72px}
+.reach-item{text-align:center;padding:56px 24px;border-right:1px solid var(--bdr)}
+.reach-item:last-child{border-right:none}
+.reach-val{font-family:var(--mono);font-size:clamp(40px,6vw,80px);font-weight:700;color:var(--acc);line-height:1;margin-bottom:10px}
+.reach-lbl{font-size:13px;color:var(--td);letter-spacing:.03em}
+
+/* marquee */
+.mq-wrap{overflow:hidden;border-top:1px solid var(--bdr);padding:14px 0}
+.mq-track{display:flex;width:max-content;animation:mq 36s linear infinite}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.mq-item{font-family:var(--mono);font-size:11px;color:var(--td);padding:0 22px;white-space:nowrap;letter-spacing:.04em}
+.mq-dot{color:var(--acc);opacity:.4}
+
+/* ── CTA ── */
+#cta{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:64px;
+  background:var(--panel);border-top:1px solid var(--bdr);position:relative;overflow:hidden;
+}
+#cta::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 50% at 50% 50%,var(--acc-glow) 0%,transparent 70%);
+  pointer-events:none;
+}
+.cta-wm{
+  font-family:var(--mono);font-size:clamp(48px,10vw,120px);font-weight:700;
+  color:var(--tb);line-height:1;margin-bottom:28px;position:relative;z-index:1;
+}
+.cta-wm span{color:var(--acc)}
+.cta-tagline{font-size:16px;color:var(--td);margin-bottom:52px;position:relative;z-index:1}
+.cta-manifest{
+  position:absolute;bottom:24px;left:0;right:0;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  color:var(--td);opacity:.55;text-align:center;line-height:2;
+}
+.mf-key{color:var(--acc);opacity:.85;margin-right:6px}
+.mf-link{color:inherit;text-decoration:none;transition:color .18s}
+.mf-link:hover{color:var(--acc)}
+.gh-icon{display:inline-block;vertical-align:-2px;width:1.1em;height:1.1em;fill:currentColor;margin-right:5px}
+.nav-gh{display:flex;align-items:center;color:var(--td);transition:color .2s}
+.nav-gh:hover{color:var(--acc)}
+.nav-gh svg{width:16px;height:16px;fill:currentColor}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav style="position:fixed;top:0;left:0;right:0;z-index:50;padding:14px 48px;display:flex;align-items:center;justify-content:space-between;background:transparent">
+  <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--tb)"><span style="color:var(--acc)">G</span>RIME</span>
+  <div style="display:flex;gap:28px;align-items:center">
+    <a href="docs/" style="font-family:var(--mono);font-size:11px;color:var(--td);text-decoration:none;letter-spacing:.06em;transition:color .2s" onmouseover="this.style.color='#58B09C'" onmouseout="this.style.color='#8a7f68'">Docs</a>
+    <a href="https://github.com/1inandy/grime" target="_blank" rel="noopener" aria-label="GitHub repository" class="nav-gh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    <a href="explore/" style="font-family:var(--mono);font-size:11px;color:var(--acc);text-decoration:none;letter-spacing:.06em;border:1px solid var(--acc);padding:4px 14px;border-radius:3px;transition:all .2s" onmouseover="this.style.background='#58B09C';this.style.color='#1E1B12'" onmouseout="this.style.background='transparent';this.style.color='#58B09C'">Explorer</a>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section id="hero">
+  <canvas id="globe-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-eyebrow" id="ey">
+      <span class="ping"><span class="ping-dot"></span><span class="ping-ring"></span></span>
+      GRIME · v3 · Live on Ellerbe Creek
+    </div>
+    <h1 class="hero-title" id="ht"><span class="acc">G</span>RIME</h1>
+    <p class="hero-sub" id="hs">Rivers remember <em>everything</em> we throw away.<br>We built the system to take it back.</p>
+    <a href="explore/" class="cta-btn" id="hc">Explore the dashboard →</a>
+  </div>
+  <div class="scroll-ind" id="si">
+    <span class="scroll-ind-lbl">scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ═══════════ STATS ═══════════ -->
+<section id="stats">
+  <div class="stats-grid">
+    <div class="stat-item reveal">
+      <div class="stat-num"><span class="cn" data-t="11" data-s="M+">0</span></div>
+      <div class="stat-label">Tons of plastic entering the world's waterways every single year</div>
+    </div>
+    <div class="stat-item reveal rd1">
+      <div class="stat-num acc"><span class="cn" data-t="91" data-s="%">0</span></div>
+      <div class="stat-label">Of waterway plastic never recovered — it reaches the ocean</div>
+    </div>
+    <div class="stat-item reveal rd2">
+      <div class="stat-num"><span class="cn" data-t="5" data-s="T">0</span></div>
+      <div class="stat-label">Trillion pieces of plastic currently floating in the world's oceans</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ HOW ═══════════ -->
+<section id="how">
+  <div class="section-label">How GRIME works</div>
+  <div class="how-title reveal">From watershed<br>to clean water.</div>
+  <div class="how-cards">
+    <div class="how-card reveal">
+      <svg class="card-icon" viewBox="0 0 44 44" fill="none">
+        <rect x="3" y="3" width="38" height="38" rx="3" stroke="#58B09C" stroke-width="1" stroke-dasharray="3 3" opacity=".4"/>
+        <circle cx="22" cy="22" r="6" stroke="#58B09C" stroke-width="1.5"/>
+        <line x1="22" y1="3" x2="22" y2="16" stroke="#58B09C" stroke-width="1" opacity=".5"/>
+        <line x1="22" y1="28" x2="22" y2="41" stroke="#58B09C" stroke-width="1" opacity=".5"/>
+        <line x1="3" y1="22" x2="16" y2="22" stroke="#58B09C" stroke-width="1" opacity=".5"/>
+        <line x1="28" y1="22" x2="41" y2="22" stroke="#58B09C" stroke-width="1" opacity=".5"/>
+        <circle cx="10" cy="10" r="1.5" fill="#58B09C" opacity=".5"/>
+        <circle cx="34" cy="10" r="1.5" fill="#58B09C" opacity=".5"/>
+        <circle cx="34" cy="34" r="1.5" fill="#58B09C" opacity=".3"/>
+      </svg>
+      <div class="card-num">01 — Analyze</div>
+      <div class="card-title">Watershed Intelligence</div>
+      <div class="card-body">Digital elevation models processed through pysheds hydrological algorithms to identify where trash naturally concentrates — before it ever reaches the ocean.</div>
+    </div>
+    <div class="how-card reveal rd1">
+      <svg class="card-icon" viewBox="0 0 44 44" fill="none">
+        <path d="M6 34 Q22 18 38 34" stroke="#58B09C" stroke-width="1.5" fill="none"/>
+        <ellipse cx="22" cy="34" rx="16" ry="4" stroke="#58B09C" stroke-width="1" opacity=".35"/>
+        <rect x="14" y="24" width="16" height="10" rx="2" stroke="#58B09C" stroke-width="1.5"/>
+        <line x1="22" y1="14" x2="22" y2="24" stroke="#58B09C" stroke-width="1.5"/>
+        <circle cx="22" cy="12" r="3" stroke="#58B09C" stroke-width="1.5"/>
+        <circle cx="10" cy="28" r="1.5" fill="#58B09C" opacity=".6"/>
+        <circle cx="34" cy="28" r="1.5" fill="#58B09C" opacity=".6"/>
+      </svg>
+      <div class="card-num">02 — Deploy</div>
+      <div class="card-title">Optimal Placement</div>
+      <div class="card-body">Sites scored by generation rate, flow velocity, catchment area, and environmental justice index. Deploy collection units precisely where the math says it matters most.</div>
+    </div>
+    <div class="how-card reveal rd2">
+      <svg class="card-icon" viewBox="0 0 44 44" fill="none">
+        <path d="M6 26 Q14 18 22 26 Q30 34 38 26" stroke="#58B09C" stroke-width="1.5" fill="none"/>
+        <rect x="5" y="26" width="34" height="8" rx="2" stroke="#58B09C" stroke-width="1" opacity=".35"/>
+        <circle cx="22" cy="16" r="5" stroke="#58B09C" stroke-width="1.5"/>
+        <line x1="19" y1="14" x2="17" y2="12" stroke="#58B09C" stroke-width="1"/>
+        <line x1="22" y1="11" x2="22" y2="9" stroke="#58B09C" stroke-width="1"/>
+        <line x1="25" y1="14" x2="27" y2="12" stroke="#58B09C" stroke-width="1"/>
+        <circle cx="36" cy="10" r="4" fill="none" stroke="#58B09C" stroke-width="1.5"/>
+        <line x1="34" y1="8" x2="38" y2="12" stroke="#58B09C" stroke-width="1.5"/>
+        <line x1="38" y1="8" x2="34" y2="12" stroke="#58B09C" stroke-width="1.5"/>
+      </svg>
+      <div class="card-num">03 — Collect</div>
+      <div class="card-title">Autonomous Action</div>
+      <div class="card-body">Computer vision classifies debris in real time. The unit fills autonomously, pings operators via LoRa, and resets — closing the loop on waterway trash at scale.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ DASHBOARD ═══════════ -->
+<section id="dashboard">
+  <div class="section-label" style="justify-content:center">Live system</div>
+  <div class="dash-title reveal">Every river. Every site.<br>All in one view.</div>
+  <div class="dash-sub reveal rd1">108,772 cities · Real waterway data · Upstream occlusion scoring.</div>
+  <div class="dash-frame reveal rd2" style="position:relative;aspect-ratio:1060/640;max-width:1060px;margin:0 auto">
+    <!-- SVG sidebar overlay (left 28%) -->
+    <svg viewBox="0 0 300 620" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;height:100%;width:28.3%;z-index:3">
+      <rect width="300" height="620" fill="#2A2518"/>
+      <rect x="299" y="0" width="1" height="620" fill="#4A4330"/>
+      <!-- search -->
+      <rect x="14" y="14" width="272" height="26" rx="5" fill="#352E1E" stroke="#4A4330" stroke-width=".5"/>
+      <text x="28" y="30" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a7f68">Search 108,772 cities...</text>
+      <!-- stats row -->
+      <rect x="14" y="50" width="82" height="36" rx="3" fill="#352E1E"/>
+      <text x="55" y="67" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#58B09C" text-anchor="middle">108,772</text>
+      <text x="55" y="79" font-family="'JetBrains Mono',monospace" font-size="6" fill="#8a7f68" text-anchor="middle">CITIES</text>
+      <rect x="103" y="50" width="82" height="36" rx="3" fill="#352E1E"/>
+      <text x="144" y="67" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#58B09C" text-anchor="middle">240</text>
+      <text x="144" y="79" font-family="'JetBrains Mono',monospace" font-size="6" fill="#8a7f68" text-anchor="middle">COUNTRIES</text>
+      <rect x="192" y="50" width="94" height="36" rx="3" fill="#352E1E"/>
+      <text x="239" y="67" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#58B09C" text-anchor="middle">28</text>
+      <text x="239" y="79" font-family="'JetBrains Mono',monospace" font-size="6" fill="#8a7f68" text-anchor="middle">PARAMS</text>
+      <!-- section header -->
+      <text x="14" y="106" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="600" fill="#8a7f68" letter-spacing="1.2">GLOBAL COVERAGE</text>
+      <!-- city list -->
+      <rect x="0" y="114" width="300" height="26" fill="#3D3622"/>
+      <text x="14" y="131" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#e8e2d4">🇺🇸  Durham, NC</text>
+      <text x="284" y="131" font-family="'JetBrains Mono',monospace" font-size="9" fill="#8a7f68" text-anchor="end">283K</text>
+      <text x="14" y="155" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a7f68">🇧🇷  Manaus</text>
+      <text x="284" y="155" font-family="'JetBrains Mono',monospace" font-size="9" fill="#8a7f68" text-anchor="end">2.2M</text>
+      <text x="14" y="176" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a7f68">🇮🇳  Kolkata</text>
+      <text x="284" y="176" font-family="'JetBrains Mono',monospace" font-size="9" fill="#8a7f68" text-anchor="end">4.5M</text>
+      <text x="14" y="197" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a7f68">🇧🇩  Dhaka</text>
+      <text x="284" y="197" font-family="'JetBrains Mono',monospace" font-size="9" fill="#8a7f68" text-anchor="end">8.9M</text>
+      <text x="14" y="218" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a7f68">🇳🇬  Lagos</text>
+      <text x="284" y="218" font-family="'JetBrains Mono',monospace" font-size="9" fill="#8a7f68" text-anchor="end">14.8M</text>
+      <rect x="0" y="228" width="300" height=".5" fill="#4A4330"/>
+      <!-- city detail -->
+      <text x="14" y="249" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="600" fill="#8a7f68" letter-spacing="1.2">DURHAM · TOP 8 SITES</text>
+      <rect x="0" y="256" width="300" height="28" fill="rgba(88,176,156,.1)"/>
+      <rect x="14" y="261" width="20" height="15" rx="3" fill="#d4a017"/>
+      <text x="24" y="272" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="700" fill="#1a1a1a" text-anchor="middle">1</text>
+      <text x="44" y="272" font-family="'DM Sans',sans-serif" font-size="10" font-weight="500" fill="#e8e2d4">Ellerbe Creek (entrance)</text>
+      <text x="284" y="272" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="700" fill="#58B09C" text-anchor="end">87</text>
+      <rect x="14" y="288" width="20" height="15" rx="3" fill="#94a3b8"/>
+      <text x="24" y="299" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="700" fill="#1a1a1a" text-anchor="middle">2</text>
+      <text x="44" y="299" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a7f68">Sandy Creek @ Hwy 55</text>
+      <text x="284" y="299" font-family="'JetBrains Mono',monospace" font-size="11" fill="#8a7f68" text-anchor="end">74</text>
+      <rect x="14" y="312" width="20" height="15" rx="3" fill="#d97706"/>
+      <text x="24" y="323" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="700" fill="#1a1a1a" text-anchor="middle">3</text>
+      <text x="44" y="323" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a7f68">Walnut Creek (tunnel exit)</text>
+      <text x="284" y="323" font-family="'JetBrains Mono',monospace" font-size="11" fill="#8a7f68" text-anchor="end">71</text>
+      <rect x="0" y="336" width="300" height=".5" fill="#4A4330"/>
+      <!-- score breakdown -->
+      <text x="24" y="364" font-family="'JetBrains Mono',monospace" font-size="26" font-weight="700" fill="#58B09C">87</text>
+      <text x="60" y="358" font-family="'JetBrains Mono',monospace" font-size="7" fill="#8a7f68">COMPOSITE</text>
+      <text x="60" y="368" font-family="'JetBrains Mono',monospace" font-size="7" fill="#8a7f68">SCORE</text>
+      <text x="14" y="388" font-family="'DM Sans',sans-serif" font-size="8" fill="#f97316">Generation</text>
+      <rect x="86" y="381" width="180" height="4" rx="2" fill="#1E1B12"/>
+      <rect x="86" y="381" width="146" height="4" rx="2" fill="#f97316" opacity=".8"/>
+      <text x="275" y="387" font-family="'JetBrains Mono',monospace" font-size="8" fill="#8a7f68" text-anchor="end">81</text>
+      <text x="14" y="402" font-family="'DM Sans',sans-serif" font-size="8" fill="#3b82f6">Flow</text>
+      <rect x="86" y="395" width="180" height="4" rx="2" fill="#1E1B12"/>
+      <rect x="86" y="395" width="162" height="4" rx="2" fill="#3b82f6" opacity=".8"/>
+      <text x="275" y="401" font-family="'JetBrains Mono',monospace" font-size="8" fill="#8a7f68" text-anchor="end">90</text>
+      <text x="14" y="416" font-family="'DM Sans',sans-serif" font-size="8" fill="#8b5cf6">Impact</text>
+      <rect x="86" y="409" width="180" height="4" rx="2" fill="#1E1B12"/>
+      <rect x="86" y="409" width="124" height="4" rx="2" fill="#8b5cf6" opacity=".8"/>
+      <text x="275" y="415" font-family="'JetBrains Mono',monospace" font-size="8" fill="#8a7f68" text-anchor="end">69</text>
+      <text x="14" y="430" font-family="'DM Sans',sans-serif" font-size="8" fill="#10b981">Feasibility</text>
+      <rect x="86" y="423" width="180" height="4" rx="2" fill="#1E1B12"/>
+      <rect x="86" y="423" width="144" height="4" rx="2" fill="#10b981" opacity=".8"/>
+      <text x="275" y="429" font-family="'JetBrains Mono',monospace" font-size="8" fill="#8a7f68" text-anchor="end">80</text>
+      <!-- params -->
+      <rect x="14" y="444" width="128" height="26" rx="4" fill="#352E1E" stroke="#4A4330" stroke-width=".5"/>
+      <text x="20" y="454" font-family="'JetBrains Mono',monospace" font-size="5" fill="#8a7f68">SITE TYPE</text>
+      <text x="20" y="464" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="600" fill="#f5f0e4">⚠ Culvert portal</text>
+      <rect x="150" y="444" width="128" height="26" rx="4" fill="#352E1E" stroke="#4A4330" stroke-width=".5"/>
+      <text x="156" y="454" font-family="'JetBrains Mono',monospace" font-size="5" fill="#8a7f68">OCCLUSION</text>
+      <text x="156" y="464" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="600" fill="#f5f0e4">65% catch rate</text>
+      <!-- pipeline stats -->
+      <text x="14" y="494" font-family="'JetBrains Mono',monospace" font-size="7" fill="#8a7f68" opacity=".7">42 evaluated → 8 deployed (top 25%)</text>
+      <text x="14" y="506" font-family="'JetBrains Mono',monospace" font-size="7" fill="#8a7f68" opacity=".7">34 filtered · occlusion active · 4 portals</text>
+    </svg>
+    <!-- Header bar overlay (full width) -->
+    <div style="position:absolute;top:0;left:0;right:0;height:44px;z-index:4;background:#2A2518;border-bottom:1px solid #4A4330;display:flex;align-items:center;justify-content:space-between;padding:0 20px">
+      <div style="display:flex;align-items:center;gap:16px">
+        <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:#f5f0e4"><span style="color:#58B09C">G</span>RIME</span>
+        <span style="font-family:var(--mono);font-size:9px;color:#8a7f68">108,772 cities · 240 countries · 28 params</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-family:var(--mono);font-size:8px;color:#8a7f68;padding:3px 10px;background:#352E1E;border:1px solid #4A4330;border-radius:3px">Waterways</span>
+        <span style="font-family:var(--mono);font-size:8px;color:#8a7f68;padding:3px 10px;background:#352E1E;border:1px solid #4A4330;border-radius:3px">Satellite</span>
+        <span style="font-family:var(--mono);font-size:8px;color:#8a7f68;padding:3px 10px;background:#352E1E;border:1px solid #4A4330;border-radius:3px">Dark theme</span>
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-left:4px"></span>
+        <span style="font-family:var(--mono);font-size:8px;color:#10b981">v3</span>
+      </div>
+    </div>
+    <!-- Live Mapbox globe (fills map area, right 71.7%) -->
+    <div id="dash-globe" style="position:absolute;left:28.3%;top:44px;right:0;bottom:0;z-index:2;border-radius:0 0 10px 0;overflow:hidden"></div>
+  </div>
+</section>
+
+<!-- ═══════════ REACH ═══════════ -->
+<section id="reach">
+  <div class="section-label">Global reach</div>
+  <div class="reach-nums">
+    <div class="reach-item reveal">
+      <div class="reach-val"><span class="cn" data-t="108772" data-s="">0</span></div>
+      <div class="reach-lbl">Cities analyzed worldwide</div>
+    </div>
+    <div class="reach-item reveal rd1">
+      <div class="reach-val"><span class="cn" data-t="240" data-s="">0</span></div>
+      <div class="reach-lbl">Countries in the dataset</div>
+    </div>
+    <div class="reach-item reveal rd2">
+      <div class="reach-val">top <span class="cn" data-t="25" data-s="%">0</span></div>
+      <div class="reach-lbl">Catch efficiency per deployed unit</div>
+    </div>
+  </div>
+  <div class="mq-wrap">
+    <div class="mq-track" id="mq"></div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section id="cta">
+  <div class="cta-wm"><span>G</span>RIME</div>
+  <p class="cta-tagline">Watershed intelligence. At scale. In real time.</p>
+  <a href="explore/" class="cta-btn" style="opacity:1;transform:none">Explore the dashboard →</a>
+  <div class="cta-manifest">
+    <div class="mf-row"><span class="mf-key">built/</span> 2026 · NC School of Science and Mathematics · Durham, NC · Ellerbe Creek</div>
+    <div class="mf-row"><span class="mf-key">awards/</span> <a class="mf-link" href="#" target="_blank" rel="noopener">US-NC Junior Water Stockholm Prize</a> · <a class="mf-link" href="#" target="_blank" rel="noopener">SMathHacks Climate Grand Award</a></div>
+    <div class="mf-row"><span class="mf-key">dev crew/</span> Andy Lin · Soham Kela · Aarush Jain · Abhav Kunchakuri</div>
+    <div class="mf-row"><span class="mf-key">source/</span> <a class="mf-link" href="https://github.com/1inandy/grime" target="_blank" rel="noopener"><svg class="gh-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>github.com/1inandy/grime</a></div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="dashboard/config.js"></script>
+<script>
+// ═══════════════════════════════════════
+// GLOBE
+// ═══════════════════════════════════════
+const canvas = document.getElementById('globe-canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.z = 2.55;
+
+const globeGroup = new THREE.Group();
+scene.add(globeGroup);
+
+// base dark sphere
+globeGroup.add(new THREE.Mesh(
+  new THREE.SphereGeometry(1, 64, 64),
+  new THREE.MeshBasicMaterial({color:0x181510})
+));
+
+// atmospheric rim glow shader
+const atmoMat = new THREE.ShaderMaterial({
+  vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`varying vec3 vN;void main(){float i=pow(.68-dot(vN,vec3(0.,0.,1.)),3.2);gl_FragColor=vec4(.345,.69,.612,1.)*i;}`,
+  blending:THREE.AdditiveBlending,side:THREE.BackSide,transparent:true,depthWrite:false
+});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.16,64,64), atmoMat));
+
+// lat/lon → vec3
+function ll(lat, lon, r=1.003){
+  const phi=(90-lat)*Math.PI/180, th=(lon+180)*Math.PI/180;
+  return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(th), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(th));
+}
+
+// land regions: [clat, clon, lspread, lonspread, count]
+const regions=[
+  // N America
+  [48,-100,14,22,72],[38,-95,10,18,62],[58,-128,10,14,30],[25,-104,8,12,28],
+  [18,-91,6,8,18],[9,-82,6,6,14],[45,-75,7,12,24],[32,-90,7,10,20],
+  // S America
+  [-5,-60,18,18,82],[-35,-65,12,10,42],[5,-75,8,6,20],[-15,-50,10,12,36],[-28,-52,8,8,18],
+  // Europe
+  [50,10,12,18,82],[60,25,8,18,40],[40,22,8,18,40],[55,-3,6,8,24],
+  [47,8,6,10,20],[37,-6,6,10,18],[64,26,6,14,20],[43,15,6,10,16],
+  // Africa
+  [10,20,22,22,72],[-25,28,14,16,50],[30,22,10,18,40],[5,22,8,10,24],
+  [-28,26,8,12,20],[8,3,8,6,18],[14,16,8,10,18],
+  // Russia / C Asia
+  [60,60,10,40,56],[55,100,10,30,50],[50,140,8,15,28],[64,100,8,30,26],[50,55,8,20,22],
+  // E Asia
+  [35,110,14,20,88],[45,128,8,12,40],[35,137,5,4,22],[23,121,3,2,12],
+  [37,127,4,3,12],[22,114,3,3,10],[40,116,5,5,18],
+  // S/SE Asia
+  [20,80,12,14,70],[10,77,8,6,28],[7,80,5,4,14],
+  [5,108,8,12,40],[1,103,3,3,12],[15,100,6,6,22],[20,96,6,6,16],
+  // Middle East
+  [25,46,8,14,32],[37,35,6,8,18],[32,36,5,6,16],
+  // Australia
+  [-26,133,14,18,50],[-35,148,6,6,20],[-33,151,4,4,10],
+  // Greenland / Iceland / British Isles
+  [70,-42,10,18,16],[64,-20,4,6,8],[56,-4,4,4,12],
+];
+
+const pos=[];
+regions.forEach(([cl,co,ls,lo,n])=>{
+  for(let i=0;i<n;i++){
+    const lat=cl+(Math.random()-.5)*2*ls;
+    const lon=co+(Math.random()-.5)*2*lo;
+    const v=ll(lat,lon,1.003); pos.push(v.x,v.y,v.z);
+  }
+});
+const dg=new THREE.BufferGeometry();
+dg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+globeGroup.add(new THREE.Points(dg,new THREE.PointsMaterial({color:0x58B09C,size:.011,transparent:true,opacity:.88,sizeAttenuation:true})));
+
+// watershed arc pairs [latA,lonA],[latB,lonB]
+const arcPairs=[
+  [[-3,-60],[-15,-47]],[[-3,-60],[5,-52]],[[-18,-50],[-3,-60]],
+  [[38,-90],[30,-90]],[[45,-93],[38,-90]],[[30,-90],[29.9,-90]],
+  [[36,-79],[35,-77]],[[35,-77],[34,-78]],
+  [[15,32],[30,31]],[[5,31],[15,32]],[[0,32],[5,31]],
+  [[25,83],[23,88]],[[27,77],[25,83]],[[28,84],[27,77]],
+  [[30,106],[31,121]],[[28,99],[30,106]],[[31,121],[32,118]],
+  [[48,8],[52,5]],[[50,14],[48,8]],
+  [[-3,-60],[10,106]],
+  [[20,80],[30,106]],
+];
+
+arcPairs.forEach(([a,b])=>{
+  const va=ll(a[0],a[1],1.003), vb=ll(b[0],b[1],1.003);
+  const pts=[];
+  for(let t=0;t<=60;t++){
+    const f=t/60;
+    const p=new THREE.Vector3().lerpVectors(va,vb,f);
+    p.normalize().multiplyScalar(1.003+Math.sin(Math.PI*f)*0.22);
+    pts.push(p);
+  }
+  const g=new THREE.BufferGeometry().setFromPoints(pts);
+  const m=new THREE.LineBasicMaterial({color:0x58B09C,transparent:true,opacity:.52});
+  globeGroup.add(new THREE.Line(g,m));
+});
+
+// Slightly right-offset for text breathing room
+globeGroup.position.x = 0.18;
+
+// ── controls ──
+let autoRot=0, scrollRot=0, targetScroll=0;
+let drag={x:0,y:0}, isDrag=false, prev={x:0,y:0};
+let lastT=0;
+
+function resize(){
+  const w=canvas.offsetWidth, h=canvas.offsetHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize',resize);
+
+canvas.addEventListener('mousedown',e=>{isDrag=true;prev={x:e.clientX,y:e.clientY}});
+window.addEventListener('mouseup',()=>isDrag=false);
+window.addEventListener('mousemove',e=>{
+  if(!isDrag)return;
+  drag.y+=(e.clientX-prev.x)*.0042;
+  drag.x+=(e.clientY-prev.y)*.0042;
+  prev={x:e.clientX,y:e.clientY};
+});
+canvas.addEventListener('touchstart',e=>{isDrag=true;prev={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
+canvas.addEventListener('touchend',()=>isDrag=false);
+canvas.addEventListener('touchmove',e=>{
+  if(!isDrag)return;
+  drag.y+=(e.touches[0].clientX-prev.x)*.0042;
+  drag.x+=(e.touches[0].clientY-prev.y)*.0042;
+  prev={x:e.touches[0].clientX,y:e.touches[0].clientY};
+},{passive:true});
+
+let lastSY=0;
+window.addEventListener('scroll',()=>{
+  const heroH=document.getElementById('hero').offsetHeight;
+  const sy=Math.min(window.scrollY,heroH);
+  targetScroll=sy*.0038;
+  lastSY=window.scrollY;
+},{ passive:true });
+
+function animate(t){
+  requestAnimationFrame(animate);
+  const dt=Math.min((t-lastT)/16.67,3); lastT=t;
+  autoRot+=.0018*dt;
+  scrollRot+=(targetScroll-scrollRot)*.06*dt;
+  drag.x*=.92; drag.y*=.92;
+  globeGroup.rotation.y=autoRot+scrollRot+drag.y;
+  globeGroup.rotation.x=Math.max(-.4,Math.min(.4,drag.x));
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(t=>{lastT=t;animate(t);});
+
+// ═══════════════════════════════════════
+// HERO ENTRANCE
+// ═══════════════════════════════════════
+function ease(el,delay){
+  setTimeout(()=>{
+    el.style.transition='opacity .85s ease, transform .85s ease';
+    el.style.opacity='1'; el.style.transform='translateY(0)';
+  },delay);
+}
+window.addEventListener('load',()=>{
+  ease(document.getElementById('ey'),320);
+  ease(document.getElementById('ht'),640);
+  ease(document.getElementById('hs'),920);
+  ease(document.getElementById('hc'),1120);
+  setTimeout(()=>{
+    const si=document.getElementById('si');
+    si.style.transition='opacity 1s ease'; si.style.opacity='1';
+  },1700);
+});
+
+// ═══════════════════════════════════════
+// DASHBOARD GLOBE (Mapbox GL)
+// ═══════════════════════════════════════
+const dashGlobeEl=document.getElementById('dash-globe');
+if(dashGlobeEl){
+  const dObs=new IntersectionObserver(entries=>{
+    if(entries[0].isIntersecting){
+      dObs.disconnect();
+      mapboxgl.accessToken=MAPBOX_TOKEN;
+      const dMap=new mapboxgl.Map({
+        container:'dash-globe',
+        style:'mapbox://styles/mapbox/dark-v11',
+        center:[40,20],zoom:1.2,
+        projection:'globe',
+        interactive:false,
+        attributionControl:false
+      });
+      dMap.on('style.load',()=>{
+        dMap.setFog({color:'#1E1B12','high-color':'#252117','horizon-blend':0.04,'space-color':'#141108','star-intensity':0.06});
+        // ~2000 city dots scattered across land masses (matches explore density)
+        const regions=[
+          [48,-100,14,22,80],[38,-95,10,18,65],[25,-104,8,12,30],[58,-128,10,14,22],
+          [18,-91,6,8,18],[9,-82,6,6,14],[45,-75,7,12,28],[32,-90,7,10,22],
+          [-5,-60,18,18,90],[-35,-65,12,10,45],[5,-75,8,6,22],[-15,-50,10,12,38],
+          [50,10,12,18,90],[60,25,8,18,42],[40,22,8,18,42],[55,-3,6,8,26],
+          [47,8,6,10,22],[37,-6,6,10,18],[43,15,6,10,18],
+          [10,20,22,22,78],[-25,28,14,16,52],[30,22,10,18,42],[5,22,8,10,26],
+          [60,60,10,40,58],[55,100,10,30,52],[50,140,8,15,28],
+          [35,110,14,20,95],[45,128,8,12,42],[35,137,5,4,24],[23,121,3,2,14],
+          [20,80,12,14,75],[10,77,8,6,30],[5,108,8,12,42],[1,103,3,3,14],
+          [15,100,6,6,24],[25,46,8,14,34],[37,35,6,8,20],
+          [-26,133,14,18,42],[-35,148,6,6,16]
+        ];
+        const features=[];
+        regions.forEach(([cl,co,ls,lo,n])=>{
+          for(let i=0;i<n;i++){
+            const lat=cl+(Math.random()-.5)*2*ls;
+            const lon=co+(Math.random()-.5)*2*lo;
+            const pop=Math.round(Math.pow(10, 3+Math.random()*4.2)); // 1K to 15M
+            features.push({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties:{pop}});
+          }
+        });
+
+        // Clustering source — matches explore page exactly
+        dMap.addSource('places',{type:'geojson',data:{type:'FeatureCollection',features},
+          cluster:true,clusterMaxZoom:12,clusterRadius:40
+        });
+
+        // Cluster circles — same colors as explore
+        dMap.addLayer({id:'clusters',type:'circle',source:'places',filter:['has','point_count'],paint:{
+          'circle-color':['step',['get','point_count'],'#1D9E75',50,'#378ADD',200,'#7F77DD',1000,'#22d3ee'],
+          'circle-radius':['step',['get','point_count'],12,50,16,200,20,1000,26],
+          'circle-stroke-width':1.5,'circle-stroke-color':'rgba(255,255,255,0.3)'
+        }});
+
+        // Cluster count labels
+        dMap.addLayer({id:'cluster-count',type:'symbol',source:'places',filter:['has','point_count'],layout:{
+          'text-field':'{point_count_abbreviated}','text-size':10,
+          'text-font':['DIN Pro Medium','Arial Unicode MS Regular']
+        },paint:{'text-color':'#ffffff'}});
+
+        // Unclustered individual dots — scaled by pop like explore
+        dMap.addLayer({id:'unclustered',type:'circle',source:'places',filter:['!',['has','point_count']],paint:{
+          'circle-radius':['interpolate',['linear'],['get','pop'],1000,2,100000,4,1000000,7,10000000,11],
+          'circle-color':['interpolate',['linear'],['get','pop'],1000,'#10b981',100000,'#3b82f6',1000000,'#8b5cf6',10000000,'#22d3ee'],
+          'circle-stroke-width':1,'circle-stroke-color':'rgba(255,255,255,0.25)',
+          'circle-opacity':0.85
+        }});
+
+        // Glow layer behind unclustered
+        dMap.addLayer({id:'dot-glow',type:'circle',source:'places',filter:['!',['has','point_count']],paint:{
+          'circle-radius':['interpolate',['linear'],['get','pop'],1000,6,1000000,14,10000000,22],
+          'circle-color':['interpolate',['linear'],['get','pop'],1000,'#10b981',1000000,'#58B09C',10000000,'#22d3ee'],
+          'circle-opacity':0.08,'circle-blur':1
+        }},'unclustered');
+
+        // Smooth auto-rotate globe
+        let lon=40;
+        function spinDash(){
+          lon+=0.008;
+          dMap.setCenter([lon,15]);
+          requestAnimationFrame(spinDash);
+        }
+        spinDash();
+      });
+    }
+  },{threshold:0.08});
+  dObs.observe(dashGlobeEl);
+}
+
+// ═══════════════════════════════════════
+// SCROLL REVEAL
+// ═══════════════════════════════════════
+const revObs=new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('vis'); });
+},{threshold:.14});
+document.querySelectorAll('.reveal').forEach(el=>revObs.observe(el));
+
+// ═══════════════════════════════════════
+// COUNT-UP
+// ═══════════════════════════════════════
+function countUp(el){
+  const target=parseInt(el.dataset.t), suf=el.dataset.s||'';
+  const dur=1900, start=performance.now();
+  const step=now=>{
+    const p=Math.min((now-start)/dur,1);
+    const e=1-Math.pow(1-p,3);
+    const v=Math.round(e*target);
+    el.textContent=target>=1000?v.toLocaleString()+suf:v+suf;
+    if(p<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+const cObs=new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting){countUp(e.target);cObs.unobserve(e.target);} });
+},{threshold:.5});
+document.querySelectorAll('.cn').forEach(el=>cObs.observe(el));
+
+// ═══════════════════════════════════════
+// MARQUEE
+// ═══════════════════════════════════════
+const cities=['Durham, NC','Manaus, BR','Kolkata, IN','Dhaka, BD','Lagos, NG',
+  'Chongqing, CN','Kinshasa, CD','Cairo, EG','Jakarta, ID','São Paulo, BR',
+  'Mumbai, IN','Ho Chi Minh City, VN','Wuhan, CN','Khartoum, SD','Lima, PE',
+  'Raleigh, NC','New Orleans, LA','Bangkok, TH','Yangon, MM','Hanoi, VN',
+  'Nairobi, KE','Accra, GH','Bogotá, CO','Karachi, PK','Manila, PH',
+  'Guangzhou, CN','Chengdu, CN','Hyderabad, IN','Alexandria, EG','Casablanca, MA'];
+const mq=document.getElementById('mq');
+const items=[...cities,...cities].map(c=>
+  `<span class="mq-item">${c}<span class="mq-dot"> · </span></span>`
+).join('');
+mq.innerHTML=items+items;
+</script>
+</body>
+</html>
