@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRIME Docs — Technical Documentation</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<style>
+:root{
+  --bg:#1E1B12;--panel:#2A2518;--card:#352E1E;--hover:#3D3622;--bdr:#4A4330;
+  --t:#e8e2d4;--td:#8a7f68;--tb:#f5f0e4;
+  --acc:#58B09C;--acc2:#3b82f6;--acc-dim:rgba(88,176,156,0.12);
+  --gen:#f97316;--flow:#3b82f6;--imp:#8b5cf6;--feas:#10b981;
+  --red:#ef4444;--yellow:#f59e0b;
+  --mono:'JetBrains Mono',monospace;--sans:'DM Sans',-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);line-height:1.75;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.028;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:160px}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:50;padding:14px 48px;display:flex;align-items:center;justify-content:space-between;background:rgba(30,27,18,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--bdr)}
+.nav-logo{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tb);text-decoration:none}
+.nav-logo span{color:var(--acc)}
+.nav-right{display:flex;gap:24px;align-items:center}
+.nav-right a{font-family:var(--mono);font-size:11px;color:var(--td);text-decoration:none;letter-spacing:.06em;transition:color .2s}
+.nav-right a:hover{color:var(--acc)}
+.nav-badge{font-family:var(--mono);font-size:9px;padding:3px 10px;border:1px solid var(--acc);color:var(--acc);border-radius:3px}
+
+/* ── TOC SIDEBAR ── */
+.layout{display:flex;max-width:1400px;margin:0 auto}
+.toc{width:260px;flex-shrink:0;position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto;padding:32px 24px;border-right:1px solid var(--bdr)}
+.toc-title{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--acc);text-transform:uppercase;margin-bottom:18px}
+.toc a{display:block;font-size:12px;color:var(--td);text-decoration:none;padding:6px 10px;transition:all .2s;line-height:1.5;border-radius:4px;border-left:2px solid transparent;margin-left:-10px}
+.toc a:hover{color:var(--acc);background:var(--hover)}
+.toc a.active{color:var(--acc);background:var(--acc-dim);border-left-color:var(--acc);font-weight:500}
+.toc .t2{padding-left:14px;font-size:11px;opacity:.7}
+.toc-div{height:1px;background:var(--bdr);margin:14px 0}
+
+/* ── MAIN ── */
+main{flex:1;min-width:0;padding:48px 64px 120px}
+
+/* ── SECTIONS ── */
+.doc-section{margin-bottom:80px}
+.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--acc);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--bdr)}
+h2{font-family:var(--mono);font-size:clamp(22px,3vw,32px);font-weight:700;color:var(--tb);margin-bottom:20px;line-height:1.2}
+h3{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--tb);margin:32px 0 14px}
+p{font-size:15px;color:var(--t);margin-bottom:16px;max-width:720px}
+p .hl{color:var(--acc);font-weight:500}
+
+/* ── MATH ── */
+.math-block{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:24px 28px;margin:20px 0 24px;overflow-x:auto;text-align:center}
+.math-block .katex{font-size:1.15em}
+.math-inline .katex{font-size:.95em}
+
+/* ── CODE ── */
+pre{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:20px 24px;margin:16px 0 24px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--t);position:relative}
+pre::before{content:attr(data-lang);position:absolute;top:8px;right:14px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--td);text-transform:uppercase;opacity:.6}
+.kw{color:var(--acc)}.fn{color:#dcd19e}.cm{color:#6a6244;font-style:italic}.st{color:#ce9178}.num{color:#b5cea8}.op{color:#d4d4d4}
+
+/* ── VIZ CONTAINERS ── */
+.viz{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:28px;margin:24px 0;position:relative;overflow:hidden}
+.viz canvas{display:block;width:100%;border-radius:6px}
+.viz-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--td);text-transform:uppercase;margin-bottom:14px}
+.viz-caption{font-family:var(--mono);font-size:11px;color:var(--td);margin-top:14px;line-height:1.6}
+
+/* ── WOLFRAM FIGURES ── */
+.wl-fig{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:16px;margin:24px 0;text-align:center}
+.wl-fig img{max-width:100%;border-radius:6px;display:block;margin:0 auto}
+.wl-fig .wl-caption{font-family:var(--mono);font-size:10px;color:var(--td);margin-top:12px;letter-spacing:.04em}
+.wl-fig.gif-fig img{border:1px solid var(--bdr)}
+.wl-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0}
+.wl-row .wl-fig{margin:0}
+
+/* ── TABLES ── */
+table{width:100%;border-collapse:collapse;margin:16px 0 24px;font-size:13px}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--acc);text-align:left;padding:10px 14px;border-bottom:2px solid var(--bdr);text-transform:uppercase}
+td{padding:9px 14px;border-bottom:1px solid var(--bdr);color:var(--t)}
+tr:hover td{background:var(--hover)}
+td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(--bg);padding:2px 6px;border-radius:3px}
+
+/* ── CALLOUTS ── */
+.callout{border-left:3px solid var(--acc);background:var(--acc-dim);padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;font-size:14px}
+.callout.warn{border-color:var(--yellow);background:rgba(245,158,11,.08)}
+.callout strong{color:var(--tb)}
+
+/* ── PARAM CHIPS ── */
+.param-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:16px 0 24px}
+.param-chip{background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:10px 14px}
+.param-chip .label{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--td);text-transform:uppercase}
+.param-chip .value{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--tb)}
+
+/* ── INTERACTIVE CONTROLS ── */
+.ctrl-row{display:flex;gap:16px;align-items:center;margin:12px 0;flex-wrap:wrap}
+.ctrl-row label{font-family:var(--mono);font-size:11px;color:var(--td)}
+.ctrl-row input[type=range]{width:140px;accent-color:var(--acc)}
+.ctrl-row .val{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--acc);min-width:42px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .toc{display:none}
+  main{padding:32px 20px 80px}
+  nav{padding:12px 20px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../" class="nav-logo"><span>G</span>RIME <span style="font-weight:400;color:var(--td);font-size:12px">docs</span></a>
+  <div class="nav-right">
+    <a href="../">Home</a>
+    <a href="../explore/">Explorer</a>
+    <span class="nav-badge">v3</span>
+  </div>
+</nav>
+
+<div class="layout">
+<aside class="toc">
+  <div class="toc-title">Documentation</div>
+  <a href="#overview">Overview</a>
+  <div class="toc-div"></div>
+  <a href="#scoring">§1 Composite Scoring</a>
+  <a href="#subscore" class="t2">Sub-score computation</a>
+  <a href="#normalization" class="t2">MinMax normalization</a>
+  <a href="#weights" class="t2">Weight architecture</a>
+  <div class="toc-div"></div>
+  <a href="#manning">§2 Manning's Equation</a>
+  <a href="#roughness" class="t2">Roughness coefficients</a>
+  <a href="#continuity" class="t2">Continuity cross-check</a>
+  <a href="#velocity-gate" class="t2">Velocity feasibility gate</a>
+  <div class="toc-div"></div>
+  <a href="#occlusion">§3 Upstream Occlusion</a>
+  <a href="#catch-model" class="t2">Catch efficiency model</a>
+  <a href="#greedy" class="t2">Greedy selection</a>
+  <a href="#decay-viz" class="t2">Decay visualization</a>
+  <div class="toc-div"></div>
+  <a href="#placement">§4 Placement Algorithm</a>
+  <a href="#spacing" class="t2">Dual spacing</a>
+  <a href="#portals" class="t2">Culvert portal detection</a>
+  <a href="#ww-weighting" class="t2">Waterway-type composite penalty</a>
+  <a href="#length-gate" class="t2">Length &amp; intermittency gates</a>
+  <a href="#quality-bar" class="t2">Per-fetch quality bar</a>
+  <a href="#traffic" class="t2">Traffic capacity</a>
+  <div class="toc-div"></div>
+  <a href="#sensitivity">§5 Sensitivity Analysis</a>
+  <a href="#dirichlet" class="t2">Dirichlet perturbation</a>
+  <div class="toc-div"></div>
+  <a href="#hydrology">§6 DEM Pipeline</a>
+  <a href="#parameters">§7 All 28 Parameters</a>
+</aside>
+
+<main>
+
+<!-- ═══════════ OVERVIEW ═══════════ -->
+<div class="doc-section" id="overview">
+  <div class="sec-label">Introduction</div>
+  <h2>GRIME Technical Documentation</h2>
+  <p>This document details the mathematical models, algorithms, and computational methods behind GRIME — the Garbage River Interception and Modeling Engine. GRIME scores candidate trash trap deployment sites across <span class="hl">28 geospatial parameters</span> organized into <span class="hl">6 families</span>, producing <span class="hl">4 sub-scores</span> that combine into a single composite ranking.</p>
+  <div class="param-grid">
+    <div class="param-chip"><div class="label">Parameters</div><div class="value">28</div></div>
+    <div class="param-chip"><div class="label">Sub-scores</div><div class="value">4</div></div>
+    <div class="param-chip"><div class="label">Hard gates</div><div class="value">3</div></div>
+    <div class="param-chip"><div class="label">Cities</div><div class="value">108,772</div></div>
+    <div class="param-chip"><div class="label">Countries</div><div class="value">240</div></div>
+    <div class="param-chip"><div class="label">Catch efficiency</div><div class="value">η = 0.65</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ §1 COMPOSITE SCORING ═══════════ -->
+<div class="doc-section" id="scoring">
+  <div class="sec-label">§1 — Scoring model</div>
+  <h2>Composite Scoring Function</h2>
+
+  <p>Let <strong>x</strong> ∈ ℝ²⁸ be the raw parameter vector for a candidate site. The composite score S(<strong>x</strong>) is a two-level weighted aggregation:</p>
+
+  <div class="math-block" id="eq-composite"></div>
+
+  <p>where <strong>ω</strong> = [0.30, 0.25, 0.30, 0.15] are the sub-score weights, and each sub-score G<sub>k</sub> is:</p>
+
+  <div class="math-block" id="eq-subscore"></div>
+
+  <h3 id="subscore">Sub-score computation</h3>
+  <p>Each parameter family aggregates its members through weighted summation after normalization. The within-family weights w<sub>j</sub> are renormalized to sum to 1 after filtering unavailable parameters — this means the model degrades gracefully when an API is unreachable.</p>
+
+<pre data-lang="Python"><span class="kw">def</span> <span class="fn">compute_subscore</span>(df, weights):
+    <span class="cm">"""Normalize each parameter to [0,1], then weight-sum → sub-score [0,100]."""</span>
+    cols = [c <span class="kw">for</span> c <span class="kw">in</span> weights.keys() <span class="kw">if</span> c <span class="kw">in</span> df.columns]
+    <span class="kw">if not</span> cols:
+        <span class="kw">return</span> pd.Series(<span class="num">50.0</span>, index=df.index)  <span class="cm"># graceful fallback</span>
+
+    scaler = MinMaxScaler()
+    normed = pd.DataFrame(scaler.fit_transform(df[cols].fillna(<span class="num">0</span>)),
+                          columns=cols, index=df.index)
+
+    <span class="cm"># Invert distance-based columns (closer = better)</span>
+    <span class="kw">for</span> col <span class="kw">in</span> [<span class="st">"estuary_dist_km"</span>, <span class="st">"beach_dist_km"</span>]:
+        <span class="kw">if</span> col <span class="kw">in</span> normed.columns:
+            normed[col] = <span class="num">1</span> - normed[col]
+
+    w = np.array([weights[c] <span class="kw">for</span> c <span class="kw">in</span> cols])
+    w = w / w.sum()  <span class="cm"># renormalize after filtering</span>
+    <span class="kw">return</span> (normed[cols] @ w) * <span class="num">100</span></pre>
+
+  <h3 id="normalization">MinMax normalization</h3>
+  <p>Each raw parameter x<sub>j</sub> is scaled to [0, 1] using:</p>
+  <div class="math-block" id="eq-minmax"></div>
+
+  <div class="callout"><strong>Implementation note:</strong> Normalization is computed across the candidate set, not against a global reference. A score of 80 means "top of this candidate pool," not 80% of some theoretical maximum. Cross-city comparisons are therefore invalid.</div>
+
+  <h3 id="weights">Weight architecture</h3>
+
+  <div class="viz">
+    <div class="viz-label">Sub-score weight distribution</div>
+    <canvas id="weight-chart" height="180"></canvas>
+  </div>
+
+  <table>
+    <tr><th>Sub-score</th><th>Weight</th><th>Question it answers</th></tr>
+    <tr><td style="color:var(--gen)">Generation</td><td><code>0.30</code></td><td>How much trash enters the waterway here?</td></tr>
+    <tr><td style="color:var(--flow)">Flow Transport</td><td><code>0.25</code></td><td>How does water move trash to this point?</td></tr>
+    <tr><td style="color:var(--imp)">Downstream Impact</td><td><code>0.30</code></td><td>What's at stake downstream if we don't catch it?</td></tr>
+    <tr><td style="color:var(--feas)">Feasibility</td><td><code>0.15</code></td><td>Can we physically deploy a net here?</td></tr>
+  </table>
+
+  <p>The composite is then computed as the hard-gate-filtered, weighted sum:</p>
+
+<pre data-lang="Python"><span class="kw">def</span> <span class="fn">compute_composite_score</span>(candidates_df):
+    <span class="cm">"""Full scoring pipeline — returns ranked GeoDataFrame."""</span>
+    df = apply_hard_gates(candidates_df.copy())  <span class="cm"># removes V>3.0, W>50m, private land</span>
+
+    df[<span class="st">"generation_score"</span>]  = compute_subscore(df, GENERATION_WEIGHTS)
+    df[<span class="st">"flow_score"</span>]        = compute_subscore(df, FLOW_WEIGHTS)
+    df[<span class="st">"impact_score"</span>]      = compute_subscore(df, IMPACT_WEIGHTS)
+    df[<span class="st">"feasibility_score"</span>] = compute_subscore(df, FEASIBILITY_WEIGHTS)
+
+    df[<span class="st">"composite_score"</span>] = (
+        <span class="num">0.30</span> * df[<span class="st">"generation_score"</span>]
+      + <span class="num">0.25</span> * df[<span class="st">"flow_score"</span>]
+      + <span class="num">0.30</span> * df[<span class="st">"impact_score"</span>]
+      + <span class="num">0.15</span> * df[<span class="st">"feasibility_score"</span>]
+    )
+    <span class="kw">return</span> df.sort_values(<span class="st">"composite_score"</span>, ascending=<span class="kw">False</span>)</pre>
+
+  <div class="wl-fig">
+    <img src="dashboard/docs/exports/07_score_landscape.png" alt="Composite score landscape S(gen, impact)">
+    <div class="wl-caption">Composite score surface S(Generation, Impact) with Flow=50, Feasibility=70 held constant · Wolfram Language</div>
+  </div>
+</div>
+
+<!-- ═══════════ §2 MANNING'S ═══════════ -->
+<div class="doc-section" id="manning">
+  <div class="sec-label">§2 — Hydraulics</div>
+  <h2>Manning's Velocity Equation</h2>
+
+  <p>Flow velocity at each candidate site is estimated via Manning's open-channel equation, the standard approach in computational hydrology since 1891:</p>
+
+  <div class="math-block" id="eq-manning"></div>
+
+  <h3 id="roughness">Roughness coefficients n</h3>
+  <p>Manning's roughness coefficient characterizes channel bed friction. Values from Chow (1959), <em>Open-Channel Hydraulics</em>:</p>
+
+<pre data-lang="Python">MANNING_N = {
+    <span class="st">"clean_straight"</span>:    <span class="num">0.030</span>,  <span class="cm"># gravel/sand, no vegetation</span>
+    <span class="st">"winding_some_pool"</span>: <span class="num">0.040</span>,  <span class="cm"># typical urban creek (Ellerbe)</span>
+    <span class="st">"sluggish_weedy"</span>:    <span class="num">0.070</span>,  <span class="cm"># heavy vegetation, slow flow</span>
+    <span class="st">"urban_concrete"</span>:    <span class="num">0.015</span>,  <span class="cm"># engineered concrete channel</span>
+}</pre>
+
+  <p>The hydraulic radius R assumes a rectangular channel cross-section with bankfull depth D ≈ 0.3W:</p>
+  <div class="math-block" id="eq-hydraulic-radius"></div>
+
+  <h3 id="continuity">Continuity cross-check</h3>
+  <p>A second velocity estimate is derived from the continuity equation using USGS-measured discharge:</p>
+  <div class="math-block" id="eq-continuity"></div>
+
+  <p>The final velocity is the <span class="hl">geometric mean</span> of both estimates, hedging against DEM slope noise and channel geometry assumptions:</p>
+  <div class="math-block" id="eq-geomean"></div>
+
+<pre data-lang="Python"><span class="kw">def</span> <span class="fn">compute_flow_velocity</span>(row, dem_array, dem_transform, gauge_stats):
+    <span class="cm"># Channel geometry (rectangular approximation)</span>
+    W = row.get(<span class="st">"channel_width_m"</span>, <span class="num">5.0</span>)
+    D = <span class="num">0.3</span> * W  <span class="cm"># bankfull depth ≈ 30% of width</span>
+    A_cross = W * D
+    P_wet = W + <span class="num">2</span> * D
+    R_h = A_cross / P_wet  <span class="cm"># hydraulic radius</span>
+
+    <span class="cm"># DEM slope over 100m reach</span>
+    slope = compute_local_slope(row, dem_array, dem_transform, reach=<span class="num">100</span>)
+    slope = max(slope, <span class="num">0.0001</span>)  <span class="cm"># clamp to avoid zero</span>
+
+    n = <span class="num">0.040</span>  <span class="cm"># winding_some_pool default</span>
+    V_manning = (<span class="num">1</span>/n) * R_h**(<span class="num">2</span>/<span class="num">3</span>) * slope**(<span class="num">0.5</span>)
+
+    <span class="cm"># Continuity cross-check</span>
+    Q_cms = gauge_stats[<span class="st">"mean_q_cfs"</span>] * <span class="num">0.0283168</span>  <span class="cm"># cfs → m³/s</span>
+    V_cont = Q_cms / max(A_cross, <span class="num">0.01</span>)
+
+    <span class="cm"># Geometric mean hedges both estimates</span>
+    <span class="kw">return</span> math.sqrt(V_manning * max(V_cont, <span class="num">0.01</span>))</pre>
+
+  <h3 id="velocity-gate">Velocity feasibility gate</h3>
+  <p>A piecewise function maps velocity to deployment viability. Sites above 3.0 m/s are removed by the hard gate entirely.</p>
+
+  <div class="viz">
+    <div class="viz-label">Velocity feasibility function f(V)</div>
+    <canvas id="velocity-chart" height="200"></canvas>
+    <div class="viz-caption">Optimal range: 0.30–1.50 m/s. Below 0.05 = stagnant (debris doesn't concentrate). Above 2.50 = structural damage risk.</div>
+  </div>
+
+  <div class="wl-fig">
+    <img src="dashboard/docs/exports/05_manning_velocity_field.png" alt="Manning velocity 3D field">
+    <div class="wl-caption">V(width, slope) velocity field · Color = feasibility zone · Red plane = hard gate at 3.0 m/s · Wolfram Language</div>
+  </div>
+
+<!-- ═══════════ §3 UPSTREAM OCCLUSION ═══════════ -->
+<div class="doc-section" id="occlusion">
+  <div class="sec-label">§3 — Diminishing returns</div>
+  <h2>Upstream Occlusion Model</h2>
+
+  <p>The central algorithmic insight: <span class="hl">a net upstream reduces the value of all downstream nets on the same waterway</span>. Each net catches η = 65% of debris passing through it. The trash reaching a downstream position after k upstream nets is:</p>
+
+  <div class="math-block" id="eq-occlusion"></div>
+
+  <h3 id="catch-model">Catch efficiency model</h3>
+
+  <div class="viz">
+    <div class="viz-label">Trash reaching downstream positions (interactive)</div>
+    <div class="ctrl-row">
+      <label>Catch efficiency η:</label>
+      <input type="range" id="eta-slider" min="30" max="95" value="65">
+      <span class="val" id="eta-val">0.65</span>
+    </div>
+    <canvas id="occlusion-chart" height="260"></canvas>
+    <div class="viz-caption">Each upstream net compounds the passthrough multiplicatively. At η=0.65, a 3rd net on the same stream sees only 4.3% of original trash — making it almost always better to place that net on a different stream.</div>
+  </div>
+
+  <p>Only the <span class="hl">generation sub-score</span> is discounted. Flow, impact, and feasibility are intrinsic to the location — they don't change based on upstream nets.</p>
+
+  <div class="math-block" id="eq-occlusion-composite"></div>
+
+  <h3 id="greedy">Greedy selection algorithm</h3>
+  <p>The algorithm greedily picks the highest-scoring candidate, then discounts all downstream positions on the same stream, then re-sorts and picks again:</p>
+
+<pre data-lang="Pseudocode"><span class="kw">while</span> |selected| < target <span class="kw">and</span> remaining ≠ ∅:
+    remaining.sort_by(composite, descending)
+    best ← remaining.pop_first()
+    selected.add(best)
+
+    <span class="cm">// Discount all DOWNSTREAM candidates on SAME stream</span>
+    k ← upstream_nets[best.stream] += <span class="num">1</span>
+    <span class="kw">for</span> c <span class="kw">in</span> remaining <span class="kw">where</span> c.stream == best.stream
+                       <span class="kw">and</span> c.coord_idx > best.coord_idx:
+        passthrough ← (<span class="num">1</span> − η)<sup>k</sup>
+        c.gen ← c.raw_gen × passthrough
+        c.composite ← <span class="num">0.30</span>·c.gen + <span class="num">0.25</span>·c.flow + <span class="num">0.30</span>·c.impact + <span class="num">0.15</span>·c.feas</pre>
+
+  <div class="callout"><strong>Why greedy beats static percentile:</strong> A static top-N% cut would keep two candidates on the same stream — both scored before occlusion. The greedy approach recognizes that #2's value drops by 65% after #1 is placed. The re-sort after each placement captures this dynamic revaluation.</div>
+
+  <div class="wl-fig">
+    <img src="dashboard/docs/exports/04_occlusion_surface.png" alt="3D occlusion decay surface">
+    <div class="wl-caption">Upstream occlusion decay surface (1−η)^k · Color gradient red→teal = remaining trash load · Wolfram Language</div>
+  </div>
+  <div class="wl-fig gif-fig">
+    <img src="dashboard/docs/exports/03_debris_transport.gif" alt="Debris transport simulation">
+    <div class="wl-caption">Particle debris transport simulation · 150 particles · Yellow = flowing · Red = caught at net · 3 nets at 25%, 55%, 80% river length</div>
+  </div>
+
+<!-- ═══════════ §4 PLACEMENT ═══════════ -->
+<div class="doc-section" id="placement">
+  <div class="sec-label">§4 — Spatial constraints</div>
+  <h2>Candidate Placement Algorithm</h2>
+
+  <h3 id="spacing">Dual spacing model</h3>
+  <p>Same-stream and cross-stream proximity are governed by different physical realities:</p>
+
+  <table>
+    <tr><th>Constraint</th><th>Distance</th><th>Rationale</th></tr>
+    <tr><td>Same-stream</td><td><code>500m</code> (~1600ft)</td><td>Upstream occlusion makes closer nets wasteful</td></tr>
+    <tr><td>Cross-stream</td><td><code>300m</code> (~1000ft)</td><td>Different catchments — no occlusion, but avoid physical clustering</td></tr>
+    <tr><td>Max channel width</td><td><code>30m</code> (~100ft)</td><td>Cannot span wider channels with a stationary net</td></tr>
+  </table>
+
+  <p>Distances are computed using the <span class="hl">haversine formula</span> for geodesic accuracy:</p>
+  <div class="math-block" id="eq-haversine"></div>
+
+  <h3 id="portals">Culvert portal detection</h3>
+  <p>Underground waterway segments are detected from OpenStreetMap tags and excluded from candidate placement. Their entrance and exit coordinates are injected as candidates <strong>only when the parent waterway is a river, canal, or stream</strong> — culverts under drains or ditches are not real chokepoints and would otherwise dominate the top-N because so many road crossings are tagged this way.</p>
+
+<pre data-lang="JavaScript"><span class="cm">// OSM tags that indicate underground segments</span>
+<span class="kw">const</span> underground = tags.tunnel === <span class="st">'yes'</span>
+    || tags.tunnel === <span class="st">'culvert'</span>
+    || tags.tunnel === <span class="st">'building_passage'</span>
+    || tags.covered === <span class="st">'yes'</span>
+    || tags.layer === <span class="st">'-1'</span>
+    || tags.layer === <span class="st">'-2'</span>;
+
+<span class="kw">const</span> PORTAL_PARENTS = <span class="kw">new</span> Set([<span class="st">'river'</span>, <span class="st">'canal'</span>, <span class="st">'stream'</span>]);
+
+<span class="kw">if</span> (underground &amp;&amp; PORTAL_PARENTS.has(ww)) {
+    <span class="cm">// Don't place nets ON underground segments — but mark entrance and exit</span>
+    <span class="cm">// as portals, carrying the parent waterway type so the bonus can scale.</span>
+    portals.push({ lon: coords[<span class="num">0</span>],   lat: coords[<span class="num">0</span>],   type: <span class="st">'entrance'</span>, parentWw: ww });
+    portals.push({ lon: coords[N], lat: coords[N], type: <span class="st">'exit'</span>,     parentWw: ww });
+}</pre>
+
+  <p>Portal candidates use a deliberately <em>moderate</em> catchment assumption — <code>upstreamFrac = 0.6</code> for entrances and <code>0.4</code> for exits, with <code>order = 2</code>. The previous extreme values (<code>0.95</code> / <code>0.05</code> with <code>order = 3</code>) inflated the four sub-scores so much that culverts dominated the top 20 even before the bonus was applied. The bonus itself is also scaled by parent type and added <em>after</em> the four sub-scores combine:</p>
+
+  <table>
+    <tr><th>Parent waterway</th><th>Composite bonus</th><th>Rationale</th></tr>
+    <tr><td>river</td><td><code>+5</code></td><td>Real catchment, real flow — culvert is genuinely the last access point</td></tr>
+    <tr><td>canal</td><td><code>+3</code></td><td>Engineered conveyance, predictable trash load</td></tr>
+    <tr><td>stream</td><td><code>+1</code></td><td>Moderate flow; still a meaningful choke point</td></tr>
+    <tr><td>drain / ditch</td><td><code>—</code></td><td>No portal candidate generated at all (skipped at parse time)</td></tr>
+  </table>
+
+  <h3 id="ww-weighting">Waterway-type composite penalty</h3>
+  <p>The four sub-scores (Generation, Flow, Impact, Feasibility) draw on parameters that are largely insensitive to whether a line in OSM is a real river or a 30 m drainage dash. Without an explicit type signal, a randomly-good ditch could leapfrog an actually-important stream. To prevent that, surface positions take a small composite penalty based on the OSM <code>waterway</code> tag:</p>
+
+  <table>
+    <tr><th>Waterway</th><th>Composite penalty</th></tr>
+    <tr><td>ditch</td><td><code>−6</code></td></tr>
+    <tr><td>drain</td><td><code>−3</code></td></tr>
+    <tr><td>stream / canal / river</td><td><code>0</code></td></tr>
+  </table>
+
+  <p>The penalty is preserved through the greedy occlusion re-rank — otherwise an occluded ditch could silently re-rise above an unoccluded stream just because its raw generation was discounted less.</p>
+
+  <h3 id="length-gate">Length & intermittency gates</h3>
+  <p>Tiny disconnected dashes in OSM (a 40 m unnamed ditch in a field) produce noise but no value. We drop them at parse time using a per-type minimum length:</p>
+
+  <table>
+    <tr><th>Waterway</th><th>Minimum length</th></tr>
+    <tr><td>river / canal</td><td><code>50 m</code></td></tr>
+    <tr><td>stream</td><td><code>120 m</code></td></tr>
+    <tr><td>drain / ditch</td><td><code>250 m</code></td></tr>
+  </table>
+
+  <p>Length is computed by summing haversine distances along the OSM way's geometry. We additionally drop ways tagged <code>intermittent=yes</code>, <strong>except</strong> for rivers — intermittent rivers in arid regions still carry a year's worth of accumulated debris during storms.</p>
+
+  <h3 id="quality-bar">Per-fetch quality bar</h3>
+  <p>Both the initial city fetch and every pan-autoload fetch run their results through the same <code>applyQualityBar</code> filter so panning around can never sneak in low-priority short ditches or stormdrain culverts that the initial criteria would have trimmed:</p>
+
+<pre data-lang="JavaScript"><span class="kw">function</span> <span class="fn">applyQualityBar</span>(streams, opts = {}) {
+    <span class="kw">const</span> maxStreams  = opts.maxStreams  ?? <span class="num">25</span>;
+    <span class="kw">const</span> maxCulverts = opts.maxCulverts ?? Math.max(<span class="num">2</span>, Math.floor(maxStreams * <span class="num">0.15</span>));
+    <span class="cm">// Sort: surface first, then by length (longer = more nodes)</span>
+    streams.sort((a, b) =&gt;
+        (a.underground ? <span class="num">1</span> : <span class="num">0</span>) - (b.underground ? <span class="num">1</span> : <span class="num">0</span>)
+        || (b.coords.length - a.coords.length));
+    <span class="kw">const</span> surface  = streams.filter(s =&gt; !s.underground).slice(<span class="num">0</span>, maxStreams);
+    <span class="kw">const</span> culverts = streams.filter(s =&gt;  s.underground).slice(<span class="num">0</span>, maxCulverts);
+    <span class="kw">return</span> [...surface, ...culverts];
+}</pre>
+
+  <p>For a population &gt; 1M city the slice is 25 surface + at most 3 underground per fetch. Cumulative pan-autoload merges go through <code>streamKeySet</code> to dedupe ways that have already been added, so the cap applies <em>per fetch</em>, not as a hard global limit.</p>
+
+  <h3 id="traffic">Traffic capacity per waterway</h3>
+<pre data-lang="JavaScript"><span class="kw">function</span> <span class="fn">waterwayCapacity</span>(stream) {
+    <span class="kw">const</span> n = stream.coords.length;
+    <span class="kw">if</span> (stream.waterway === <span class="st">'canal'</span>) <span class="kw">return</span> Math.max(<span class="num">5</span>, Math.floor(n/<span class="num">3</span>)); <span class="cm">// boat traffic</span>
+    <span class="kw">return</span> Math.max(<span class="num">8</span>, Math.floor(n/<span class="num">2</span>));  <span class="cm">// rivers/streams</span>
+}</pre>
+
+  <div class="wl-row">
+    <div class="wl-fig">
+      <img src="dashboard/docs/exports/11_scored_terrain.png" alt="Scored terrain static">
+      <div class="wl-caption">Static view · Glowing spheres = candidates</div>
+    </div>
+    <div class="wl-fig">
+      <img src="dashboard/docs/exports/02_particle_flow.png" alt="Particle flow traces">
+      <div class="wl-caption">50 water particles traced downhill to channels</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ §5 SENSITIVITY ═══════════ -->
+<div class="doc-section" id="sensitivity">
+  <div class="sec-label">§5 — Robustness</div>
+  <h2>Monte Carlo Sensitivity Analysis</h2>
+
+  <h3 id="dirichlet">Dirichlet perturbation</h3>
+  <p>Weight vectors must sum to 1 (convex combination). The <span class="hl">Dirichlet distribution</span> is the natural choice for sampling from a simplex. We use α = 10 × baseline weights to control perturbation magnitude:</p>
+
+  <div class="math-block" id="eq-dirichlet"></div>
+
+<pre data-lang="Python"><span class="kw">def</span> <span class="fn">sensitivity_analysis</span>(candidates_df, n_perturbations=<span class="num">50</span>):
+    baseline = compute_composite_score(candidates_df)
+    top5_counts = pd.Series(<span class="num">0</span>, index=baseline.index)
+
+    <span class="kw">for</span> _ <span class="kw">in</span> range(n_perturbations):
+        alpha = np.array([<span class="num">0.30</span>, <span class="num">0.25</span>, <span class="num">0.30</span>, <span class="num">0.15</span>]) * <span class="num">10</span>
+        perturbed = np.random.dirichlet(alpha)  <span class="cm"># samples from simplex</span>
+
+        df = baseline.copy()
+        df[<span class="st">"composite_score"</span>] = (
+            perturbed[<span class="num">0</span>] * df[<span class="st">"generation_score"</span>]
+          + perturbed[<span class="num">1</span>] * df[<span class="st">"flow_score"</span>]
+          + perturbed[<span class="num">2</span>] * df[<span class="st">"impact_score"</span>]
+          + perturbed[<span class="num">3</span>] * df[<span class="st">"feasibility_score"</span>]
+        )
+        top5 = df.nlargest(<span class="num">5</span>, <span class="st">"composite_score"</span>).index
+        top5_counts[top5] += <span class="num">1</span>
+
+    baseline[<span class="st">"robustness_pct"</span>] = top5_counts / n_perturbations * <span class="num">100</span>
+    <span class="kw">return</span> baseline</pre>
+
+  <p>A site with <span class="hl">robustness > 80%</span> is ranked highly regardless of reasonable weight changes. A site at 30% is sensitive to weight assumptions — its position depends on the exact weighting.</p>
+
+  <div class="wl-row">
+    <div class="wl-fig">
+      <img src="dashboard/docs/exports/06_dirichlet_simplex.png" alt="Dirichlet simplex static">
+      <div class="wl-caption">Static simplex view · Color = weight mix</div>
+    </div>
+    <div class="wl-fig">
+      <img src="dashboard/docs/exports/06_weight_distributions.png" alt="Weight distributions">
+      <div class="wl-caption">Histogram overlay of 4 weight dimensions</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ §6 HYDROLOGY ═══════════ -->
+<div class="doc-section" id="hydrology">
+  <div class="sec-label">§6 — Computational hydrology</div>
+  <h2>DEM Hydrological Conditioning Pipeline</h2>
+
+  <p>Raw elevation data from USGS 3DEP (10m resolution) must be hydrologically conditioned before flow routing. The pipeline uses <span class="hl">pysheds</span> — an in-memory NumPy-based hydrology library:</p>
+
+<pre data-lang="Python"><span class="cm"># 1. Fetch DEM raster</span>
+dem = py3dep.get_map(<span class="st">"DEM"</span>, bbox, resolution=<span class="num">10</span>)
+
+<span class="cm"># 2. Hydrological conditioning</span>
+grid = Grid.from_raster(dem)
+pit_filled    = grid.fill_pits(dem)              <span class="cm"># remove single-cell sinks</span>
+flooded       = grid.fill_depressions(pit_filled) <span class="cm"># fill multi-cell depressions</span>
+inflated      = grid.resolve_flats(flooded)       <span class="cm"># assign gradient to flat areas</span>
+flow_dir      = grid.flowdir(inflated)            <span class="cm"># D8: each cell → 1 of 8 neighbors</span>
+accumulation  = grid.accumulation(flow_dir)       <span class="cm"># count upstream cells per cell</span>
+
+<span class="cm"># 3. Extract stream network (cells with >500 upstream cells)</span>
+streams = grid.extract_river_network(flow_dir, accumulation, threshold=<span class="num">500</span>)
+<span class="cm"># 500 cells × 10m × 10m = 0.05 km² minimum catchment area</span>
+
+<span class="cm"># 4. Generate candidate points along stream network</span>
+candidates = extract_candidates(streams, spacing=<span class="num">200</span>)  <span class="cm"># 200m apart</span></pre>
+
+  <p>The D8 algorithm assigns each cell exactly one of 8 cardinal/diagonal flow directions based on steepest descent. This is the standard approach in computational hydrology (O'Callaghan & Mark, 1984).</p>
+
+  <div class="callout warn"><strong>Resolution limitation:</strong> 10m DEM means channels narrower than ~10m are not resolved in the raster. These are identified through NHD and OSM geometry instead.</div>
+
+  <div class="wl-row">
+    <div class="wl-fig">
+      <img src="dashboard/docs/exports/01_terrain_3d.png" alt="Simulated watershed terrain">
+      <div class="wl-caption">Simulated watershed · Flow accumulation carves channels · Wolfram Language</div>
+    </div>
+    <div class="wl-fig">
+      <img src="dashboard/docs/exports/01_flow_accumulation.png" alt="Flow accumulation heatmap">
+      <div class="wl-caption">Log₁₀ flow accumulation · Brighter = more upstream drainage</div>
+    </div>
+  </div>
+
+  <div class="wl-row">
+    <div class="wl-fig">
+      <img src="dashboard/docs/exports/08_durham_terrain_3d.png" alt="Durham 3D terrain">
+      <div class="wl-caption">Durham, NC · 3D terrain model</div>
+    </div>
+    <div class="wl-fig">
+      <img src="dashboard/docs/exports/08_durham_relief.png" alt="Durham relief plot">
+      <div class="wl-caption">Durham, NC · Elevation relief plot</div>
+    </div>
+  </div>
+
+  <div class="wl-fig">
+    <img src="dashboard/docs/exports/10_cauchy_influence_field.png" alt="CSO influence field">
+    <div class="wl-caption">CSO influence field · Cauchy kernel 1/(1+(d/h)²) · h=500m · 3D dome visualization</div>
+  </div>
+
+  <div class="wl-fig">
+    <img src="dashboard/docs/exports/09_ej_surface.png" alt="EJ index surface">
+    <div class="wl-caption">Environmental Justice Index surface · EJ = (0.4·P_d + 0.3·P_m + 0.3·P_i)/100 · P_discharge=80</div>
+  </div>
+</div>
+
+<!-- ═══════════ §7 ALL PARAMETERS ═══════════ -->
+<div class="doc-section" id="parameters">
+  <div class="sec-label">§7 — Full parameter reference</div>
+  <h2>All 28 Parameters</h2>
+
+  <h3 style="color:var(--gen)">Generation (ω = 0.30) — "How much trash enters here?"</h3>
+  <table>
+    <tr><th>#</th><th>Parameter</th><th>Unit</th><th>Weight</th><th>Source</th></tr>
+    <tr><td>1</td><td>Population density</td><td>persons/km²</td><td><code>0.18</code></td><td>US Census ACS</td></tr>
+    <tr><td>2</td><td>Impervious surface %</td><td>%</td><td><code>0.20</code></td><td>NLCD 2021</td></tr>
+    <tr><td>3</td><td>Road density</td><td>km/km²</td><td><code>0.10</code></td><td>Census TIGER / OSMnx</td></tr>
+    <tr><td>4</td><td>TRI facility count</td><td>per km²</td><td><code>0.18</code></td><td>EPA TRI API</td></tr>
+    <tr><td>5</td><td>NPDES discharge points</td><td>count</td><td><code>0.12</code></td><td>EPA ECHO</td></tr>
+    <tr><td>6</td><td>CSO outfall density</td><td>per km²</td><td><code>0.12</code></td><td>EPA ECHO</td></tr>
+    <tr><td>7</td><td>Litter complaints</td><td>per km²</td><td><code>0.10</code></td><td>Local 311 / GIS</td></tr>
+  </table>
+
+  <h3 style="color:var(--flow)">Flow Transport (ω = 0.25) — "How does water move trash?"</h3>
+  <table>
+    <tr><th>#</th><th>Parameter</th><th>Unit</th><th>Weight</th><th>Source</th></tr>
+    <tr><td>8</td><td>USGS mean discharge Q</td><td>cfs</td><td><code>0.22</code></td><td>USGS NWIS</td></tr>
+    <tr><td>9</td><td>Flow velocity</td><td>m/s</td><td><code>0.16</code></td><td>Manning's equation</td></tr>
+    <tr><td>10</td><td>Strahler stream order</td><td>ordinal</td><td><code>0.14</code></td><td>Network topology</td></tr>
+    <tr><td>11</td><td>Catchment area</td><td>km²</td><td><code>0.18</code></td><td>pysheds DEM</td></tr>
+    <tr><td>12</td><td>Flood return Q10</td><td>cfs</td><td><code>0.14</code></td><td>USGS StreamStats</td></tr>
+    <tr><td>13</td><td>Seasonal flow CV</td><td>ratio</td><td><code>0.10</code></td><td>USGS NWIS</td></tr>
+    <tr><td>14</td><td>Runoff coefficient C</td><td>—</td><td><code>0.06</code></td><td>C = 0.05 + 0.009·I</td></tr>
+  </table>
+
+  <h3 style="color:var(--imp)">Downstream Impact (ω = 0.30) — "What's at stake?"</h3>
+  <table>
+    <tr><th>#</th><th>Parameter</th><th>Unit</th><th>Weight</th><th>Source</th></tr>
+    <tr><td>15</td><td>Water intake proximity</td><td>exp(−d/10)</td><td><code>0.22</code></td><td>EPA SDWIS</td></tr>
+    <tr><td>16</td><td>Protected area proximity</td><td>score</td><td><code>0.16</code></td><td>USGS PAD-US</td></tr>
+    <tr><td>17</td><td>EJ index</td><td>[0,1]</td><td><code>0.18</code></td><td>EPA EJSCREEN</td></tr>
+    <tr><td>18</td><td>Estuary proximity</td><td>km (inv)</td><td><code>0.14</code></td><td>NHD terminus</td></tr>
+    <tr><td>19</td><td>Beach proximity</td><td>km (inv)</td><td><code>0.12</code></td><td>EPA BEACH</td></tr>
+    <tr><td>20</td><td>Tourism value</td><td>count</td><td><code>0.10</code></td><td>OSM amenities</td></tr>
+    <tr><td>21</td><td>Superfund proximity</td><td>score</td><td><code>0.08</code></td><td>EPA FRS</td></tr>
+  </table>
+
+  <h3 style="color:var(--feas)">Feasibility (ω = 0.15) — "Can we deploy here?"</h3>
+  <table>
+    <tr><th>#</th><th>Parameter</th><th>Unit</th><th>Weight</th><th>Source</th></tr>
+    <tr><td>22</td><td>Road access distance</td><td>m</td><td><code>0.25</code></td><td>OSMnx routing</td></tr>
+    <tr><td>23</td><td>Channel width</td><td>m</td><td><code>0.20</code></td><td>NHD / NBI / OSM</td></tr>
+    <tr><td>24</td><td>Velocity penalty</td><td>m/s</td><td><code>0.20</code></td><td>Manning's eq</td></tr>
+    <tr><td>25</td><td>Land ownership</td><td>binary</td><td><code>0.15</code></td><td>PAD-US</td></tr>
+    <tr><td>26</td><td>Bank slope</td><td>degrees</td><td><code>0.10</code></td><td>DEM gradient</td></tr>
+    <tr><td>27</td><td>Bridge proximity</td><td>bonus</td><td><code>0.10</code></td><td>FHWA NBI</td></tr>
+  </table>
+
+  <div class="callout"><strong>Hard gates (binary elimination):</strong> Velocity > 3.0 m/s → removed. Channel width > 30 m → removed. Way length below per-type minimum (river/canal 50 m, stream 120 m, drain/ditch 250 m) → removed. <code>intermittent=yes</code> on anything other than a river → removed. Confirmed private land → removed. Underground segment → no candidates on the segment itself; portals injected only if the parent waterway is a river/canal/stream, with bonus scaled by parent type. <strong>Every fetch (initial AND pan-autoload) runs through the per-fetch quality bar:</strong> surface-first sort, top 25 surface + at most 3 culverts kept.</div>
+</div>
+
+<div style="text-align:center;padding:60px 0;border-top:1px solid var(--bdr);margin-top:80px">
+  <div style="font-family:var(--mono);font-size:14px;color:var(--td);margin-bottom:16px">
+    <span style="color:var(--acc);font-weight:700">G</span>RIME · SmathHacks 2025
+  </div>
+  <a href="../explore/" style="font-family:var(--mono);font-size:12px;color:var(--acc);text-decoration:none;border:1px solid var(--acc);padding:10px 28px;border-radius:3px;transition:all .2s;display:inline-block">Open the Explorer →</a>
+</div>
+
+</main>
+</div>
+
+<script>
+// ═══ KATEX RENDERING ═══
+const eqs = {
+  'eq-composite':    'S(\\mathbf{x}) = \\sum_{k=1}^{4} \\omega_k \\cdot G_k(\\mathbf{x}) \\quad\\quad \\omega = [0.30,\\; 0.25,\\; 0.30,\\; 0.15]',
+  'eq-subscore':     'G_k(\\mathbf{x}) = 100 \\cdot \\sum_{j \\in F_k} w_j \\cdot \\hat{x}_j \\quad\\quad \\text{where } \\sum_{j \\in F_k} w_j = 1',
+  'eq-minmax':       '\\hat{x}_j = \\frac{x_j - \\min(x_j)}{\\max(x_j) - \\min(x_j)}',
+  'eq-manning':      'V = \\frac{1}{n} \\cdot R_h^{\\,2/3} \\cdot S^{\\,1/2}',
+  'eq-hydraulic-radius': 'R_h = \\frac{W \\cdot D}{W + 2D} \\quad\\quad D \\approx 0.3\\,W \\;\\text{(bankfull)}',
+  'eq-continuity':   'V_{\\text{cont}} = \\frac{Q}{A_{\\text{cross}}} = \\frac{Q}{W \\cdot D}',
+  'eq-geomean':      'V_{\\text{final}} = \\sqrt{\\,V_{\\text{Manning}} \\cdot V_{\\text{continuity}}\\,}',
+  'eq-occlusion':    '\\text{trash}_{\\text{reaching}} = \\text{load}_{\\text{original}} \\times (1 - \\eta)^{\\,k} \\quad\\quad \\eta = 0.65,\\; k = \\text{nets upstream}',
+  'eq-occlusion-composite': "S'(\\mathbf{x}) = 0.30 \\cdot G'_{\\text{gen}} + 0.25 \\cdot G_{\\text{flow}} + 0.30 \\cdot G_{\\text{imp}} + 0.15 \\cdot G_{\\text{feas}}",
+  'eq-haversine':    'd = 2R \\cdot \\arctan2\\!\\left(\\sqrt{a},\\; \\sqrt{1-a}\\right) \\quad\\quad a = \\sin^2\\!\\frac{\\Delta\\phi}{2} + \\cos\\phi_1 \\cos\\phi_2 \\sin^2\\!\\frac{\\Delta\\lambda}{2}',
+  'eq-dirichlet':    "\\boldsymbol{\\omega'} \\sim \\text{Dir}(\\boldsymbol{\\alpha}) \\quad\\quad \\boldsymbol{\\alpha} = 10 \\times [0.30,\\; 0.25,\\; 0.30,\\; 0.15]",
+};
+Object.entries(eqs).forEach(([id,tex])=>{
+  const el=document.getElementById(id);
+  if(el) katex.render(tex, el, {displayMode:true, throwOnError:false});
+});
+
+// ═══ WEIGHT CHART ═══
+(function(){
+  const c=document.getElementById('weight-chart');if(!c)return;
+  const ctx=c.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  c.width=c.offsetWidth*dpr;c.height=180*dpr;
+  ctx.scale(dpr,dpr);
+  const W=c.offsetWidth,H=180;
+  const data=[{l:'Generation',w:.30,c:'#f97316'},{l:'Flow',w:.25,c:'#3b82f6'},{l:'Impact',w:.30,c:'#8b5cf6'},{l:'Feasibility',w:.15,c:'#10b981'}];
+  const barH=28,gap=12,startY=(H-data.length*(barH+gap)+gap)/2;
+  data.forEach((d,i)=>{
+    const y=startY+i*(barH+gap);
+    const bw=(W-180)*d.w/.30;
+    ctx.fillStyle='#1E1B12';ctx.fillRect(120,y,W-180,barH);
+    ctx.fillStyle=d.c;ctx.globalAlpha=.85;ctx.fillRect(120,y,bw,barH);ctx.globalAlpha=1;
+    ctx.fillStyle='#8a7f68';ctx.font='500 12px "DM Sans"';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(d.l,108,y+barH/2);
+    ctx.fillStyle='#f5f0e4';ctx.font='600 13px "JetBrains Mono"';ctx.textAlign='left';
+    ctx.fillText((d.w*100).toFixed(0)+'%',bw+128,y+barH/2);
+  });
+})();
+
+// ═══ VELOCITY CHART ═══
+(function(){
+  const c=document.getElementById('velocity-chart');if(!c)return;
+  const ctx=c.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  c.width=c.offsetWidth*dpr;c.height=200*dpr;
+  ctx.scale(dpr,dpr);
+  const W=c.offsetWidth,H=200,pad={l:60,r:20,t:20,b:40};
+  const pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+
+  function f(v){if(v<.05)return .3;if(v<.30)return .7;if(v<=1.50)return 1;if(v<=2.50)return .5;return .1;}
+
+  // grid
+  ctx.strokeStyle='#4A4330';ctx.lineWidth=.5;
+  for(let y=0;y<=1;y+=.25){
+    const py=pad.t+ph*(1-y);
+    ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(pad.l+pw,py);ctx.stroke();
+    ctx.fillStyle='#8a7f68';ctx.font='11px "JetBrains Mono"';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(y.toFixed(2),pad.l-8,py);
+  }
+  for(let v=0;v<=3.5;v+=.5){
+    const px=pad.l+pw*(v/3.5);
+    ctx.fillStyle='#8a7f68';ctx.font='10px "JetBrains Mono"';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(v.toFixed(1),px,H-pad.b+8);
+  }
+  ctx.fillStyle='#8a7f68';ctx.font='10px "JetBrains Mono"';ctx.textAlign='center';
+  ctx.fillText('velocity (m/s)',pad.l+pw/2,H-4);
+
+  // zones
+  const zones=[{from:0,to:.05,c:'rgba(239,68,68,.08)'},{from:.05,to:.30,c:'rgba(245,158,11,.08)'},{from:.30,to:1.50,c:'rgba(88,176,156,.1)'},{from:1.50,to:2.50,c:'rgba(245,158,11,.08)'},{from:2.50,to:3.5,c:'rgba(239,68,68,.08)'}];
+  zones.forEach(z=>{
+    ctx.fillStyle=z.c;
+    ctx.fillRect(pad.l+pw*(z.from/3.5),pad.t,pw*((z.to-z.from)/3.5),ph);
+  });
+
+  // line
+  ctx.strokeStyle='#58B09C';ctx.lineWidth=2.5;ctx.beginPath();
+  for(let v=0;v<=3.5;v+=.01){
+    const x=pad.l+pw*(v/3.5),y=pad.t+ph*(1-f(v));
+    v===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // hard gate line
+  ctx.strokeStyle='#ef4444';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  const gx=pad.l+pw*(3.0/3.5);
+  ctx.beginPath();ctx.moveTo(gx,pad.t);ctx.lineTo(gx,pad.t+ph);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ef4444';ctx.font='10px "JetBrains Mono"';ctx.textAlign='center';
+  ctx.fillText('HARD GATE',gx,pad.t-4);
+})();
+
+// ═══ OCCLUSION CHART (INTERACTIVE) ═══
+const etaSlider=document.getElementById('eta-slider');
+const etaVal=document.getElementById('eta-val');
+const occCanvas=document.getElementById('occlusion-chart');
+function drawOcclusion(){
+  const eta=parseInt(etaSlider.value)/100;
+  etaVal.textContent=eta.toFixed(2);
+  const c=occCanvas;if(!c)return;
+  const ctx=c.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  c.width=c.offsetWidth*dpr;c.height=260*dpr;
+  ctx.scale(dpr,dpr);
+  const W=c.offsetWidth,H=260,pad={l:60,r:30,t:20,b:50};
+  const pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+  const maxK=8;
+
+  // grid
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#4A4330';ctx.lineWidth=.5;
+  for(let y=0;y<=100;y+=25){
+    const py=pad.t+ph*(1-y/100);
+    ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(pad.l+pw,py);ctx.stroke();
+    ctx.fillStyle='#8a7f68';ctx.font='11px "JetBrains Mono"';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(y+'%',pad.l-8,py);
+  }
+
+  // bars + curve
+  for(let k=0;k<=maxK;k++){
+    const val=Math.pow(1-eta,k)*100;
+    const x=pad.l+pw*(k/maxK);
+    const bw=pw/maxK*.7;
+    const bh=ph*(val/100);
+
+    // bar
+    ctx.fillStyle=val>50?'rgba(88,176,156,.35)':val>15?'rgba(245,158,11,.3)':'rgba(239,68,68,.25)';
+    ctx.fillRect(x-bw/2,pad.t+ph-bh,bw,bh);
+    ctx.strokeStyle=val>50?'#58B09C':val>15?'#f59e0b':'#ef4444';
+    ctx.lineWidth=1.5;ctx.strokeRect(x-bw/2,pad.t+ph-bh,bw,bh);
+
+    // value
+    ctx.fillStyle='#f5f0e4';ctx.font='bold 12px "JetBrains Mono"';ctx.textAlign='center';
+    ctx.fillText(val.toFixed(1)+'%',x,pad.t+ph-bh-8);
+
+    // label
+    ctx.fillStyle='#8a7f68';ctx.font='11px "JetBrains Mono"';ctx.textBaseline='top';
+    ctx.fillText(k===0?'none':k+' net'+(k>1?'s':''),x,H-pad.b+8);
+  }
+  ctx.fillStyle='#8a7f68';ctx.font='10px "JetBrains Mono"';ctx.textAlign='center';
+  ctx.fillText('nets upstream on same stream',pad.l+pw/2,H-6);
+
+  // smooth curve overlay
+  ctx.strokeStyle='#58B09C';ctx.lineWidth=2;ctx.beginPath();
+  for(let k=0;k<=maxK;k+=.1){
+    const val=Math.pow(1-eta,k)*100;
+    const x=pad.l+pw*(k/maxK),y=pad.t+ph*(1-val/100);
+    k===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+etaSlider.addEventListener('input',drawOcclusion);
+drawOcclusion();
+
+// ═══ TOC ACTIVE STATE ═══
+const tocLinks=document.querySelectorAll('.toc a');
+const sections=document.querySelectorAll('.doc-section');
+const obs=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      tocLinks.forEach(l=>l.classList.remove('active'));
+      const link=document.querySelector(`.toc a[href="#${e.target.id}"]`);
+      if(link)link.classList.add('active');
+    }
+  });
+},{threshold:.2,rootMargin:'-80px 0px -60% 0px'});
+sections.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

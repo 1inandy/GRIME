@@ -1,0 +1,46 @@
+# GRIME — Full development dependencies
+# Includes the hydrology pipeline, scoring engine, and all data APIs
+# Use this locally: pip install -r requirements-full.txt
+
+# Web server (same as requirements.txt)
+fastapi>=0.110
+uvicorn[standard]>=0.29
+websockets>=12.0
+python-dotenv>=1.0
+requests>=2.31
+aiohttp>=3.9
+geojson>=3.1
+geonamescache>=2.0
+
+# Core hydrology pipeline
+pysheds>=0.4
+py3dep>=0.16
+rasterio>=1.3
+geopandas>=0.14
+shapely>=2.0
+fiona>=1.9
+pyproj>=3.6
+numpy>=1.26,<2.0
+pandas>=2.1
+scipy>=1.12
+
+# Image / raster processing
+scikit-image>=0.22
+matplotlib>=3.8
+earthpy>=0.9
+
+# Graph / network analysis
+networkx>=3.2
+
+# ML / scoring
+scikit-learn>=1.4
+scikit-optimize>=0.10
+
+# USGS data access
+dataretrieval>=1.0
+
+# OSM / road network
+osmnx==1.9.4
+
+# Utilities
+tqdm>=4.66
