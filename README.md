@@ -888,7 +888,7 @@ No formal benchmarks have been run. Times above are observed during development.
 
 ### C. License
 
-Undecided as of project creation.
+MIT.
 
 ---
 
