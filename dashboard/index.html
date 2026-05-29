@@ -129,11 +129,13 @@ section{padding:112px 64px}
 .dash-frame{
   max-width:1060px;margin:0 auto;border-radius:10px;overflow:hidden;
   border:1px solid var(--bdr);
-  transform:perspective(1400px) rotateX(5deg) scale(.98);
-  transition:transform .7s cubic-bezier(.22,1,.36,1);
+  /* NOTE: do not add a CSS transform here. The Mapbox globe (#dash-globe) lives
+     inside this element, and Mapbox GL breaks (no canvas, unproject -> NaN) when
+     any ancestor has a transform. Depth is done with shadow/glow instead. */
+  transition:box-shadow .7s cubic-bezier(.22,1,.36,1);
   box-shadow:0 48px 120px rgba(0,0,0,.6),0 0 100px var(--acc-glow);
 }
-.dash-frame:hover{transform:perspective(1400px) rotateX(0deg) scale(1)}
+.dash-frame:hover{box-shadow:0 56px 150px rgba(0,0,0,.7),0 0 130px var(--acc-glow)}
 #dash-globe .mapboxgl-ctrl-bottom-left,#dash-globe .mapboxgl-ctrl-bottom-right,#dash-globe .mapboxgl-ctrl-top-right,#dash-globe .mapboxgl-ctrl-top-left{display:none!important}
 
 /* ── REACH ── */
