@@ -631,6 +631,10 @@ if(dashGlobeEl){
         attributionControl:false
       });
       dMap.on('style.load',()=>{
+        // Container uses aspect-ratio + a reveal animation, so its size may not be
+        // settled when the map is created — resize now and again after reveal completes.
+        dMap.resize();
+        setTimeout(()=>dMap.resize(),450);
         dMap.setFog({color:'#1E1B12','high-color':'#252117','horizon-blend':0.04,'space-color':'#141108','star-intensity':0.06});
         // ~2000 city dots scattered across land masses (matches explore density)
         const regions=[
