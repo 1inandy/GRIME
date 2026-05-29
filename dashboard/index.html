@@ -426,6 +426,17 @@ section{padding:112px 64px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="dashboard/config.js"></script>
 <script>
+// Resolve the Mapbox token. Prefers a local config.js global (dev convenience);
+// otherwise fetches it from /api/config, which reads the MAPBOX_TOKEN env var.
+// config.js is gitignored, so deployments rely on the env var path.
+async function getMapboxToken(){
+  if(typeof MAPBOX_TOKEN!=='undefined' && MAPBOX_TOKEN && !MAPBOX_TOKEN.includes('YOUR_MAPBOX')) return MAPBOX_TOKEN;
+  try{
+    const r=await fetch('/api/config');
+    if(r.ok){const j=await r.json(); if(j.mapbox_token) return j.mapbox_token;}
+  }catch(e){}
+  return '';
+}
 // ═══════════════════════════════════════
 // GLOBE
 // ═══════════════════════════════════════
@@ -607,10 +618,10 @@ window.addEventListener('load',()=>{
 // ═══════════════════════════════════════
 const dashGlobeEl=document.getElementById('dash-globe');
 if(dashGlobeEl){
-  const dObs=new IntersectionObserver(entries=>{
+  const dObs=new IntersectionObserver(async entries=>{
     if(entries[0].isIntersecting){
       dObs.disconnect();
-      mapboxgl.accessToken=MAPBOX_TOKEN;
+      mapboxgl.accessToken=await getMapboxToken();
       const dMap=new mapboxgl.Map({
         container:'dash-globe',
         style:'mapbox://styles/mapbox/dark-v11',
