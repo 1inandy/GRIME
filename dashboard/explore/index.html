@@ -132,6 +132,18 @@ body.theme-light .hm button.active{border-color:var(--acc)!important}
 // ═══ CONFIG ══════════════════════════════════════════════════════
 const API=location.hostname==='localhost'?'http://localhost:8000':location.origin;
 
+// Resolve the Mapbox token. Prefers a local config.js global (dev convenience);
+// otherwise fetches it from the API's /api/config, which reads the MAPBOX_TOKEN
+// env var. config.js is gitignored, so deployments rely on the env var path.
+async function getMapboxToken(){
+  if(typeof MAPBOX_TOKEN!=='undefined' && MAPBOX_TOKEN && !MAPBOX_TOKEN.includes('YOUR_MAPBOX')) return MAPBOX_TOKEN;
+  try{
+    const r=await fetch(API+'/api/config');
+    if(r.ok){const j=await r.json(); if(j.mapbox_token) return j.mapbox_token;}
+  }catch(e){}
+  return '';
+}
+
 // ═══ STATE ══════════════════════════════════════════════════════
 let map,places=[],activeCityIdx=-1,activeCandidates=[],activeStreams=[],selectedCand=null,isSat=true,pipelineStats=null;
 // Remember city params so we can re-score after pan-autoload merges in new streams
@@ -783,8 +795,8 @@ function exitRiverFocus(){
 const cursorPointer=()=>map.getCanvas().style.cursor='pointer';
 const cursorReset=()=>map.getCanvas().style.cursor='';
 
-function initMap(){
-  mapboxgl.accessToken=MAPBOX_TOKEN;
+async function initMap(){
+  mapboxgl.accessToken=await getMapboxToken();
   map=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/satellite-streets-v12',center:[20,15],zoom:2,pitch:0,maxZoom:18});
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
   map.addControl(new mapboxgl.ScaleControl(),'bottom-right');
@@ -1208,7 +1220,7 @@ document.getElementById('theme-toggle').addEventListener('click',()=>{
 
 // ═══ INIT ═══════════════════════════════════════════════════════
 async function init(){
-  initMap();
+  await initMap();
   document.getElementById('load-msg').textContent='Loading cities database...';
   places=await loadPlaces();
   places=places.filter(p=>p&&p.n&&p.c&&p.la!=null&&p.lo!=null);
