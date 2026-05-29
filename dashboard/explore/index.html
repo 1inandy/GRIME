@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GRIME — Garbage River Interception and Modeling Engine</title>
+<link rel="icon" type="image/png" href="https://grime.world/dashboard/images/favicon.png">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1231,7 +1232,13 @@ async function init(){
   document.getElementById('loading').style.display='none';
   document.getElementById('app').classList.add('ready');
   map.resize();
-  map.on('load',()=>loadWorldView());
+  // The map's `load` event can fire while we're still awaiting loadPlaces() above
+  // (common on a cold reload: the Mapbox style loads from CDN faster than the large
+  // places.json downloads). A `load` listener attached after the event has already
+  // fired never runs, so loadWorldView() would be skipped and no cities/dots appear.
+  // Guard by checking whether the map has already loaded.
+  if(map.loaded())loadWorldView();
+  else map.on('load',()=>loadWorldView());
 }
 init();
 </script>
