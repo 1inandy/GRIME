@@ -1168,4 +1168,3 @@ Dashboard scores are approximate — the Python pipeline is the authoritative sc
 Export["filename.png", %, ImageResolution -> 144]
 ```
 
-*Place all exported PNGs in `dashboard/docs/images/` using the filenames referenced in this document.*
