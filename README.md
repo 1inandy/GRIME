@@ -5,8 +5,6 @@ Video - https://www.youtube.com/watch?v=GsYtVGVTPWM
 
 GRIME is a multi-parameter optimization system that identifies optimal locations for deploying trash interception barriers ("nets") on urban waterways. It evaluates candidate sites across **28 geospatial parameters** organized into **6 parameter families**, producing **4 sub-scores** that combine into a single composite ranking per candidate location.
 
-**Built for:** 2026 SmathHacks hackathon
-
 **What makes it technically interesting:**
 - A two-level weighted scoring architecture (parameters → sub-scores → composite) that is both interpretable and tunable
 - Hydrological pipeline built on real DEM data: pit-filling → depression-filling → flat resolution → D8 flow direction → flow accumulation → stream extraction
