@@ -61,6 +61,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t)}
 .pchip-v{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tb)}
 .close{background:var(--card);border:1px solid var(--bdr);color:var(--td);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
 .close:hover{background:var(--hover);color:var(--t)}
+.site-detail{position:absolute;top:16px;left:16px;width:min(340px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto;background:rgba(42,37,24,.94);border:1px solid var(--bdr);border-radius:8px;padding:14px 16px;box-shadow:0 16px 44px rgba(0,0,0,.42);z-index:4;display:none;backdrop-filter:blur(8px)}
+.site-detail.vis{display:block}
+.site-detail::-webkit-scrollbar{width:5px}
+.site-detail::-webkit-scrollbar-track{background:transparent}
+.site-detail::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
 
 /* ── MAP: fill remaining space ── */
 #map-wrap{flex:1 1 0;position:relative;min-width:0}
@@ -84,6 +89,7 @@ body.theme-light .hm button.active{background:var(--accd);color:var(--acc);borde
 body.theme-light .mapboxgl-popup-content{background:var(--panel)!important;border-color:var(--bdr)!important;color:var(--t)!important}
 body.theme-light .mapboxgl-popup-tip{border-top-color:var(--panel)!important}
 body.theme-light #loading{background:var(--panel);border-color:var(--bdr);color:var(--t)}
+body.theme-light .site-detail{background:rgba(250,248,244,.95);box-shadow:0 16px 44px rgba(44,42,30,.18)}
 body.theme-light .r1{background:linear-gradient(135deg,#d4a017,#b8860b);color:#fff}
 body.theme-light .r2{background:linear-gradient(135deg,#a8a29e,#78716c);color:#fff}
 body.theme-light .r3{background:linear-gradient(135deg,#b45309,#92400e);color:#fff}
@@ -98,6 +104,11 @@ body.theme-light .hm button.active{border-color:var(--acc)!important}
 /* ── River-focus back chip in sidebar ── */
 .river-back{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--bdr);color:var(--acc);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--mono);margin-bottom:10px}
 .river-back:hover{background:var(--hover)}
+@media(max-width:760px){
+  #content{flex-direction:column}
+  #sidebar{width:100%;flex:0 0 42vh;border-right:none;border-bottom:1px solid var(--bdr)}
+  .site-detail{top:auto;bottom:12px;left:12px;width:calc(100% - 24px);max-height:45vh}
+}
 </style>
 </head>
 <body>
@@ -125,7 +136,7 @@ body.theme-light .hm button.active{border-color:var(--acc)!important}
     <div id="place-list"></div>
     <div id="city-view"></div>
   </div>
-  <div id="map-wrap"><div id="map"></div><div id="load-pill"><div class="mini-spinner"></div><span id="load-pill-text">Loading more streams…</span></div></div>
+  <div id="map-wrap"><div id="map"></div><div id="site-detail" class="site-detail"></div><div id="load-pill"><div class="mini-spinner"></div><span id="load-pill-text">Loading more streams…</span></div></div>
 </div>
 </div>
 <script src="dashboard/config.js"></script>
@@ -839,6 +850,7 @@ function resetExploreState(){
 
 function loadWorldView(){
   activeCityIdx=-1;activeCandidates=[];activeStreams=[];selectedCand=null;
+  renderSelectedCandPanel();
   resetExploreState();
   clearLayers();
   const geojson={type:'FeatureCollection',features:places.map((p,i)=>({
@@ -879,6 +891,7 @@ async function openCity(idx){
   const p=places[idx];
   if(!p||!p.n)return;
   activeCityIdx=idx;selectedCand=null;
+  renderSelectedCandPanel();
   // Remember city params so pan-autoload can re-score the merged stream set without
   // reaching back into `places[idx]` (which can race with a back-btn click).
   activePop=p.p;activeCC=p.c;
@@ -910,6 +923,7 @@ async function openCity(idx){
   if(!activeStreams||activeStreams.length===0){
     activeCandidates=[];
     activeStreams=[];
+    renderSelectedCandPanel();
     document.getElementById('info').textContent=`${p.n||'Unknown'} · No waterway data in OpenStreetMap`;
     document.getElementById('city-view').innerHTML=`
       <div style="padding:24px 16px;text-align:center">
@@ -947,9 +961,14 @@ async function openCity(idx){
 }
 
 function selectCand(i){
-  selectedCand=i;
+  selectedCand=Number(i);
   const c=activeCandidates[i];
   if(c)map.flyTo({center:[c.lon,c.lat],zoom:16,duration:600});
+  renderCityView();
+}
+
+function clearSelectedCand(){
+  selectedCand=null;
   renderCityView();
 }
 
@@ -1058,17 +1077,27 @@ function renderSelectedCandHtml(){
   if(selectedCand===null||!activeCandidates[selectedCand])return'';
   const c=activeCandidates[selectedCand];
   const ss=[{l:'Generation',v:c.gen,c:'var(--gen)',w:'30%'},{l:'Flow',v:c.flow,c:'var(--flow)',w:'25%'},{l:'Impact',v:c.impact,c:'var(--imp)',w:'30%'},{l:'Feasibility',v:c.feas,c:'var(--feas)',w:'15%'}];
-  return`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bdr)">
+  return`<div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--td)">Score</div>
       <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--acc)">${c.composite}</div></div>
-      <button class="close" onclick="selectedCand=null;renderCityView()">×</button>
+      <button class="close" onclick="clearSelectedCand()">×</button>
     </div>
+    <div style="font-size:12px;font-weight:600;color:var(--tb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${c.stream||'Stream'}</div>
+    <div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div>
     ${ss.map(s=>`<div class="ss-row"><div style="font-size:11px;font-weight:500;color:${s.c}">${s.l} <span style="font-size:9px;color:var(--td)">${s.w}</span></div><div class="ss-bar"><div class="ss-fill" style="width:${s.v}%;background:${s.c}"></div></div><div style="font-family:var(--mono);font-size:11px;text-align:right">${s.v}</div></div>`).join('')}
     <div class="pgrid">
       ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Strahler',c.strahler],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
     </div>
   </div>`;
+}
+
+function renderSelectedCandPanel(){
+  const el=document.getElementById('site-detail');
+  if(!el)return;
+  const html=renderSelectedCandHtml();
+  el.innerHTML=html;
+  el.classList.toggle('vis',!!html);
 }
 
 function renderRiverFocusHtml(){
@@ -1108,7 +1137,6 @@ function renderRiverFocusHtml(){
       </div>`;
     }).join('');
   }
-  html+=renderSelectedCandHtml();
   return html;
 }
 
@@ -1118,7 +1146,7 @@ function renderCityView(){
   if(activeCityIdx<0)return;
   const p=places[activeCityIdx];
   if(!p)return;
-  if(focusedRiverKey){el.innerHTML=renderRiverFocusHtml();return}
+  if(focusedRiverKey){el.innerHTML=renderRiverFocusHtml();renderSelectedCandPanel();return}
   let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${p.n||'Unknown'} · Top ${activeCandidates.length} sites</h3>`;
   if(pipelineStats){
     html+=`<div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px;line-height:1.6">
@@ -1137,8 +1165,8 @@ function renderCityView(){
     </div>`;
   }).join('');
 
-  html+=renderSelectedCandHtml();
   el.innerHTML=html;
+  renderSelectedCandPanel();
 }
 
 // ═══ EVENTS ═════════════════════════════════════════════════════
@@ -1166,7 +1194,7 @@ document.getElementById('back-btn').addEventListener('click',()=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(focusedRiverKey){exitRiverFocus();e.stopPropagation()}
-    else if(selectedCand!==null){selectedCand=null;renderCityView()}
+    else if(selectedCand!==null){clearSelectedCand()}
   }
 });
 // ── Helper: pick correct map style from current state ──
