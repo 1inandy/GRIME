@@ -61,8 +61,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t)}
 .pchip-v{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tb)}
 .close{background:var(--card);border:1px solid var(--bdr);color:var(--td);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
 .close:hover{background:var(--hover);color:var(--t)}
-.site-detail{position:absolute;top:16px;left:16px;width:min(340px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto;background:rgba(42,37,24,.94);border:1px solid var(--bdr);border-radius:8px;padding:14px 16px;box-shadow:0 16px 44px rgba(0,0,0,.42);z-index:4;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-18px);backdrop-filter:blur(8px);transition:opacity .22s ease,transform .22s ease,visibility 0s linear .22s}
-.site-detail.vis{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(0);transition:opacity .24s ease,transform .24s ease,visibility 0s}
+.site-detail{position:absolute;top:16px;left:16px;width:min(340px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto;background:rgba(42,37,24,.94);border:1px solid var(--bdr);border-radius:8px;padding:14px 16px;box-shadow:0 16px 44px rgba(0,0,0,.42);z-index:4;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-18px);backdrop-filter:blur(8px);transition:opacity .44s ease,transform .44s ease,visibility 0s linear .44s}
+.site-detail.vis{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(0);transition:opacity .48s ease,transform .48s ease,visibility 0s}
 .site-detail::-webkit-scrollbar{width:5px}
 .site-detail::-webkit-scrollbar-track{background:transparent}
 .site-detail::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
@@ -1107,7 +1107,7 @@ function renderSelectedCandPanel(){
   el._hideTimer=setTimeout(()=>{
     if(!el.classList.contains('vis'))el.innerHTML='';
     el._hideTimer=null;
-  },260);
+  },520);
 }
 
 function renderRiverFocusHtml(){
