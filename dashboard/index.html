@@ -583,8 +583,15 @@ window.addEventListener('scroll',()=>{
   lastSY=window.scrollY;
 },{ passive:true });
 
+// Perf (Phase 6 #5a): pause the hero globe's math+render when it's scrolled
+// off-screen or the tab is hidden — saves a full WebGL frame every ~16 ms.
+let globeVisible=true;
+(function(){const gc=document.getElementById('globe-canvas');
+  if(gc&&'IntersectionObserver'in window)
+    new IntersectionObserver(es=>{globeVisible=es[0].isIntersecting},{threshold:0.01}).observe(gc);})();
 function animate(t){
   requestAnimationFrame(animate);
+  if(!globeVisible||document.hidden){lastT=t;return;}  // skip frame when not visible
   const dt=Math.min((t-lastT)/16.67,3); lastT=t;
   autoRot+=.0018*dt;
   scrollRot+=(targetScroll-scrollRot)*.06*dt;
@@ -695,12 +702,15 @@ if(dashGlobeEl){
           'circle-opacity':0.08,'circle-blur':1
         }},'unclustered');
 
-        // Smooth auto-rotate globe
-        let lon=40;
+        // Smooth auto-rotate globe — paused when off-screen / tab hidden (#5a)
+        let lon=40, dashVisible=true;
+        if('IntersectionObserver'in window)
+          new IntersectionObserver(es=>{dashVisible=es[0].isIntersecting},{threshold:0.01}).observe(dashGlobeEl);
         function spinDash(){
+          requestAnimationFrame(spinDash);
+          if(!dashVisible||document.hidden)return;  // skip setCenter repaint off-screen
           lon+=0.008;
           dMap.setCenter([lon,15]);
-          requestAnimationFrame(spinDash);
         }
         spinDash();
       });
