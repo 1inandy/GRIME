@@ -1,0 +1,14 @@
+.DS_Store
+*/.DS_Store
+
+.env
+.env.*
+!.env.example
+
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+dashboard/config.js
