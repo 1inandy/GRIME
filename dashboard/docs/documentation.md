@@ -2,7 +2,7 @@
 
 Welcome to the GRIME documentation! GRIME is a multi-parameter optimization engine for identifying optimal trash interception net placements in waterways, anywhere on Earth. It extends the WaterGate flood-analysis framework (Cheng, Anand, Rose, 2023) from 3 parameters to 28, redirecting a hydrological model toward trash accumulation prediction and net deployment optimization.
 
-GRIME was inspired by firsthand experience with river pollution in India — rivers choked with plastic waste, communities unable to determine where intervention would actually make a difference. Over 1,500 rivers worldwide are responsible for 80% of ocean-bound plastic, and GRIME answers the question: *if you can't net every river, where should your limited resources go?*
+GRIME was inspired by firsthand experience with river pollution in India — rivers choked with plastic waste, communities unable to determine where intervention would actually make a difference. Over 1,000 rivers worldwide carry ~80% of ocean-bound riverine plastic (Meijer et al. 2021 attribute the 80% figure to 1,656 rivers), and GRIME answers the question: *if you can't net every river, where should your limited resources go?*
 
 The project is currently being developed at the **North Carolina School of Science and Mathematics** and is designed for use by municipal stormwater services, environmental nonprofits, and organizations like The Ocean Cleanup.
 
@@ -17,7 +17,7 @@ The project is currently being developed at the **North Carolina School of Scien
 
 # Abstract
 
-Effective trash interception in waterways requires solving a site-selection problem: given a finite budget for nets, where should they go to capture the most debris while remaining physically installable and equitable? GRIME addresses this through a 28-parameter scoring engine organized into a two-level weighted architecture. Parameters span six families — population & land use, industrial discharge, hydrology, downstream consequence, environmental justice, and physical feasibility — and aggregate into four interpretable sub-scores (Generation, Flow, Impact, Feasibility) before combining into a single composite score from 0 to 100. Hard gates eliminate physically impossible sites before scoring begins. A Dirichlet-based Monte Carlo sensitivity analysis tests whether top-ranked sites are robust to weight assumptions. The system operates in two modes: a research pipeline using real 10m USGS elevation data and six federal APIs, and an interactive dashboard covering 108,772 cities across 240 countries using OpenStreetMap data and client-side scoring.
+Effective trash interception in waterways requires solving a site-selection problem: given a finite budget for nets, where should they go to capture the most debris while remaining physically installable and equitable? GRIME addresses this through a 27-parameter scoring engine organized into a two-level weighted architecture. Parameters span six families — population & land use, industrial discharge, hydrology, downstream consequence, environmental justice, and physical feasibility — and aggregate into four interpretable sub-scores (Generation, Flow, Impact, Feasibility) before combining into a single composite score from 0 to 100. Hard gates eliminate physically impossible sites before scoring begins. A Dirichlet-based Monte Carlo sensitivity analysis tests whether top-ranked sites are robust to weight assumptions. The system operates in two modes: a research pipeline using real 10m USGS elevation data and several federal APIs, and an interactive dashboard covering 89,518 places across 239 countries using OpenStreetMap data and client-side scoring.
 
 # Table of Contents
 
@@ -378,7 +378,7 @@ Each dot is a candidate net site. The faded circles represent the upstream catch
 
 ## Parameter Families & Scoring
 
-Each candidate site is evaluated on 28 parameters organized into 6 families, which aggregate into 4 interpretable sub-scores. Parameters are normalized to [0, 1] before weighting.
+Each candidate site is evaluated on 27 parameters organized into 6 families, which aggregate into 4 interpretable sub-scores. Parameters are normalized to [0, 1] before weighting.
 
 ### Generation Sub-Score
 
@@ -824,7 +824,7 @@ The ridge along the diagonal represents the ideal combination: narrow, moderate-
 
 ## Two-Level Scoring Architecture
 
-GRIME uses a two-level weighted architecture deliberately chosen over a flat 28-parameter weighted sum. At **Level 1**, parameters within each family combine into sub-scores:
+GRIME uses a two-level weighted architecture deliberately chosen over a flat 27-parameter weighted sum. At **Level 1**, parameters within each family combine into sub-scores:
 
 $$S_k = \sum_{j \in \mathcal{F}_k} w_{k,j} \cdot p_{k,j}$$
 
@@ -1115,16 +1115,16 @@ ListPlot3D[demDurham,
 <img src="images/terrain_surface.png" width="700">
 </p>
 
-From this DEM, the pipeline extracts streams, generates candidates every 200m, queries six federal APIs for parameter data, scores each site, and runs the Dirichlet sensitivity analysis. The output is a ranked list of deployment sites with sub-score breakdowns that Durham Stormwater Services can use to prioritize net installations.
+From this DEM, the pipeline extracts streams, generates candidates every 200m, queries several federal APIs for parameter data, scores each site, and runs the Dirichlet sensitivity analysis. The output is a ranked list of deployment sites with sub-score breakdowns that Durham Stormwater Services can use to prioritize net installations.
 
 ## Application: Global Dashboard
 
-The interactive dashboard lets anyone click on any of 108,772 cities across 240 countries. When a city is selected:
+The interactive dashboard lets anyone click on any of 89,518 places across 239 countries. When a city is selected:
 
 1. An **Overpass API** query fetches real waterway geometry from OpenStreetMap
 2. Candidate sites are placed every 200m along each waterway using Haversine spacing
 3. **Hard gates** eliminate infeasible sites (width > 50m, velocity > 3.0 m/s)
-4. Each surviving candidate is scored using the 28-parameter model with OSM-derived proxies
+4. Each surviving candidate is scored using the 27-parameter model with OSM-derived proxies
 5. A **population-scaled risk percentile** threshold filters out low-scoring candidates
 6. Remaining candidates are color-coded by composite score and rendered on a Mapbox map
 
@@ -1132,7 +1132,7 @@ The interactive dashboard lets anyone click on any of 108,772 cities across 240 
 (* Dashboard pipeline as a flowchart *)
 nodes = {"City Selection", "Overpass API", "Waterway Geometry",
   "Candidate Generation", "Hard Gate Filter",
-  "Scoring (28 params)", "Risk Filter",
+  "Scoring (27 params)", "Risk Filter",
   "Map Rendering"};
 
 edges = Thread[nodes[[;; -2]] -> nodes[[2 ;;]]];
