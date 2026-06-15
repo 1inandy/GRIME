@@ -12,7 +12,7 @@ import pandas as pd
 from shapely.geometry import Point
 from core import (
     DURHAM_STATE_FIPS, DURHAM_COUNTY_FIPS, UTM_CRS, WGS84,
-    safe_call, inverse_distance_score
+    safe_call, inverse_distance_score, census_api_key
 )
 
 
@@ -25,13 +25,17 @@ def get_population_density(catchment_polygon, state_fips=DURHAM_STATE_FIPS,
     Returns persons/km² as a float.
     Uses Census API directly (no cenpy dependency needed).
     """
-    # Census API — ACS 5-year, block group level
+    # Census API — ACS 5-year, block group level. The API now rejects keyless
+    # requests, so include CENSUS_API_KEY when present (else this falls back).
     url = "https://api.census.gov/data/2022/acs/acs5"
     params = {
         "get": "B01003_001E,NAME",
         "for": "block group:*",
         "in": f"state:{state_fips} county:{county_fips}",
     }
+    api_key = census_api_key()
+    if api_key:
+        params["key"] = api_key
 
     try:
         r = requests.get(url, params=params, timeout=30)
