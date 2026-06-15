@@ -147,7 +147,7 @@ async def get_candidate_detail(candidate_id: int):
                 "parameters": {
                     k: props.get(k, 0)
                     for k in [
-                        "usgs_mean_q_cfs", "flow_velocity_ms", "strahler_order",
+                        "usgs_mean_q_cfs", "flow_velocity_ms", "stream_order",
                         "catchment_area_km2", "flood_q10_cfs", "seasonal_cv",
                         "runoff_coeff_C",
                     ]
@@ -203,7 +203,7 @@ async def get_weights():
             },
             "flow": {
                 "usgs_mean_q_cfs": 0.22, "flow_velocity_ms": 0.16,
-                "strahler_order": 0.14, "catchment_area_km2": 0.18,
+                "stream_order": 0.14, "catchment_area_km2": 0.18,
                 "flood_q10_cfs": 0.14, "seasonal_cv": 0.10,
                 "runoff_coeff_C": 0.06,
             },

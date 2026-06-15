@@ -44,8 +44,10 @@ def get_drinking_water_intakes(state="NC"):
 
 def water_intake_score(candidate_point_utm, intakes_gdf, max_dist_km=50):
     """
-    Score based on downstream drinking water intakes.
-    Exponential decay: score = sum(exp(-d/10)) for each intake within 50km.
+    Proximity score to drinking-water intakes.
+    L5: this is **omnidirectional proximity, not flow-gated** — it sums exp(-d/10)
+    over every intake within 50 km regardless of upstream/downstream direction.
+    Flow-gated (network-distance) weighting is future work.
     """
     if intakes_gdf.empty:
         return 0.0
@@ -264,19 +266,42 @@ def superfund_proximity_score(candidate_point_utm, catchment_bbox):
     return inverse_distance_score(candidate_point_utm, sf, half_decay_m=500)
 
 
-# ── 6.5 Ocean/Estuary Proximity ─────────────────────────────────────
+# ── 6.5 Ocean/Estuary and Beach Proximity (H5 — must be distinct) ───
+
+# Reference points (lat, lon). The estuary and beach references are genuinely
+# different locations, so the two distances are decorrelated rather than the old
+# `beach = estuary * 1.1` copy that double-counted one signal at weight 0.26.
+NC_ESTUARY_REF = (35.05, -76.05)   # Pamlico Sound (estuary system)
+NC_BEACH_REF = (34.21, -77.79)     # Wrightsville Beach (recreational beach)
+
+
+def _haversine_km(lat1, lon1, lat2, lon2):
+    """Great-circle distance in km."""
+    R = 6371.0088
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) ** 2
+         + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2))
+         * math.sin(dlon / 2) ** 2)
+    return 2 * R * math.asin(min(1.0, math.sqrt(a)))
+
 
 def estimate_estuary_distance_km(lat, lon):
     """
-    Rough estimate of distance to nearest ocean/estuary from coordinates.
-    For NC: Pamlico Sound / Atlantic coast is roughly at -76.5 lon.
+    Great-circle distance to the nearest NC estuary reference (Pamlico Sound).
+    H5: a real haversine — the old code set `coast_lat = lat`, killing the dlat
+    term so the result was longitude-only and didn't change with latitude.
     """
-    # Simple great-circle approximation to NC coast
-    coast_lon = -76.5
-    coast_lat = lat  # approximate same latitude
-    dlat = (lat - coast_lat) * 111.32
-    dlon = (lon - coast_lon) * 111.32 * math.cos(math.radians(lat))
-    return math.sqrt(dlat ** 2 + dlon ** 2)
+    return _haversine_km(lat, lon, *NC_ESTUARY_REF)
+
+
+def estimate_beach_distance_km(lat, lon):
+    """
+    Great-circle distance to a recreational-beach reference (Wrightsville Beach).
+    H5: genuinely distinct from the estuary reference, so estuary_dist and
+    beach_dist are no longer perfectly collinear.
+    """
+    return _haversine_km(lat, lon, *NC_BEACH_REF)
 
 
 # ── 6.6 Tourism / Recreation Value ──────────────────────────────────
@@ -342,7 +367,7 @@ def compute_impact_features(candidate_row, intakes_gdf=None, bbox=None):
             get_ej_index, catchment_poly, default=0.5
         ),
         "estuary_dist_km": estimate_estuary_distance_km(lat, lon),
-        "beach_dist_km": estimate_estuary_distance_km(lat, lon) * 1.1,  # proxy
+        "beach_dist_km": estimate_beach_distance_km(lat, lon),  # H5: distinct reference
         "tourism_amenity_density": safe_call(
             get_tourism_amenity_density, point_utm, default=1.0
         ),

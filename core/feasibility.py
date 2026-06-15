@@ -53,7 +53,7 @@ def road_access_score(dist_m):
 def get_channel_width(candidate_point_utm, stream_gdf, nbi_bridges_gdf=None):
     """
     Estimate channel width at candidate point.
-    Primary: NHD width attribute. Fallback: bridge span. Last resort: Strahler estimate.
+    Primary: NHD width attribute. Fallback: bridge span. Last resort: stream-order estimate.
     """
     if stream_gdf.empty:
         return 5.0
@@ -77,9 +77,13 @@ def get_channel_width(candidate_point_utm, stream_gdf, nbi_bridges_gdf=None):
             if bridge_len and bridge_len > 0:
                 return float(bridge_len) * 0.3048
 
-    # Method 3: Strahler-based estimate (Leopold 1964)
-    strahler = nearest_stream.get("strahler_order", 2)
-    return 2.5 * (2.5 ** int(strahler))
+    # Method 3: order-based estimate, calibrated + bounded (M1).
+    # NOTE: Leopold (1964) hydraulic geometry is W ∝ Q^~0.5, NOT an exponential in
+    # stream order. The old 2.5·2.5^order exploded (order 5 → 244 m) and self-tripped
+    # the width hard gate, silently deleting large streams. Bounded power law instead:
+    # order 1→3.0, 2→6.4, 3→10.0, 4→13.7, 5→17.6 m — always below the width gate.
+    order = int(nearest_stream.get("stream_order", 2))
+    return float(min(40.0, 3.0 * order ** 1.1))
 
 
 def channel_width_score(width_m):

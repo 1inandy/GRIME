@@ -253,7 +253,7 @@ where:
 - **R** is the hydraulic radius (m) = A_cross / P_wetted, approximated as rectangular channel: R = (W × D) / (W + 2D), where depth D ≈ 0.3W (bankfull approximation)
 - **S** is the channel slope (dimensionless), computed from DEM as elevation difference over a 100m reach: S = (Z_here − Z_downstream) / 100, clamped to minimum 0.0001
 
-A continuity cross-check is performed: V_continuity = Q / A_cross, where Q is the USGS-measured discharge converted to m³/s. The final velocity estimate is the geometric mean of Manning's and continuity estimates:
+A continuity estimate is blended in: V_continuity = Q_site / A_cross, where Q_site is the gauge discharge **area-scaled to the candidate's own catchment** (M4: site-specific, now that catchment area is real km²) and converted to m³/s. The final velocity is the geometric mean of the Manning and continuity estimates (a soft blend, not a fully independent measurement):
 
 ```
 V_final = sqrt(V_Manning · V_continuity)
@@ -548,7 +548,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
     "impervious_pct": 51.8,
     "usgs_mean_q_cfs": 37.0,
     "flow_velocity_ms": 1.377,
-    "strahler_order": 5,
+    "stream_order": 5,
     "catchment_area_km2": 63.5,
     "channel_width_m": 13.1,
     "ej_index": 0.595,
@@ -581,11 +581,11 @@ Fields: **n**=name, **c**=ISO country code, **p**=population, **la**=latitude, *
 | 7 | Litter complaint density | reports/km² | Generation | 0.10 | Durham 311 / local GIS |
 | 8 | USGS mean discharge Q | cfs | Flow | 0.22 | USGS NWIS |
 | 9 | Flow velocity | m/s | Flow | 0.16 | Manning's eq from DEM |
-| 10 | Strahler stream order | ordinal | Flow | 0.14 | Computed from topology |
+| 10 | Stream order (confluence-degree heuristic) | ordinal | Flow | 0.14 | Network topology (H3: not true Strahler) |
 | 11 | Catchment area A | km² | Flow | 0.18 | pysheds DEM analysis |
 | 12 | Flood return period Q10 | cfs | Flow | 0.14 | USGS StreamStats |
 | 13 | Seasonal flow variability | CV | Flow | 0.10 | USGS NWIS annual stats |
-| 14 | Runoff coefficient C | dimensionless | Flow | 0.06 | NLCD k-means |
+| 14 | Runoff coefficient C | dimensionless | Flow | 0.06 | Linear impervious→C (C=0.05+0.009·I) |
 | 15 | Drinking water intake proximity | exp(-d/10) | Impact | 0.22 | EPA SDWIS / ECHO |
 | 16 | Protected area proximity | score | Impact | 0.16 | USGS PAD-US |
 | 17 | Environmental justice index | [0,1] | Impact | 0.18 | Census ACS (EJSCREEN demographic-index reconstruction) |
@@ -908,7 +908,7 @@ No formal benchmarks have been run. Times above are observed during development.
 | **Hard gate** | Binary feasibility check that eliminates a candidate |
 | **NPDES** | National Pollutant Discharge Elimination System |
 | **NBI** | National Bridge Inventory |
-| **Strahler order** | Stream classification: order 1 = headwater, higher = larger |
+| **Stream order** | Confluence-degree heuristic (H3): order 1 = headwater/leaf, higher = more junctions. Not true Strahler. |
 | **Sub-score** | Intermediate score (0–100) for one parameter family |
 | **TRI** | Toxic Release Inventory |
 
