@@ -21,7 +21,7 @@ GRIME is a multi-parameter optimization engine that identifies the best location
 * **Impact**: What will happen downstream?
 * **Feasibility**: Can we even install a net?
 
-These combine into a single composite score from 0 to 100 via a two-level weighted architecture (detailed in the scoring section below). Sites where deployment is physically impossible, because of channels too wide to span, currents too fast for anchoring, or confirmed private land, are eliminated by hard gates before scoring begins. The model also explicitly weights environmental justice through EPA EJSCREEN data, prioritizing sites that serve overburdened communities.
+These combine into a single composite score from 0 to 100 via a two-level weighted architecture (detailed in the scoring section below). Sites where deployment is physically impossible, because of channels too wide to span, currents too fast for anchoring, or confirmed private land, are eliminated by hard gates before scoring begins. The model also explicitly weights environmental justice through a demographic index reconstructed from live Census ACS data (EPA decommissioned EJSCREEN in 2025), prioritizing sites that serve overburdened communities.
 
 The system works in two modes. The **research pipeline** ingests real 10m elevation data from USGS 3DEP, runs a full computational hydrology pipeline to extract stream networks, then scores every candidate point using live data from federal APIs (USGS, EPA, Census). The **interactive dashboard** lets anyone click on any of 89,518 places across 239 countries, fetches real waterway geometry from OpenStreetMap, generates and scores net placements client-side, and renders color-coded results on a Mapbox map in under 5 seconds.
 
@@ -102,7 +102,7 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 **Cross-validated flow velocity.** Manning's equation on real DEM-derived slopes, cross-checked against USGS gauge data via the geometric mean. Neither estimate is trusted alone.
 
-**Environmental justice as a first-class parameter.** The model explicitly weights whether a candidate site serves an overburdened community, using EPA EJSCREEN data that most trash interception projects ignore entirely.
+**Environmental justice as a first-class parameter.** The model explicitly weights whether a candidate site serves an overburdened community, using an environmental-justice index reconstructed from Census ACS demographics (EPA decommissioned EJSCREEN in 2025) that most trash interception projects ignore entirely.
 
 ## What we learned
 
