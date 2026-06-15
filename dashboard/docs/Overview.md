@@ -4,26 +4,26 @@ When Abhav visited his dad's small river town in India, he noticed a problem tha
 
 The locals weren't ignoring it, but they couldn't fix it either. The river was too wide to entirely block, the current too strong for makeshift barriers, and no one could tell them where intervention would actually make a difference. Nets that were tried downstream tore within weeks, while those upstream sat in the wrong spots entirely.
 
-That experience stuck with him, and data shows how this problem isn't just localized: over 1,000 rivers worldwide carry roughly 80% of ocean-bound riverine plastic — Meijer et al. (2021) attribute the 80% cumulative figure to 1,656 rivers — most of them too irregular for conventional netting. The question then became:
+That experience stuck with him, and data shows how this problem isn't just localized: over 1,500 rivers across the world are responsible for 80% of all ocean-bound plastic, most of them too irregular for conventional netting. The question then became:
 
 > **If we can't net every river, and the nets you do place keep failing, how do you decide where your limited resources will capture the most plastic?**
 
-Today, we introduce GRIME: A solution to that very question. Not bigger nets or more nets, but the right ones in the right places. GRIME extends the methodology of the WaterGate model (Anand, Cheng, Rose, 2023)[^1], which scored flood-prone locations on three parameters: catchment area, runoff coefficient, and discharge. GRIME redirects that hydrological framework toward trash accumulation prediction and expands it from 3 to 27 parameters across 6 families, adding feasibility constraints, environmental justice weighting, and a two-level scoring architecture.
+Today, we introduce GRIME: A solution to that very question. Not bigger nets or more nets, but the right ones in the right places. GRIME extends the methodology of the WaterGate model (Cheng, Anand, Rose, 2023)[^1], which scored flood-prone locations on three parameters: catchment area, runoff coefficient, and discharge. GRIME redirects that hydrological framework toward trash accumulation prediction and expands it from 3 to 28 parameters across 6 families, adding feasibility constraints, environmental justice weighting, and a two-level scoring architecture.
 
 [^1]: N. Anand, G. Cheng, T. Rose, "WaterGate: An Accessible Computational Analysis of Flooding Patterns," 2023. https://github.com/navvye/WaterGate
 
 ## What it does
 
-GRIME is a multi-parameter optimization engine that identifies the best locations to deploy trash interception nets in waterways, anywhere on Earth. Rather than guessing where to put nets or relying on expensive manual surveys, GRIME evaluates every candidate site using 27 geospatial parameters organized into 6 parameter families, which aggregate into 4 interpretable sub-scores:
+GRIME is a multi-parameter optimization engine that identifies the best locations to deploy trash interception nets in waterways, anywhere on Earth. Rather than guessing where to put nets or relying on expensive manual surveys, GRIME evaluates every candidate site using 28 geospatial parameters organized into 6 parameter families, which aggregate into 4 interpretable sub-scores:
 
 * **Generation**: Is trash entering here?
 * **Flow**: How does water move it?
 * **Impact**: What will happen downstream?
 * **Feasibility**: Can we even install a net?
 
-These combine into a single composite score from 0 to 100 via a two-level weighted architecture (detailed in the scoring section below). Sites where deployment is physically impossible, because of channels too wide to span, currents too fast for anchoring, or confirmed private land, are eliminated by hard gates before scoring begins. The model also explicitly weights environmental justice through a demographic index reconstructed from live Census ACS data (EPA decommissioned EJSCREEN in 2025), prioritizing sites that serve overburdened communities.
+These combine into a single composite score from 0 to 100 via a two-level weighted architecture (detailed in the scoring section below). Sites where deployment is physically impossible, because of channels too wide to span, currents too fast for anchoring, or confirmed private land, are eliminated by hard gates before scoring begins. The model also explicitly weights environmental justice through EPA EJSCREEN data, prioritizing sites that serve overburdened communities.
 
-The system works in two modes. The **research pipeline** ingests real 10m elevation data from USGS 3DEP, runs a full computational hydrology pipeline to extract stream networks, then scores every candidate point using live data from federal APIs (USGS, EPA, Census). The **interactive dashboard** lets anyone click on any of 89,518 places across 239 countries, fetches real waterway geometry from OpenStreetMap, generates and scores net placements client-side, and renders color-coded results on a Mapbox map in under 5 seconds.
+The system works in two modes. The **research pipeline** ingests real 10m elevation data from USGS 3DEP, runs a full computational hydrology pipeline to extract stream networks, then scores every candidate point using live data from six free, keyless federal APIs (USGS, EPA, Census). The **interactive dashboard** lets anyone click on any of 108,772 cities across 240 countries, fetches real waterway geometry from OpenStreetMap, generates and scores net placements client-side, and renders color-coded results on a Mapbox map in under 5 seconds.
 
 The output is a ranked list of deployment sites with sub-score breakdowns and parameter evidence for each one.
 
@@ -35,7 +35,7 @@ We built a DEM-based hydrology engine using `pysheds` that takes raw 10m elevati
 
 ### Parameter Computation
 
-Each candidate is evaluated on 27 parameters pulled from five live federal APIs (USGS NWIS, EPA ECHO, EPA TRI, Census ACS, USGS StreamStats) plus the USGS PAD-US dataset. The environmental-justice index is reconstructed from Census ACS demographics because EPA decommissioned EJSCREEN in 2025. Flow velocity is estimated using Manning's equation applied to DEM-derived slope and channel geometry:
+Each candidate is evaluated on 28 parameters pulled from six federal APIs (USGS NWIS, EPA ECHO, EPA EJSCREEN, EPA TRI, Census ACS, USGS PAD-US). Flow velocity is estimated using Manning's equation applied to DEM-derived slope and channel geometry:
 
 **V = (1/n) · R²ᐟ³ · S¹ᐟ²**
 
@@ -43,7 +43,7 @@ where *n* is Manning's roughness coefficient (selected by channel type, ranging 
 
 **R = (W × D) / (W + 2D)**
 
-where *W* is channel width and *D ≈ 0.3W* (bankfull approximation). A continuity estimate (gauge discharge area-scaled to the candidate's catchment, divided by the cross-section) is blended in, and the final velocity estimate is the geometric mean:
+where *W* is channel width and *D ≈ 0.3W* (bankfull approximation). A continuity cross-check is performed against USGS gauge data, and the final velocity estimate is the geometric mean:
 
 **V_final = √(V_Manning · V_continuity)**
 
@@ -55,7 +55,7 @@ where *dᵢ* is the distance to source *i* and *h* is the half-decay distance (5
 
 ### Scoring Architecture
 
-We designed a two-level weighted scoring system: 27 parameters aggregate into 4 interpretable sub-scores, which combine via a second weight layer into the composite. This structure has a specific advantage. A city planner can look at a candidate and immediately see "high generation, low feasibility" without needing to parse 27 individual numbers.
+We designed a two-level weighted scoring system: 28 parameters aggregate into 4 interpretable sub-scores, which combine via a second weight layer into the composite. This structure has a specific advantage. A city planner can look at a candidate and immediately see "high generation, low feasibility" without needing to parse 28 individual numbers.
 
 To test whether top-ranked sites are robust to our specific weight choices, the system performs Monte Carlo sensitivity analysis. We sample 50 perturbed weight vectors from a Dirichlet distribution:
 
@@ -90,19 +90,19 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 **Channel width estimation.** Fewer than 5% of OSM waterways have width tags. We built a heuristic estimator based on waterway type, but it's an approximation that affects feasibility scoring reliability.
 
-**API rate limits and timeouts.** The Python pipeline makes sequential calls to several federal APIs per candidate site. We wrapped every external call in a `safe_call()` function with fallback defaults so one slow API doesn't crash the whole pipeline.
+**API rate limits and timeouts.** The Python pipeline makes sequential calls to six federal APIs per candidate site. We wrapped every external call in a `safe_call()` function with fallback defaults so one slow API doesn't crash the whole pipeline.
 
 ## Accomplishments that we're proud of
 
-**Global coverage, not a single demo.** The dashboard works for 89,518 places in 239 countries. Click Lagos, click Jakarta, click Durham: it fetches real waterway data and scores candidate sites in seconds.
+**Global coverage, not a single demo.** The dashboard works for 108,772 cities in 240 countries. Click Lagos, click Jakarta, click Durham: it fetches real waterway data and scores candidate sites in seconds.
 
 **Fully reproducible.** Every data source we use is free and requires no API keys. The entire system can be reproduced by anyone with a Python environment and a browser.
 
 **Interpretable by design.** We deliberately chose a two-level scoring architecture over a black-box model, because the people who would actually deploy nets need to understand and trust the recommendations, not just receive a number.
 
-**Blended flow velocity.** Manning's equation on real DEM-derived slopes, blended (geometric mean) with an area-scaled continuity estimate from USGS gauge discharge. The two share the cross-section geometry, so this is a soft blend rather than a fully independent cross-check.
+**Cross-validated flow velocity.** Manning's equation on real DEM-derived slopes, cross-checked against USGS gauge data via the geometric mean. Neither estimate is trusted alone.
 
-**Environmental justice as a first-class parameter.** The model explicitly weights whether a candidate site serves an overburdened community, using an environmental-justice index reconstructed from Census ACS demographics (EPA decommissioned EJSCREEN in 2025) that most trash interception projects ignore entirely.
+**Environmental justice as a first-class parameter.** The model explicitly weights whether a candidate site serves an overburdened community, using EPA EJSCREEN data that most trash interception projects ignore entirely.
 
 ## What we learned
 

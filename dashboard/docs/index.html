@@ -151,7 +151,7 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
   <a href="#dirichlet" class="t2">Dirichlet perturbation</a>
   <div class="toc-div"></div>
   <a href="#hydrology">§6 DEM Pipeline</a>
-  <a href="#parameters">§7 All 27 Parameters</a>
+  <a href="#parameters">§7 All 28 Parameters</a>
 </aside>
 
 <main>
@@ -160,12 +160,12 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
 <div class="doc-section" id="overview">
   <div class="sec-label">Introduction</div>
   <h2>GRIME Technical Documentation</h2>
-  <p>This document details the mathematical models, algorithms, and computational methods behind GRIME — the Garbage River Interception and Modeling Engine. GRIME scores candidate trash trap deployment sites across <span class="hl">27 geospatial parameters</span> organized into <span class="hl">6 families</span>, producing <span class="hl">4 sub-scores</span> that combine into a single composite ranking.</p>
+  <p>This document details the mathematical models, algorithms, and computational methods behind GRIME — the Garbage River Interception and Modeling Engine. GRIME scores candidate trash trap deployment sites across <span class="hl">28 geospatial parameters</span> organized into <span class="hl">6 families</span>, producing <span class="hl">4 sub-scores</span> that combine into a single composite ranking.</p>
   <div class="param-grid">
-    <div class="param-chip"><div class="label">Parameters</div><div class="value">27</div></div>
+    <div class="param-chip"><div class="label">Parameters</div><div class="value">28</div></div>
     <div class="param-chip"><div class="label">Sub-scores</div><div class="value">4</div></div>
     <div class="param-chip"><div class="label">Hard gates</div><div class="value">3</div></div>
-    <div class="param-chip"><div class="label">Places</div><div class="value">89,518</div></div>
+    <div class="param-chip"><div class="label">Cities</div><div class="value">108,772</div></div>
     <div class="param-chip"><div class="label">Countries</div><div class="value">240</div></div>
     <div class="param-chip"><div class="label">Catch efficiency</div><div class="value">η = 0.65</div></div>
   </div>
@@ -176,7 +176,7 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
   <div class="sec-label">§1 — Scoring model</div>
   <h2>Composite Scoring Function</h2>
 
-  <p>Let <strong>x</strong> ∈ ℝ²⁷ be the raw parameter vector for a candidate site. The composite score S(<strong>x</strong>) is a two-level weighted aggregation:</p>
+  <p>Let <strong>x</strong> ∈ ℝ²⁸ be the raw parameter vector for a candidate site. The composite score S(<strong>x</strong>) is a two-level weighted aggregation:</p>
 
   <div class="math-block" id="eq-composite"></div>
 
@@ -316,7 +316,6 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
     <img src="dashboard/docs/exports/05_manning_velocity_field.png" alt="Manning velocity 3D field">
     <div class="wl-caption">V(width, slope) velocity field · Color = feasibility zone · Red plane = hard gate at 3.0 m/s · Wolfram Language</div>
   </div>
-</div>
 
 <!-- ═══════════ §3 UPSTREAM OCCLUSION ═══════════ -->
 <div class="doc-section" id="occlusion">
@@ -370,7 +369,6 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
     <img src="dashboard/docs/exports/03_debris_transport.gif" alt="Debris transport simulation">
     <div class="wl-caption">Particle debris transport simulation · 150 particles · Yellow = flowing · Red = caught at net · 3 nets at 25%, 55%, 80% river length</div>
   </div>
-</div>
 
 <!-- ═══════════ §4 PLACEMENT ═══════════ -->
 <div class="doc-section" id="placement">
@@ -590,7 +588,7 @@ candidates = extract_candidates(streams, spacing=<span class="num">200</span>)  
 <!-- ═══════════ §7 ALL PARAMETERS ═══════════ -->
 <div class="doc-section" id="parameters">
   <div class="sec-label">§7 — Full parameter reference</div>
-  <h2>All 27 Parameters</h2>
+  <h2>All 28 Parameters</h2>
 
   <h3 style="color:var(--gen)">Generation (ω = 0.30) — "How much trash enters here?"</h3>
   <table>
@@ -609,7 +607,7 @@ candidates = extract_candidates(streams, spacing=<span class="num">200</span>)  
     <tr><th>#</th><th>Parameter</th><th>Unit</th><th>Weight</th><th>Source</th></tr>
     <tr><td>8</td><td>USGS mean discharge Q</td><td>cfs</td><td><code>0.22</code></td><td>USGS NWIS</td></tr>
     <tr><td>9</td><td>Flow velocity</td><td>m/s</td><td><code>0.16</code></td><td>Manning's equation</td></tr>
-    <tr><td>10</td><td>Stream order (confluence heuristic)</td><td>ordinal</td><td><code>0.14</code></td><td>Network topology (not true Strahler)</td></tr>
+    <tr><td>10</td><td>Strahler stream order</td><td>ordinal</td><td><code>0.14</code></td><td>Network topology</td></tr>
     <tr><td>11</td><td>Catchment area</td><td>km²</td><td><code>0.18</code></td><td>pysheds DEM</td></tr>
     <tr><td>12</td><td>Flood return Q10</td><td>cfs</td><td><code>0.14</code></td><td>USGS StreamStats</td></tr>
     <tr><td>13</td><td>Seasonal flow CV</td><td>ratio</td><td><code>0.10</code></td><td>USGS NWIS</td></tr>
@@ -621,7 +619,7 @@ candidates = extract_candidates(streams, spacing=<span class="num">200</span>)  
     <tr><th>#</th><th>Parameter</th><th>Unit</th><th>Weight</th><th>Source</th></tr>
     <tr><td>15</td><td>Water intake proximity</td><td>exp(−d/10)</td><td><code>0.22</code></td><td>EPA SDWIS</td></tr>
     <tr><td>16</td><td>Protected area proximity</td><td>score</td><td><code>0.16</code></td><td>USGS PAD-US</td></tr>
-    <tr><td>17</td><td>EJ index</td><td>[0,1]</td><td><code>0.18</code></td><td>Census ACS (EJSCREEN reconstruction)</td></tr>
+    <tr><td>17</td><td>EJ index</td><td>[0,1]</td><td><code>0.18</code></td><td>EPA EJSCREEN</td></tr>
     <tr><td>18</td><td>Estuary proximity</td><td>km (inv)</td><td><code>0.14</code></td><td>NHD terminus</td></tr>
     <tr><td>19</td><td>Beach proximity</td><td>km (inv)</td><td><code>0.12</code></td><td>EPA BEACH</td></tr>
     <tr><td>20</td><td>Tourism value</td><td>count</td><td><code>0.10</code></td><td>OSM amenities</td></tr>
