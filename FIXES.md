@@ -117,3 +117,19 @@ Environment note: pysheds/py3dep/rioxarray NOT installed here; Census ACS now re
 - H5: corr(estuary,beach) = **−0.979** over a candidate grid (<0.99); estuary changes with latitude.
 - M1: width by order 1..5 = [3.0, 6.4, 10.0, 13.8, 17.6] — all < 50 m gate.
 - H2: `score_candidates.py` run twice → **byte-identical**; regenerated `candidates.geojson` = 26 sites, catchment 3.69–50.69 km², composite 27.26–68.26 (all ∈[0,100]), generation_score 13.9–82.7 (varies — C2), estuary/beach corr 0.35, `stream_order` (no `strahler_order`); API loads it (stats + 27-param detail trees populate). Offline provenance: 27/27 vary.
+
+## Phase 4 — Dashboard honesty & determinism (JS)
+
+| ID | Fix | Status |
+|----|-----|--------|
+| C3 | Replaced the single sequential `R=seededRand(seed+7777)` with a **per-candidate RNG seeded by the site's own coordinates** (`hash01(lat,lon)`), so a site's values are identical across re-renders and loading more streams only adds sites. Killed the pure-`Math.random` Impact terms (water-intake/protected-area now deterministic from geometry + per-candidate `pr()`). Fixed the Generation impervious weight 0.40 → documented **0.20** (+ added a road-density term at 0.10). | ✅ |
+| M7-JS | Added `computeWayOrder(streams)` chaining each river's OSM ways head→tail by endpoint matching (≤60 m); occlusion now discounts genuinely-downstream sites by `(wayOrder, coordIdx)` river-wide, and portals neither occlude nor get occluded. | ✅ |
+| H6 | Added an on-panel caveat: "Demo values are model estimates from OSM geometry … not live gauge/Census data," linking to Docs; landing dash-sub already reworded to "Real OSM waterway geometry · Upstream-occlusion scoring"; hero SVG mock composites lowered 87/74/71 → 66/61/57 to the explorer's real range. | ✅ |
+| M3 | README §6.2 rewritten: greedy + multiplicative upstream occlusion `(1−η)^k`, η=0.65 (the real algorithm, a selling point), real spacing (500 m same / 300 m cross), and an explicit "separate honestly-labeled heuristic, not the Python model" note; ADR-3 reworded from "parallels the Python implementation" to "a separate simplified heuristic." | ✅ |
+| H3 (UI) | Detail-panel chip "Strahler" → "Stream order"; candidate property `strahler` → `stream_order`. | ✅ |
+
+**Verification / proof:**
+- `node --check` clean (landing + explorer); div balance even (index 57/57, explore 81/81).
+- Determinism test (functions extracted from the file): same `(lat,lon)` → **identical** `pr()` draws regardless of set size / interleaving.
+- Occlusion direction test: 2-way river with the **downstream way created first** → `computeWayOrder` ranks upstream way 0, downstream 1; all true-downstream sites occluded, **no** upstream site wrongly occluded.
+- `grep` confirms no `Math.random()` anywhere in the explorer and no orphan `R()`/`c.strahler`.

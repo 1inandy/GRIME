@@ -399,47 +399,61 @@ FUNCTION condition_dem(dem):
 
 **Output:** Ranked array of candidate objects with scores and parameters
 
+> **This is a separate, honestly-labeled heuristic, not the Python model.** The
+> explorer scores client-side with clamped closed-form formulas (no MinMax), using
+> OSM-estimated widths and **deterministic per-candidate values seeded by each
+> site's own coordinates** (so rankings are stable across pan/zoom — no
+> `Math.random()` for any named quantity). It is a fast interactive approximation;
+> the Python pipeline (§5–6.1) is the real 27-parameter MinMax model.
+
 ```
 FUNCTION generate_candidates(streams, pop, country):
     // ── Phase 1: Constraint satisfaction ──
-    MIN_SPACE ← 120m
+    SAME_STREAM_SPACE ← 500m   // wide gaps along one waterway (occlusion makes
+    CROSS_STREAM_SPACE ← 300m  // a 2nd net 500m downstream largely redundant)
     MAX_WIDTH ← 30m
     placed ← []
     valid_positions ← []
 
     FOR EACH stream IN streams:
         IF stream.width > MAX_WIDTH: CONTINUE
-        cap ← traffic_capacity(stream)
+        cap ← waterway_capacity(stream)
         count_on_stream ← 0
-        dist_since_last ← MIN_SPACE
+        dist_since_last ← SAME_STREAM_SPACE
 
         FOR EACH point IN stream.coords:
             dist_since_last += haversine(previous_point, point)
-            IF dist_since_last < MIN_SPACE: CONTINUE
-            IF any p in placed where haversine(p, point) < MIN_SPACE: CONTINUE
+            IF dist_since_last < SAME_STREAM_SPACE: CONTINUE
+            IF any p in placed where haversine(p, point) < CROSS_STREAM_SPACE: CONTINUE
             IF count_on_stream >= cap: CONTINUE
-
-            placed.add(point)
-            count_on_stream++
-            dist_since_last ← 0
+            placed.add(point); count_on_stream++; dist_since_last ← 0
             valid_positions.add(point with metadata)
 
-    // ── Phase 2: Score every valid position ──
-    scored ← []
+    // ── Phase 2: Score every valid position (deterministic, coord-seeded) ──
     FOR EACH pos IN valid_positions:
-        compute 27 parameters (simplified model)
-        compute 4 sub-scores
-        compute composite
-        scored.add(pos with scores)
+        pr ← seeded_rng(hash(pos.lat, pos.lon) + seed)   // STABLE per site
+        compute clamped sub-scores + composite using pr() (no Math.random)
 
-    // ── Phase 3: Risk-percentile selection ──
-    scored.sort_by(composite, descending)
-    pctile ← population_scaled_percentile(pop)
-    cutoff ← max(5, ceil(len(scored) * pctile))
-    RETURN scored[0:cutoff]
+    // ── Phase 3: Greedy selection with multiplicative upstream occlusion ──
+    // NOT a static top-N%. Each time we place a net we discount every still-unplaced
+    // candidate that is DOWNSTREAM on the same river (chained across OSM ways by
+    // computeWayOrder, ordered by (wayOrder, coordIdx)) — a net already catches most
+    // debris, so a downstream net only sees the passthrough (1 − η)^k of trash.
+    η ← 0.65                                  // catch efficiency per net
+    target ← min(250, max(5, ceil(len * population_percentile)))
+    WHILE selected < target:
+        sort remaining by current composite; best ← pop highest; selected.add(best)
+        FOR EACH downstream c on best's river:
+            c.generation ← c.raw_generation × (1 − η)^(nets_upstream_on_river)
+            recompute c.composite
+    RETURN selected
 ```
 
-**Complexity:** Phase 1 is O(n × m) where n is total coordinate points and m is placed candidates. Phase 2 is O(k) where k is valid positions. Phase 3 is O(k log k) for sorting. In practice k < 200 and the entire function runs in <100ms.
+**Complexity:** Phase 1 is O(n × m); Phase 2 is O(k); the greedy Phase 3 is
+O(target × k). In practice k < 250 and the whole function runs in <100 ms.
+Upstream occlusion (η = 0.65 compounding) is the original part of the system — it
+spreads nets across waterways instead of clustering them on the single highest-trash
+reach. See §6.3 for the robustness analysis.
 
 ### 6.3 Sensitivity Analysis (Dirichlet Monte Carlo)
 
@@ -510,7 +524,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 **Context:** pysheds/rasterio have C dependencies that fail on Windows. Dashboard must work by opening one HTML file.
 
-**Chosen approach:** Simplified JS scoring model that parallels the Python implementation but uses OSM-estimated widths and seeded random parameter generation rather than real API data.
+**Chosen approach:** A **separate, simplified JS heuristic** — not a parity port of the Python model. It uses clamped closed-form formulas (no MinMax normalization), OSM-estimated widths, and deterministic per-candidate values seeded by each site's own coordinates (stable across re-render). It shares the *framing* — four sub-scores and the greedy upstream-occlusion placement — but the numbers are model estimates from OSM geometry, not the Python pipeline's API-driven, MinMax-normalized output. The explorer UI labels them as such, and the Python pipeline remains the source of truth for real scoring.
 
 **Consequences:** Dashboard scores are approximate. Python pipeline is the authoritative scoring implementation.
 
