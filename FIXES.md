@@ -133,3 +133,18 @@ Environment note: pysheds/py3dep/rioxarray NOT installed here; Census ACS now re
 - Determinism test (functions extracted from the file): same `(lat,lon)` → **identical** `pr()` draws regardless of set size / interleaving.
 - Occlusion direction test: 2-way river with the **downstream way created first** → `computeWayOrder` ranks upstream way 0, downstream 1; all true-downstream sites occluded, **no** upstream site wrongly occluded.
 - `grep` confirms no `Math.random()` anywhere in the explorer and no orphan `R()`/`c.strahler`.
+
+## Phase 5 — Reproducibility, SSOT, tests, deploy hygiene
+
+| ID | Fix | Status |
+|----|-----|--------|
+| SSOT | Created `model.json` (27 weights, sub-score weights, hard gates, spacing, occlusion η, runoff formula, feasibility curves, EJ source) + `scripts/check_model.py` asserting the Python constants/curves match it (fails loudly on drift). Makes M2/M3 contradictions structurally hard to reintroduce. | ✅ |
+| L9 | Added `tests/test_grime.py` — 16 pytest property tests over the real scoring code (see list). | ✅ |
+| M8 | CORS: default `["*"]` for the local public-data demo, but now reads `GRIME_ALLOWED_ORIGIN` (comma-separated) to lock to the deploy origin(s); commented + in `.env.example`. | ✅ |
+| M2 | README §16 failure-mode table corrected: constant column → sklearn maps to **0** (not 0.5) → `compute_subscore` drops + renormalizes (all-constant → 50); also updated the Overpass "procedural fallback" row (real behavior = "no waterway data" state), added Census-key + dead-EJSCREEN rows. README §18 testing section rewritten to reflect the real suite. | ✅ |
+| Docs | Fixed the docs/index.html div imbalance (closed 2 unclosed `<div>`s after the Manning + debris figures → 102/102); runtime claims already reconciled in §15 (dashboard ~3 s · pipeline 30–90 s + 3–5 min). | ✅ |
+
+**Verification / proof:**
+- `python3 scripts/check_model.py` → "model.json matches code: 27 parameters, weights + gates + curves consistent."
+- `pytest tests/` → **16 passed**.
+- `py_compile core/*.py api/main.py scripts/*.py` clean; div balance even (index 57/57, explore 81/81, **docs 102/102**).

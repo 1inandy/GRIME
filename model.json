@@ -1,0 +1,127 @@
+{
+  "_comment": "Single source of truth for GRIME's scoring model (Phase 5). scripts/check_model.py asserts the Python constants match this; keep them in sync.",
+  "n_parameters": 27,
+  "subscore_weights": {
+    "generation": 0.3,
+    "flow": 0.25,
+    "impact": 0.3,
+    "feasibility": 0.15
+  },
+  "parameter_weights": {
+    "generation": {
+      "population_density": 0.18,
+      "impervious_pct": 0.2,
+      "road_density_km_km2": 0.1,
+      "tri_facility_density": 0.18,
+      "npdes_points": 0.12,
+      "cso_density": 0.12,
+      "litter_complaint_density": 0.1
+    },
+    "flow": {
+      "usgs_mean_q_cfs": 0.22,
+      "flow_velocity_ms": 0.16,
+      "stream_order": 0.14,
+      "catchment_area_km2": 0.18,
+      "flood_q10_cfs": 0.14,
+      "seasonal_cv": 0.1,
+      "runoff_coeff_C": 0.06
+    },
+    "impact": {
+      "water_intake_score": 0.22,
+      "protected_area_score": 0.16,
+      "ej_index": 0.18,
+      "estuary_dist_km": 0.14,
+      "beach_dist_km": 0.12,
+      "tourism_amenity_density": 0.1,
+      "superfund_score": 0.08
+    },
+    "feasibility": {
+      "road_access_score": 0.25,
+      "channel_width_score": 0.2,
+      "velocity_feasibility": 0.2,
+      "land_ownership": 0.15,
+      "bank_slope_score": 0.1,
+      "bridge_proximity_bonus": 0.1
+    }
+  },
+  "hard_gates": {
+    "flow_velocity_ms_max": 3.0,
+    "channel_width_m_min": 0.5,
+    "channel_width_m_max": 50.0,
+    "land_ownership_min_exclusive": 0.0
+  },
+  "spacing_m": {
+    "pipeline_along_stream": 200,
+    "explorer_same_stream": 500,
+    "explorer_cross_stream": 300
+  },
+  "occlusion": {
+    "catch_efficiency_eta": 0.65
+  },
+  "runoff_coefficient": {
+    "formula": "C = intercept + slope * impervious_pct",
+    "intercept": 0.05,
+    "slope": 0.009,
+    "min": 0.05,
+    "max": 0.95
+  },
+  "curves": {
+    "velocity_feasibility": [
+      {
+        "v_lt": 0.05,
+        "score": 0.3
+      },
+      {
+        "v_lt": 0.3,
+        "score": 0.7
+      },
+      {
+        "v_le": 1.5,
+        "score": 1.0
+      },
+      {
+        "v_le": 2.5,
+        "score": 0.5
+      },
+      {
+        "else": 0.1
+      }
+    ],
+    "channel_width_score": [
+      {
+        "w_lt": 0.5,
+        "score": 0.0
+      },
+      {
+        "w_lt": 2.0,
+        "score": 0.5
+      },
+      {
+        "w_le": 15.0,
+        "score": 1.0
+      },
+      {
+        "w_le": 30.0,
+        "score": 0.5
+      },
+      {
+        "w_le": 50.0,
+        "score": 0.2
+      },
+      {
+        "else": 0.0
+      }
+    ]
+  },
+  "width_order_fallback": {
+    "formula": "min(40, 3.0 * order**1.1)"
+  },
+  "ej_index": {
+    "source": "Census ACS (EJSCREEN demographic-index reconstruction)",
+    "components": [
+      "pct_low_income (C17002)",
+      "pct_people_of_color (B03002)"
+    ],
+    "note": "EPA decommissioned EJSCREEN 2025-02-05"
+  }
+}

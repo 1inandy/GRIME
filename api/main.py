@@ -26,10 +26,14 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-# CORS — allow the dashboard to connect from any origin during dev
+# CORS (M8). Open by default for the public-data local demo. Before grime.world
+# serves this API publicly, set GRIME_ALLOWED_ORIGIN (comma-separated) to lock it
+# to the deploy origin(s) instead of "*".
+_allowed = os.getenv("GRIME_ALLOWED_ORIGIN", "").strip()
+_origins = [o.strip() for o in _allowed.split(",") if o.strip()] or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
