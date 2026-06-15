@@ -846,11 +846,13 @@ No formal benchmarks have been run. Times above are observed during development.
 
 | Failure | Impact | Mitigation |
 |---------|--------|-----------|
-| Overpass API down/slow | No real waterway data | Procedural fallback auto-activates |
-| EPA/USGS API timeout | Missing parameter values | `safe_call()` returns fallback defaults |
+| Overpass API down/slow | No real waterway data | Explorer shows an explicit "no waterway data" state (no procedural rivers) |
+| EPA/USGS API timeout | Missing parameter values | `safe_call()` returns fallback defaults; `summarize_provenance` flags the resulting constant columns each run |
+| Census ACS needs a key | Population/EJ fall back | `CENSUS_API_KEY` (free) enables live values; otherwise neutral defaults |
+| EPA EJSCREEN endpoint dead | EJ would be constant | EJ reconstructed from live Census ACS instead (C4, §5.9) |
 | Mapbox token missing | Map blank | Fatal for dashboard; replace token |
 | pysheds DEM fetch fails | No stream network | Fatal for Python pipeline; mock data works |
-| MinMax with identical values | Division by zero | Returns 0.5 for all candidates |
+| MinMax on a **constant column** | sklearn maps it to **0** (not 0.5), silently deleting its weight | `compute_subscore` **drops constant columns and renormalizes** the surviving weights (logged); an all-constant family returns a neutral 50 |
 
 ---
 
@@ -866,12 +868,22 @@ No formal benchmarks have been run. Times above are observed during development.
 
 ## 18. Testing Strategy
 
-**Current state: No automated tests.** Validation is:
-1. `notebooks/validate_pipeline.ipynb` — manual pipeline verification
-2. Visual inspection of stream networks in geojson.io
-3. Dashboard visual QA — verify rivers align with satellite
+**Automated tests:** `pytest tests/` — 16 property tests over the real scoring code:
+composite ∈ [0, 100]; family weights sum to 1; `compute_subscore` drops a constant
+column + renormalizes (and an all-constant family → neutral 50); hard gates remove
+the right rows; Manning velocity is monotonic in slope; the velocity favorability
+curve is peaked; occlusion `(1−η)^k` is non-increasing; estuary/beach distances are
+decorrelated; the width-order fallback never trips the gate; the EJ area-weighting
+varies across catchments; `optimize_weights` returns a valid simplex point.
 
-**Recommended if continuing:** Unit tests for `compute_subscore()`, Manning's velocity, hard gates. Property test: composite always in [0, 100].
+**Model drift guard:** `python3 scripts/check_model.py` asserts the Python constants
+match `model.json` (the single source of truth for weights, gates, and curves).
+
+**Other validation:**
+1. `notebooks/validate_pipeline.ipynb` — pipeline verification + endpoint health
+2. `scripts/healthcheck.py` — external endpoint connectivity (incl. the EJ source)
+3. `scripts/score_candidates.py` — reproducibly regenerates the scored GeoJSON
+4. Dashboard visual QA — verify rivers align with satellite imagery
 
 ---
 
