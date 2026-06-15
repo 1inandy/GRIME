@@ -75,3 +75,19 @@ Environment note: pysheds/py3dep/rioxarray NOT installed here; Census ACS now re
 
 > M2 (MinMax failure-mode doc) is intentionally deferred to Phase 5 — it must document the *post-C2* behavior (constant columns dropped + weights renormalized), which doesn't exist until Phase 3.
 > docs/index.html div imbalance (102/100) is fixed in Phase 5 (docs reconciliation).
+
+## Phase 2 — Environmental justice re-source + endpoint health (C4)
+
+| ID | Fix | Status |
+|----|-----|--------|
+| C4 | EJSCREEN broker is dead (HTTP down). Added `get_ej_index(catchment_polygon)` in `core/impact.py` reconstructing EJSCREEN's **two-component core demographic index** from live Census ACS (`C17002` % low-income + `B03002` % people-of-color, percentile-ranked within county, area-weighted over the catchment via cached `_fetch_county_demographics`). Wired into `compute_impact_features` with a per-candidate catchment proxy so EJ **varies** per site. `get_ejscreen_index` retained as a deprecated neutral-0.5 stub. | ✅ |
+| C4 (key) | Added `census_api_key()` helper + `CENSUS_API_KEY` to `.env.example`; threaded into both `get_ej_index` and `get_population_density` (Census ACS now rejects keyless requests). | ✅ |
+| C4 (health) | Added `scripts/healthcheck.py` pinging NWIS, ECHO, TRI, FRS/CERCLIS, StreamStats, Census ACS (required), TIGERweb, and the dead EJSCREEN broker (expected DOWN) — wired into `start.sh` step 3. Surfaces dead endpoints instead of silently swallowing them. | ✅ |
+| C4 (docs) | README §5.9 rewritten (ACS reconstruction + removal sources + formula); mermaid, taxonomy param 17, §11 API table, Overview.md, documentation.md, docs/index.html all updated from "EPA EJSCREEN data" → "Census ACS reconstruction (EPA decommissioned EJSCREEN 2025)"; keyless-data constraint softened. | ✅ |
+
+**Verification / proof:**
+- Synthetic 4-block-group county: catchment over the low-EJ cell → `EJ=0.100`; catchment over high-EJ cells → `EJ=0.771` → **varies across catchments**, both ∈ [0,1].
+- Demographic recipe sanity: `C17002` → %low-income 0.40; `B03002` → %POC 0.60 (matches hand calc).
+- `get_ejscreen_index(36,-78.9)` → 0.5 (broker dead).
+- Live `scripts/healthcheck.py`: EJSCREEN broker **DOWN (ConnectionError)** as expected; Census ACS flagged DOWN with "no CENSUS_API_KEY" hint; NWIS/TRI/FRS/TIGERweb UP; ECHO + StreamStats currently 404 (surfaced, not swallowed — both fall back via `safe_call`).
+- `grep` for live "EPA EJSCREEN data" claims across README+docs → **CLEAN**.

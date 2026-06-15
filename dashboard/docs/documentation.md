@@ -627,7 +627,7 @@ The Impact sub-score quantifies the downstream consequences of trash passing thr
 |---|---|---|
 | `water_intake_score` | 0.22 | EPA SDWIS |
 | `protected_area_score` | 0.16 | USGS PAD-US |
-| `ej_index` | 0.18 | EPA EJSCREEN |
+| `ej_index` | 0.18 | Census ACS (EJSCREEN demographic-index reconstruction) |
 | `estuary_dist_km` | 0.14 | NHD / OSM |
 | `beach_dist_km` | 0.12 | NHD / OSM |
 | `tourism_amenity_density` | 0.10 | OSM |
@@ -676,7 +676,7 @@ Plot[{expDecay[d], cauchyDecay[d]},
 
 ### Environmental Justice Weighting
 
-The EJ index is a composite from EPA's EJSCREEN tool. It combines demographic indicators (% minority, % low-income, % linguistically isolated) with environmental burden indicators (proximity to hazardous waste, traffic exposure, air quality). GRIME includes this as a **first-class parameter** because communities with the least political power to demand cleanup are often the most affected by waterway pollution.
+The EJ index reconstructs EPA EJSCREEN's *demographic index* from live Census ACS 5-year data, because EPA decommissioned EJSCREEN (tool, downloads, and the REST broker) on 2025-02-05. Per block group we compute % low-income (ACS `C17002`, income-to-poverty < 2.0) and % people of color (`B03002`), percentile-rank each within the county, average them into the two-component core demographic index, and area-weight over the candidate's catchment so it varies spatially. GRIME includes this as a **first-class parameter** because communities with the least political power to demand cleanup are often the most affected by waterway pollution. (EJSCREEN's six-component supplemental index — adding limited-English, < high-school, under-5, over-64 — is a documented extension.)
 
 ```Mathematica
 (* EJ Index surface across synthetic metro region *)
