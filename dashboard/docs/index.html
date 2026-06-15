@@ -607,7 +607,7 @@ candidates = extract_candidates(streams, spacing=<span class="num">200</span>)  
     <tr><th>#</th><th>Parameter</th><th>Unit</th><th>Weight</th><th>Source</th></tr>
     <tr><td>8</td><td>USGS mean discharge Q</td><td>cfs</td><td><code>0.22</code></td><td>USGS NWIS</td></tr>
     <tr><td>9</td><td>Flow velocity</td><td>m/s</td><td><code>0.16</code></td><td>Manning's equation</td></tr>
-    <tr><td>10</td><td>Strahler stream order</td><td>ordinal</td><td><code>0.14</code></td><td>Network topology</td></tr>
+    <tr><td>10</td><td>Stream order (confluence heuristic)</td><td>ordinal</td><td><code>0.14</code></td><td>Network topology (not true Strahler)</td></tr>
     <tr><td>11</td><td>Catchment area</td><td>km²</td><td><code>0.18</code></td><td>pysheds DEM</td></tr>
     <tr><td>12</td><td>Flood return Q10</td><td>cfs</td><td><code>0.14</code></td><td>USGS StreamStats</td></tr>
     <tr><td>13</td><td>Seasonal flow CV</td><td>ratio</td><td><code>0.10</code></td><td>USGS NWIS</td></tr>

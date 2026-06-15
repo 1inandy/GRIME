@@ -17,11 +17,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from core import safe_call, UTM_CRS
 from core.generation import GENERATION_WEIGHTS, compute_generation_features
-from core.flow import FLOW_WEIGHTS, compute_flow_features, get_discharge_stats
+from core.flow import (
+    FLOW_WEIGHTS, compute_flow_features, get_discharge_stats,
+    velocity_transport_favorability,
+)
 from core.impact import IMPACT_WEIGHTS, compute_impact_features, get_drinking_water_intakes
 from core.feasibility import (
     FEASIBILITY_WEIGHTS, compute_feasibility_features, passes_hard_gates
 )
+
+# All 27 parameter names, in family order — used by summarize_provenance.
+ALL_PARAMS = (list(GENERATION_WEIGHTS) + list(FLOW_WEIGHTS)
+              + list(IMPACT_WEIGHTS) + list(FEASIBILITY_WEIGHTS))
 
 
 # ── Sub-score weights ────────────────────────────────────────────────
@@ -40,15 +47,40 @@ def compute_subscore(df, weights):
     """
     Normalize each parameter to [0,1] independently, then weight-sum.
     Returns Series of sub-scores (0-100) for all candidates.
+
+    C2/M2: a constant column maps to **0** under sklearn's MinMaxScaler, which
+    silently deletes that parameter's weight from the sub-score (this is exactly
+    what made the catchment-level Generation family contribute nothing). So we
+    **exclude constant columns** and **renormalize the surviving weights**, logging
+    what was dropped. If *nothing* varies, the family can't rank anything → return a
+    neutral 50 (not 0).
+    M5: velocity enters Flow through a peaked transport-favorability curve, not raw
+    (raw monotonic-good would fight the Feasibility velocity gate).
     """
     cols = [c for c in weights.keys() if c in df.columns]
     if not cols:
         return pd.Series(50.0, index=df.index)
 
+    sub = df[cols].fillna(0).copy()
+
+    # M5: transform velocity to peaked favorability before it enters Flow scoring
+    # (the raw value stays in df for the Feasibility gate + display).
+    if "flow_velocity_ms" in sub.columns:
+        sub["flow_velocity_ms"] = sub["flow_velocity_ms"].map(velocity_transport_favorability)
+
+    # C2: keep only columns that actually vary; drop + renormalize the rest.
+    varying = [c for c in cols if sub[c].nunique(dropna=False) > 1]
+    dropped = [c for c in cols if c not in varying]
+    if dropped:
+        print(f"  [subscore] dropped {len(dropped)} constant column(s) "
+              f"{dropped} → renormalizing {len(varying)} weight(s)")
+    if not varying:
+        return pd.Series(50.0, index=df.index)
+
     scaler = MinMaxScaler()
     normed = pd.DataFrame(
-        scaler.fit_transform(df[cols].fillna(0)),
-        columns=cols, index=df.index,
+        scaler.fit_transform(sub[varying]),
+        columns=varying, index=df.index,
     )
 
     # Invert distance-based columns (closer = better for impact)
@@ -60,9 +92,30 @@ def compute_subscore(df, weights):
     if "seasonal_cv" in normed.columns:
         normed["seasonal_cv"] = 1 - normed["seasonal_cv"]
 
-    w = np.array([weights[c] for c in cols])
-    w = w / w.sum()  # renormalize after filtering
-    return (normed[cols] @ w) * 100
+    w = np.array([weights[c] for c in varying])
+    w = w / w.sum()  # renormalize over surviving (varying) columns
+    return (normed[varying] @ w) * 100
+
+
+def summarize_provenance(df):
+    """
+    C2/C4 support: print a loud per-run summary of how many of the 27 parameters
+    actually vary per-candidate (live) versus are constant (fallback/dead endpoint).
+    Makes constant columns and dead endpoints visible every run.
+    """
+    present = [c for c in ALL_PARAMS if c in df.columns]
+    varying = [c for c in present if df[c].nunique(dropna=False) > 1]
+    constant = [c for c in present if c not in varying]
+    print("=" * 66)
+    print(f"  PROVENANCE: {len(varying)}/{len(ALL_PARAMS)} parameters vary "
+          f"per-candidate (live) · {len(constant)} constant (fallback)")
+    if constant:
+        print(f"  constant/fallback: {', '.join(constant)}")
+    missing = [c for c in ALL_PARAMS if c not in present]
+    if missing:
+        print(f"  missing entirely: {', '.join(missing)}")
+    print("=" * 66)
+    return {"varying": varying, "constant": constant, "n_params": len(ALL_PARAMS)}
 
 
 # ── Hard gates ───────────────────────────────────────────────────────
@@ -208,12 +261,31 @@ def optimize_weights(candidates_df, known_good_indices, n_calls=40, random_state
 
 # ── Full Feature Pipeline ────────────────────────────────────────────
 
+def _candidate_catchment_polygon(row):
+    """Per-candidate catchment proxy: a disc sized by the candidate's upstream
+    catchment area (real km² after C1a). Different candidates → different polygons
+    → different block groups / land cover, so generation + EJ vary per candidate
+    (C2). When a true delineated catchment is available it can be threaded in via a
+    'catchment_polygon' column instead."""
+    poly = row.get("catchment_polygon")
+    if poly is not None:
+        return poly
+    area_km2 = row.get("catchment_area_km2", 1.0) or 1.0
+    radius_m = max(500.0, (max(area_km2, 0.01) / np.pi) ** 0.5 * 1000.0)
+    return row.geometry.buffer(radius_m)
+
+
 def build_all_features(candidates_gdf, bbox, stream_gdf=None,
-                       dem_array=None, dem_transform=None,
+                       dem_array=None, dem_transform=None, fdir=None,
                        max_workers=4):
     """
     Compute all 27 parameter features for all candidates.
     Uses threading for API calls. Returns enriched GeoDataFrame.
+
+    C2: generation features are computed **per candidate** on each candidate's own
+    catchment (proxy disc), not collapsed to one catchment-wide column. `fdir` (the
+    D8 flow grid) is threaded into the flow features so channel slope follows the
+    real downstream direction (C1b/M7).
     """
     df = candidates_gdf.copy()
     print(f"Computing features for {len(df)} candidates...")
@@ -222,7 +294,7 @@ def build_all_features(candidates_gdf, bbox, stream_gdf=None,
     print("  Fetching USGS gauge data...")
     gauge_stats = safe_call(get_discharge_stats, default={
         "mean_q_cfs": 12.5, "median_q_cfs": 5.2, "peak_q_cfs": 450.0,
-        "max_q_cfs": 2100.0, "cv": 2.1, "high_flow_days": 36, "n_years": 20,
+        "max_q_cfs": 2100.0, "cv": 2.1, "high_flow_days": 36, "n_peak_records": 20,
     })
 
     print("  Fetching drinking water intakes...")
@@ -233,10 +305,10 @@ def build_all_features(candidates_gdf, bbox, stream_gdf=None,
         if idx % 10 == 0:
             print(f"  Processing candidate {idx + 1}/{len(df)}...")
 
-        # Flow features (fastest — local computation)
+        # Flow features (fastest — local computation; fdir → real downstream slope)
         flow_feats = compute_flow_features(
             row, dem_array=dem_array, dem_transform=dem_transform,
-            gauge_stats=gauge_stats,
+            gauge_stats=gauge_stats, fdir=fdir,
         )
         for k, v in flow_feats.items():
             df.at[idx, k] = v
@@ -249,15 +321,16 @@ def build_all_features(candidates_gdf, bbox, stream_gdf=None,
         for k, v in feas_feats.items():
             df.at[idx, k] = v
 
-    # Generation and Impact features — these hit APIs, do in bulk
-    # For hackathon: use catchment-level aggregates rather than per-candidate
-    print("  Computing generation features (catchment-level)...")
-    gen_features = safe_call(
-        _compute_catchment_generation, bbox,
-        default={k: 0.5 for k in GENERATION_WEIGHTS},
-    )
-    for k, v in gen_features.items():
-        df[k] = v
+    # Generation features — PER CANDIDATE (C2), on each candidate's own catchment.
+    print("  Computing generation features (per candidate)...")
+    for idx, row in df.iterrows():
+        catch_poly = _candidate_catchment_polygon(row)
+        gen_feats = safe_call(
+            compute_generation_features, row, catch_poly, bbox,
+            default={k: 0.5 for k in GENERATION_WEIGHTS},
+        )
+        for k, v in gen_feats.items():
+            df.at[idx, k] = v
 
     print("  Computing impact features...")
     for idx, row in df.iterrows():
@@ -267,37 +340,10 @@ def build_all_features(candidates_gdf, bbox, stream_gdf=None,
         for k, v in impact_feats.items():
             df.at[idx, k] = v
 
+    # Loud per-run provenance: how many of the 27 params actually vary (C2/C4).
+    summarize_provenance(df)
+
     print("  Computing composite scores...")
     scored = compute_composite_score(df)
     print(f"  Done. Top score: {scored['composite_score'].max():.1f}")
     return scored
-
-
-def _compute_catchment_generation(bbox):
-    """Compute generation features at the catchment level (shared across candidates)."""
-    from core.generation import (
-        get_impervious_pct, tri_density_score, npdes_count
-    )
-    from core import bbox_to_polygon
-
-    catch_poly = bbox_to_polygon(bbox).to_crs(UTM_CRS).geometry.iloc[0]
-    west, south, east, north = bbox
-    area_km2 = catch_poly.area / 1e6
-
-    return {
-        "population_density": safe_call(
-            lambda: 800.0, default=500.0  # Durham ~800 persons/km²
-        ),
-        "impervious_pct": safe_call(
-            get_impervious_pct, catch_poly, bbox, default=35.0
-        ),
-        "road_density_km_km2": 5.0,  # Durham average
-        "tri_facility_density": safe_call(
-            tri_density_score, catch_poly, area_km2, bbox, default=0.0
-        ),
-        "npdes_points": safe_call(
-            npdes_count, catch_poly, bbox, default=0
-        ),
-        "cso_density": 0.5,  # catchment-level placeholder
-        "litter_complaint_density": 2.0,  # Durham average
-    }

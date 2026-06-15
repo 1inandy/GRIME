@@ -8,7 +8,7 @@ That experience stuck with him, and data shows how this problem isn't just local
 
 > **If we can't net every river, and the nets you do place keep failing, how do you decide where your limited resources will capture the most plastic?**
 
-Today, we introduce GRIME: A solution to that very question. Not bigger nets or more nets, but the right ones in the right places. GRIME extends the methodology of the WaterGate model (Cheng, Anand, Rose, 2023)[^1], which scored flood-prone locations on three parameters: catchment area, runoff coefficient, and discharge. GRIME redirects that hydrological framework toward trash accumulation prediction and expands it from 3 to 27 parameters across 6 families, adding feasibility constraints, environmental justice weighting, and a two-level scoring architecture.
+Today, we introduce GRIME: A solution to that very question. Not bigger nets or more nets, but the right ones in the right places. GRIME extends the methodology of the WaterGate model (Anand, Cheng, Rose, 2023)[^1], which scored flood-prone locations on three parameters: catchment area, runoff coefficient, and discharge. GRIME redirects that hydrological framework toward trash accumulation prediction and expands it from 3 to 27 parameters across 6 families, adding feasibility constraints, environmental justice weighting, and a two-level scoring architecture.
 
 [^1]: N. Anand, G. Cheng, T. Rose, "WaterGate: An Accessible Computational Analysis of Flooding Patterns," 2023. https://github.com/navvye/WaterGate
 
@@ -43,7 +43,7 @@ where *n* is Manning's roughness coefficient (selected by channel type, ranging 
 
 **R = (W × D) / (W + 2D)**
 
-where *W* is channel width and *D ≈ 0.3W* (bankfull approximation). A continuity cross-check is performed against USGS gauge data, and the final velocity estimate is the geometric mean:
+where *W* is channel width and *D ≈ 0.3W* (bankfull approximation). A continuity estimate (gauge discharge area-scaled to the candidate's catchment, divided by the cross-section) is blended in, and the final velocity estimate is the geometric mean:
 
 **V_final = √(V_Manning · V_continuity)**
 
@@ -100,7 +100,7 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 **Interpretable by design.** We deliberately chose a two-level scoring architecture over a black-box model, because the people who would actually deploy nets need to understand and trust the recommendations, not just receive a number.
 
-**Cross-validated flow velocity.** Manning's equation on real DEM-derived slopes, cross-checked against USGS gauge data via the geometric mean. Neither estimate is trusted alone.
+**Blended flow velocity.** Manning's equation on real DEM-derived slopes, blended (geometric mean) with an area-scaled continuity estimate from USGS gauge discharge. The two share the cross-section geometry, so this is a soft blend rather than a fully independent cross-check.
 
 **Environmental justice as a first-class parameter.** The model explicitly weights whether a candidate site serves an overburdened community, using an environmental-justice index reconstructed from Census ACS demographics (EPA decommissioned EJSCREEN in 2025) that most trash interception projects ignore entirely.
 

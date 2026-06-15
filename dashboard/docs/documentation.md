@@ -1,6 +1,6 @@
 # GRIME — Garbage River Interception & Modeling Engine
 
-Welcome to the GRIME documentation! GRIME is a multi-parameter optimization engine for identifying optimal trash interception net placements in waterways, anywhere on Earth. It extends the WaterGate flood-analysis framework (Cheng, Anand, Rose, 2023) from 3 parameters to 28, redirecting a hydrological model toward trash accumulation prediction and net deployment optimization.
+Welcome to the GRIME documentation! GRIME is a multi-parameter optimization engine for identifying optimal trash interception net placements in waterways, anywhere on Earth. It extends the WaterGate flood-analysis framework (Anand, Cheng, Rose, 2023) from 3 parameters to 27, redirecting a hydrological model toward trash accumulation prediction and net deployment optimization.
 
 GRIME was inspired by firsthand experience with river pollution in India — rivers choked with plastic waste, communities unable to determine where intervention would actually make a difference. Over 1,000 rivers worldwide carry ~80% of ocean-bound riverine plastic (Meijer et al. 2021 attribute the 80% figure to 1,656 rivers), and GRIME answers the question: *if you can't net every river, where should your limited resources go?*
 
@@ -28,7 +28,7 @@ Effective trash interception in waterways requires solving a site-selection prob
     + [Flat Resolution & D8 Flow Direction](#flat-resolution--d8-flow-direction)
   * [Flow Accumulation & Stream Extraction](#flow-accumulation--stream-extraction)
     + [Accumulation Thresholding](#accumulation-thresholding)
-    + [Strahler Stream Ordering](#strahler-stream-ordering)
+    + [Stream Ordering (heuristic)](#stream-ordering-confluence-degree-heuristic)
   * [Candidate Site Generation](#candidate-site-generation)
   * [Parameter Families & Scoring](#parameter-families--scoring)
     + [Generation Sub-Score](#generation-sub-score)
@@ -230,12 +230,19 @@ ListPlot3D[Log10[accum + 1],
 
 Ridges (low accumulation) appear as peaks; valleys and stream channels (high accumulation) form deep grooves. The dendritic drainage pattern emerges naturally from the DEM.
 
-### Strahler Stream Ordering
+### Stream Ordering (confluence-degree heuristic)
 
-Each stream segment is assigned a Strahler order: headwater streams with no tributaries are order 1. When two streams of the same order *k* merge, the result is order *k + 1*. When streams of different orders merge, the result retains the higher order.
+GRIME assigns each segment a **stream order** using a confluence node-degree
+heuristic, **not true Strahler order** (H3). Segment endpoints are snapped to a ~5 m
+grid and joined into an undirected graph; a segment's order is the larger
+junction-degree of its two endpoints, capped at 5. This is cheaper than true
+Strahler (which needs directed downstream topology and the "two order-*k* streams
+merge → *k+1*" rule) and is honest about being an approximation — the field is named
+`stream_order`, not `strahler_order`. The diagram below illustrates the *true*
+Strahler rule for reference (the target the heuristic approximates):
 
 ```Mathematica
-(* Stream network with Strahler ordering as a tree graph *)
+(* Reference: TRUE Strahler ordering on a tree (GRIME uses a degree heuristic) *)
 SeedRandom[7];
 
 buildTree[depth_] := If[depth == 0,
@@ -282,7 +289,7 @@ Graph[edgeList,
        Line[#1]}
     ] &),
   VertexSize -> 0,
-  PlotLabel -> Style["Stream Network \[LongDash] Strahler Ordering", 14, Bold],
+  PlotLabel -> Style["Stream Network \[LongDash] Strahler Ordering (reference)", 14, Bold],
   Epilog -> {
     Inset[SwatchLegend[
       Values[orderColors][[1 ;; 5]],
@@ -482,7 +489,7 @@ The Flow sub-score characterizes how water moves through the candidate site — 
 |---|---|---|
 | `usgs_mean_q_cfs` | 0.22 | USGS NWIS |
 | `flow_velocity_ms` | 0.16 | Manning's Eq. |
-| `strahler_order` | 0.14 | DEM-derived |
+| `stream_order` | 0.14 | Network topology (confluence-degree heuristic) |
 | `catchment_area_km2` | 0.18 | DEM-derived |
 | `flood_q10_cfs` | 0.14 | USGS Stats |
 | `seasonal_cv` | 0.10 | USGS NWIS |
@@ -531,7 +538,7 @@ Steep, smooth channels (back-left) produce high velocities; flat, rough channels
 
 ### Velocity Cross-Validation
 
-A continuity cross-check is performed against USGS gauge data when available:
+A continuity estimate (gauge discharge area-scaled to the candidate catchment, ÷ cross-section) is blended in when available:
 
 $$V_{\text{continuity}} = \frac{Q}{A} = \frac{Q}{W \times D}$$
 
@@ -727,7 +734,7 @@ The Feasibility sub-score determines whether a net can physically be installed, 
 | `bank_slope_score` | 0.10 | DEM |
 | `bridge_proximity_bonus` | 0.10 | OSM |
 
-Fewer than 5% of OpenStreetMap waterways have explicit width tags, so GRIME uses a heuristic estimator based on waterway type (`ditch` → 1.5m, `stream` → 4m, `canal` → 8m, `river` → 15–40m depending on Strahler order).
+Fewer than 5% of OpenStreetMap waterways have explicit width tags, so GRIME uses a heuristic estimator based on waterway type (`ditch` → 1.5m, `stream` → 4m, `canal` → 8m, `river` → 15–40m depending on stream order).
 
 ### Velocity Feasibility Function
 
