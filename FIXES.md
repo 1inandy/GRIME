@@ -168,3 +168,30 @@ the integrity/reproducibility ones; deferred the high-risk/invisible ones.
 - `scripts/robustness_report.py` (n=500, seeded): top site South Ellerbe = 99.2% robust; 4 sites ≥80%; histogram PNG (28 KB) written. Reproducible.
 - `candidates.geojson` (now n=500) byte-reproducible across runs.
 - `node --check` landing clean after the IntersectionObserver gating; div balance 57/57.
+
+---
+
+## Final verification checklist (all green)
+
+- [x] `grep "28 param|108,772|240 countries|gARB|1,500 rivers|ℝ²⁸"` → **0 hits**
+- [x] weight dicts 7/7/7/6 = **27**; `scripts/check_model.py` → model.json matches code
+- [x] `python3 -m py_compile core/*.py api/main.py scripts/*.py` → clean
+- [x] explorer + landing inline JS `node --check` clean; **div balance equal** (57/57, 81/81, 102/102)
+- [x] `scripts/score_candidates.py` reproduces `candidates.geojson` byte-for-byte; catchment **3.69–50.69 km²** (real, not 0.01)
+- [x] provenance: EJ index + generation params **vary** (26 distinct values each)
+- [x] explorer rankings stable across re-render (same `(lat,lon)` → identical draws); **0 live `Math.random`** in scoring
+- [x] README endpoint table ⊆ `@app` routes; `.env.example` + `.gitignore` + `LICENSE` exist
+- [x] `pytest tests/` → **16 passed**
+- [x] FIXES.md has a row for **all 32** findings (X1–X3, C1–C6, H1–H6, M1–M8, L1–L9)
+
+## Consolidated summary
+
+- **Phase 0** (XSS/JS races): `esc()` + escaped all third-party strings; `openCity` stale-fetch guard; cluster listeners attached once.
+- **Phase 1** (claims/counts): 28→27, 108,772→89,518 places/239, real `optimize_weights`, `/map` route, `.gitignore`/`.env.example`/`LICENSE`, gARB→GRIME, sourced stats + award links, Meijer 2021.
+- **Phase 2** (EJ/C4): `get_ej_index` reconstructs EJSCREEN's demographic index from live Census ACS (varies 0.10↔0.77 across catchments); `healthcheck.py` surfaces the dead EJSCREEN broker; docs de-claim live EPA EJSCREEN.
+- **Phase 3** (Python core): UTM reproject (catchment 50000·100/1e6 = **5.0 km²** vs 0.01); D8 downstream slope walk; per-candidate generation + constant-column drop/renormalize + provenance; reproducible `score_candidates.py`; stream_order rename; decorrelated estuary/beach (corr −0.98); bounded width; area-scaled continuity; peaked velocity curve.
+- **Phase 4** (explorer): per-candidate coord-seeded RNG (stable across re-render); killed `Math.random` Impact noise; impervious weight 0.40→0.20; `computeWayOrder` river-wide occlusion (verified: upstream ranked first, all true-downstream occluded); on-panel "model estimates" caveat; README §6.2 + ADR-3 honesty.
+- **Phase 5** (SSOT/tests): `model.json` + `check_model.py` drift guard; 16-test pytest suite; env-driven CORS; corrected MinMax failure-mode doc; closed 2 docs `<div>`s.
+- **Phase 6** (additions): real n=500 Dirichlet robustness histogram + table (top site 99% robust); off-screen globe pausing; field-validation roadmap. Deferred: live US pipeline wiring, EPA parallelization, PAD-US cache (risk/low payoff).
+
+**Environment caveats (honest):** pysheds/py3dep/rioxarray not installed and Census ACS needs a free key in this sandbox, so C1/C2/H2 were verified with synthetic-DEM scratch tests + the deterministic offline `score_candidates` path (its *scoring* is the real shipped code; raw params are labeled synthetic estimates), and the EJ math on synthetic block groups. The `--live` path + `CENSUS_API_KEY` produce field values on a full environment. ECHO + StreamStats currently return 404 (surfaced by `healthcheck.py`, handled by `safe_call`).
