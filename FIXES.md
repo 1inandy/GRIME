@@ -91,3 +91,29 @@ Environment note: pysheds/py3dep/rioxarray NOT installed here; Census ACS now re
 - `get_ejscreen_index(36,-78.9)` → 0.5 (broker dead).
 - Live `scripts/healthcheck.py`: EJSCREEN broker **DOWN (ConnectionError)** as expected; Census ACS flagged DOWN with "no CENSUS_API_KEY" hint; NWIS/TRI/FRS/TIGERweb UP; ECHO + StreamStats currently 404 (surfaced, not swallowed — both fall back via `safe_call`).
 - `grep` for live "EPA EJSCREEN data" claims across README+docs → **CLEAN**.
+
+## Phase 3 — Core scientific correctness (Python)
+
+| ID | Fix | Status |
+|----|-----|--------|
+| C1 | `fetch_dem` now reprojects the DEM to UTM (`dem.rio.reproject(UTM_CRS)`) before any hydrology, so `pixel_size` is metres; `run_pipeline` maps UTM candidates straight onto the metric affine. Fixes C1a (catchment area real km²) + C1b (slope reach in metres). | ✅ |
+| C1b/M7 | Added `_follow_downstream()` walking ~100 m **along the D8 `fdir` grid** (steepest-descent fallback); `compute_flow_velocity` uses it for slope; `fdir` threaded `build_all_features → compute_flow_features → compute_flow_velocity`. | ✅ |
+| C2 | `build_all_features` computes generation **per candidate** on each candidate's own catchment (proxy disc); `compute_subscore` **drops constant columns + renormalizes** surviving weights (logged), all-constant family → neutral 50; added `summarize_provenance(df)` printing "X/27 vary · Y constant" each run. | ✅ |
+| H2 | Added `scripts/score_candidates.py` (real `--live` pipeline + deterministic offline mode whose scoring is the real code); regenerated + committed `mock_data/candidates.geojson` (byte-reproducible). Notebook Step 4 now actually scores (was generate-only). | ✅ |
+| H3 | "Strahler" renamed to **`stream_order`** everywhere (flow/pipeline/feasibility/api + README/docs) and documented as a confluence-degree heuristic, not true Strahler; endpoint snap tolerance widened 0.1 m → 5 m so the graph stops fragmenting to order 1. | ✅ |
+| H5 | `estimate_estuary_distance_km` rewritten as a real haversine to a fixed estuary ref (Pamlico Sound); new distinct `estimate_beach_distance_km` (Wrightsville Beach) replaces `estuary × 1.1`. corr now ~0.35 (was 1.0); estuary varies with latitude. | ✅ |
+| M1 | Width fallback `2.5·2.5^order` (order5→244 m) → bounded `min(40, 3·order^1.1)` (order5→17.6 m); never trips the width gate. Noted Leopold 1964 is hydraulic geometry, not this. | ✅ |
+| M4 | Continuity estimate now **area-scales** gauge Q to the candidate's catchment (`ELLERBE_DRAINAGE_KM2` ref) so V_continuity is site-specific; docs reworded from "independent cross-check" → "soft blend" (shares the cross-section). | ✅ |
+| M5 | Added `velocity_transport_favorability()` (Gaussian peaked at ~0.9 m/s); `compute_subscore` feeds velocity through it for Flow while the raw value stays for the Feasibility gate + display. | ✅ |
+| L4 | Runoff docstring + README param 14 fixed ("linear impervious→C", not "NLCD k-means"); WaterGate author order unified to "Anand, Cheng, Rose". | ✅ |
+| L5 | `water_intake_score` docstring corrected to "omnidirectional proximity, not flow-gated". | ✅ |
+| L6 | `n_years` → `n_peak_records` (count of annual-peak records, not distinct years). | ✅ |
+
+**Verification / proof (synthetic-DEM scratch tests; pysheds/network unavailable here):**
+- C1a: `compute_catchment_area(acc=50000, pixel=10m)` → **5.0 km²** (was clamped 0.01).
+- C1b/M7: D8 walk from (2,2) with fdir=East ends at col 12 (east); velocity finite/positive on an east-dropping DEM.
+- M5: favorability(0,0.9,2.5)=(0.105, 1.0, 0.001) — peaked at 0.9.
+- C2: 6-constant+1-varying family → sub-score spans [0,100]; all-constant → 50.0; provenance prints split.
+- H5: corr(estuary,beach) = **−0.979** over a candidate grid (<0.99); estuary changes with latitude.
+- M1: width by order 1..5 = [3.0, 6.4, 10.0, 13.8, 17.6] — all < 50 m gate.
+- H2: `score_candidates.py` run twice → **byte-identical**; regenerated `candidates.geojson` = 26 sites, catchment 3.69–50.69 km², composite 27.26–68.26 (all ∈[0,100]), generation_score 13.9–82.7 (varies — C2), estuary/beach corr 0.35, `stream_order` (no `strahler_order`); API loads it (stats + 27-param detail trees populate). Offline provenance: 27/27 vary.
