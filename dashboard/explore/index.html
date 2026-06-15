@@ -112,7 +112,7 @@ body.theme-light .hm button.active{border-color:var(--acc)!important}
 </style>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><div id="load-msg">Loading GRIME — 89,518 places...</div></div>
+<div id="loading"><div class="spinner"></div><div id="load-msg">Loading GRIME — 108,772 cities...</div></div>
 <div id="app">
 <div id="header">
   <h1><a href="../" style="text-decoration:none;color:inherit"><span>G</span>RIME</a></h1>
@@ -191,22 +191,6 @@ async function loadPlaces(){
 function seededRand(seed){
   let s=Math.abs(Math.round(seed))||1;
   return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646};
-}
-
-// ═══ HTML ESCAPE (X1 — XSS hardening) ═══════════════════════════
-// Third-party strings (OSM way names → c.stream / focusedRiverName, places.json
-// names/country codes) flow into innerHTML. An OSM way literally named
-// <img src=x onerror=alert(1)> would otherwise execute. Wrap every such string.
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-
-// Deterministic string → [0,1) hash (FNV-1a). Used to seed a per-candidate RNG
-// from the site's own coordinates, so a site's values are identical across
-// re-renders (C3 determinism) regardless of how many streams are loaded.
-function hash01(str){
-  let h=2166136261>>>0;
-  const s=String(str);
-  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
-  return (h>>>0)/4294967296;
 }
 
 // ═══ REAL RIVER DATA FROM OPENSTREETMAP ═════════════════════════
@@ -408,45 +392,9 @@ function waterwayCapacity(stream){
   return Math.max(8,Math.floor(nCoords/2));
 }
 
-// M7-JS: chain each river's OSM ways head→tail by matching endpoints (≤~60 m) so we
-// have a real downstream rank per way. A river is often split into several OSM ways
-// returned in arbitrary order, so global creation id / raw coordIdx don't track flow.
-// Returns Map: streamArrayIndex → wayOrder (0 = most upstream way of that river).
-function computeWayOrder(streams){
-  const order=new Map();
-  const byRiver={};
-  (streams||[]).forEach((s,idx)=>{
-    if(s.underground)return;
-    const k=riverKeyOf(s);
-    (byRiver[k]=byRiver[k]||[]).push({s,idx});
-  });
-  const near=(a,b)=>a&&b&&hvM(a[1],a[0],b[1],b[0])<=60;
-  for(const k in byRiver){
-    const ways=byRiver[k];
-    if(ways.length===1){order.set(ways[0].idx,0);continue;}
-    const heads=ways.map(w=>w.s.coords[0]);
-    const tails=ways.map(w=>w.s.coords[w.s.coords.length-1]);
-    const nextOf=new Array(ways.length).fill(-1);
-    const hasPrev=new Array(ways.length).fill(false);
-    for(let i=0;i<ways.length;i++)for(let j=0;j<ways.length;j++){
-      if(i!==j&&near(tails[i],heads[j])){nextOf[i]=j;hasPrev[j]=true;}
-    }
-    const visited=new Array(ways.length).fill(false);
-    let next=0;
-    for(let i=0;i<ways.length;i++){
-      if(hasPrev[i])continue;            // start from headwater ways
-      let cur=i,ord=0;
-      while(cur!==-1&&!visited[cur]){visited[cur]=true;order.set(ways[cur].idx,ord++);cur=nextOf[cur];}
-      next=Math.max(next,ord);
-    }
-    for(let i=0;i<ways.length;i++)if(!visited[i])order.set(ways[i].idx,next++); // cycles/disconnected
-  }
-  return order;
-}
-
 function generateCandidates(streams,pop,cc,seed){
+  const R=seededRand(seed+7777);
   const isDev=DEV.has(cc),dev=isDev?1.4:1.0;
-  const wayOrderMap=computeWayOrder(streams);  // M7-JS: downstream rank per OSM way
 
   // ── Spacing: SAME stream needs much wider gaps than cross-stream ──
   // If there's already a net on this stream, another 500m down is redundant
@@ -495,7 +443,7 @@ function generateCandidates(streams,pop,cc,seed){
       stream:pt.stream+' ('+pt.type+')',streamWidth:pt.estWidth,waterway:'culvert_portal',
       parentWw:pt.parentWw||'stream',
       riverKey:riverKeyOf({baseName:pt.stream,name:pt.stream}),
-      upstreamFrac:isEntrance?0.6:0.4,order:2,streamIdx:-1,coordIdx:0,wayOrder:-1,isPortal:true});
+      upstreamFrac:isEntrance?0.6:0.4,order:2,streamIdx:-1,coordIdx:0,isPortal:true});
   }
 
   // Walk surface streams
@@ -522,25 +470,18 @@ function generateCandidates(streams,pop,cc,seed){
       countOnStream++;
       globalPlaced.push({o:lon,a:lat});
 
-      const sIdxG=streams.indexOf(st);
       allPositions.push({id:id++,lon,lat,stream:st.name,streamWidth:w,waterway:st.waterway||'stream',
         riverKey:riverKeyOf(st),
         upstreamFrac:i/Math.max(1,st.coords.length-1),order:st.order,
-        streamIdx:sIdxG,coordIdx:i,wayOrder:wayOrderMap.get(sIdxG)??0});
+        streamIdx:streams.indexOf(st),coordIdx:i});
     }
   }
 
   if(allPositions.length===0)return[];
 
   // ── Phase 2: Score every position (no occlusion yet — raw potential) ──
-  // C3 — DETERMINISM: each candidate gets its OWN RNG seeded by its coordinates,
-  // not a single RNG consumed sequentially across all candidates. So a site's
-  // values are identical across re-renders; loading more streams only ADDS sites,
-  // it never reshuffles existing ones. No Math.random() for any named quantity.
   const scored=allPositions.map(pos=>{
-    const uf=pos.upstreamFrac;
-    const pr=seededRand(Math.floor(hash01(pos.lat.toFixed(5)+','+pos.lon.toFixed(5))*2147483647)+1+seed);
-    const rg=()=>pr()-.5;
+    const uf=pos.upstreamFrac,rg=()=>R()-.5;
     const popD=(800+uf*400)*dev+rg()*200;
     const imp=30+uf*15+rg()*8;
     const vel=.4+uf*.6+rg()*.15;
@@ -551,22 +492,12 @@ function generateCandidates(streams,pop,cc,seed){
     const ram=Math.max(20,300+rg()*150);
     const cw=Math.max(1,pos.streamWidth+rg()*2);
     const bs=Math.max(2,12+rg()*6);
-    const roadD=(5+uf*7)*dev+rg()*2;                 // road density proxy (km/km²)
-    const bb=pr()<.25?.2:0;
+    const bb=R()<.25?.2:0;
     const cl=v=>Math.max(0,Math.min(100,v));
 
-    // Generation: population .18, impervious .20 (was an undocumented .40 — C3),
-    // road density .10 — mirrors the documented family weights (the rest aren't
-    // modeled client-side; this is a separate heuristic, see Docs).
-    const gs=cl(popD/20*.18+imp*.20+roadD*3*.10+5);
+    const gs=cl(popD/20*.18+imp*.4+5*2*.1);
     const fs=cl(mq*.8*.22+Math.min(vel*40,60)*.16+stO*12*.14+Math.min(ca*1.5,70)*.18);
-    // Impact: water-intake & protected-area terms were pure Math.random() (C3).
-    // Drive them deterministically from geometry + the per-candidate pr() so they
-    // are STABLE across re-renders: intakes matter more upstream (more downstream
-    // beneficiaries); protected-area proximity is a stable per-site draw.
-    const wiTerm=(0.35+uf*0.55)*100;                 // 35..90: higher upstream
-    const paTerm=(0.25+pr()*0.55)*100;               // stable per-site, coord-seeded
-    const ips=cl(wiTerm*.22+paTerm*.16+ej*100*.18+(1-Math.min(ca*1.5,70)/100)*100*.14);
+    const ips=cl(R()*30*.22+R()*20*.16+ej*80*.18+(1-80/300)*80*.14);
     const ras=ram<200?1:ram<500?.8:ram<1000?.6:.3;
     const cws=cw<2?.5:cw<=15?1:cw<=30?.5:.2;
     const vf=vel<.05?.3:vel<.3?.7:vel<=1.5?1:vel<=2.5?.5:.1;
@@ -578,7 +509,7 @@ function generateCandidates(streams,pop,cc,seed){
 
     return{...pos,composite:+comp.toFixed(1),gen:+gs.toFixed(1),flow:+fs.toFixed(1),
       impact:+ips.toFixed(1),feas:+fes.toFixed(1),pop_d:+popD.toFixed(0),imp_pct:+imp.toFixed(1),
-      vel:+vel.toFixed(2),mq:+mq.toFixed(1),stream_order:stO,catch_km2:+ca.toFixed(1),
+      vel:+vel.toFixed(2),mq:+mq.toFixed(1),strahler:stO,catch_km2:+ca.toFixed(1),
       ej:+ej.toFixed(2),road_m:+ram.toFixed(0),width_m:+cw.toFixed(1),slope_deg:+bs.toFixed(1),
       rawGen:gs};  // keep raw generation for occlusion
   });
@@ -596,16 +527,8 @@ function generateCandidates(streams,pop,cc,seed){
   const targetCount=Math.min(HARD_CAP,Math.max(MIN_DEPLOY,pctCut,Math.min(80,Math.ceil(scored.length*0.05))));
   const selected=[];
   const remaining=[...scored];
-  // Track how many nets are upstream per RIVER (not per OSM way) — occlusion now
-  // spans the whole chained river (M7-JS), keyed by riverKey.
-  const upstreamNets={};
-
-  // Downstream test (M7-JS): same river AND further along the chained flow path,
-  // ordered by (wayOrder, coordIdx). Portals are point anchors — they neither
-  // occlude nor get occluded.
-  const isDownstreamOf=(c,best)=>
-    c.riverKey===best.riverKey &&
-    (c.wayOrder>best.wayOrder || (c.wayOrder===best.wayOrder && c.coordIdx>best.coordIdx));
+  // Track how many nets are upstream per stream
+  const upstreamNets={}; // streamIdx → count of nets already placed upstream
 
   while(selected.length<targetCount&&remaining.length>0){
     // Sort remaining by current effective composite (accounts for occlusion)
@@ -614,23 +537,27 @@ function generateCandidates(streams,pop,cc,seed){
     // Pick the best remaining candidate
     const best=remaining.shift();
     selected.push(best);
-    if(best.isPortal)continue;  // portals don't occlude downstream sites
 
-    const rKey=best.riverKey;
-    upstreamNets[rKey]=(upstreamNets[rKey]||0)+1;
-    const netsUp=upstreamNets[rKey];
+    // Apply upstream occlusion: discount generation score for all DOWNSTREAM
+    // candidates on the SAME stream
+    const sIdx=best.streamIdx;
+    upstreamNets[sIdx]=(upstreamNets[sIdx]||0)+1;
+    const netsUp=upstreamNets[sIdx];
 
     for(const c of remaining){
-      if(c.isPortal)continue;                 // portals never get occluded
-      if(!isDownstreamOf(c,best))continue;
-      // Each upstream net lets through (1 - CATCH_EFFICIENCY) of trash; compounds.
-      const passthrough=Math.pow(1-CATCH_EFFICIENCY,netsUp);
-      const discountedGen=+(c.rawGen*passthrough).toFixed(1);
-      // Recompute composite with discounted generation, preserving the
-      // waterway-type penalty (otherwise occluded ditches would re-rise).
-      const wwPenalty=WW_PENALTY[c.waterway]||0;
-      c.gen=discountedGen;
-      c.composite=+(.3*discountedGen+.25*c.flow+.3*c.impact+.15*c.feas+wwPenalty).toFixed(1);
+      if(c.streamIdx===sIdx&&c.coordIdx>best.coordIdx){
+        // This candidate is downstream of the net we just placed
+        // Each upstream net lets through (1 - CATCH_EFFICIENCY) of trash
+        const passthrough=Math.pow(1-CATCH_EFFICIENCY,netsUp);
+        const discountedGen=+(c.rawGen*passthrough).toFixed(1);
+        // Recompute composite with discounted generation, preserving the
+        // waterway-type penalty (otherwise occluded ditches would silently
+        // re-rise above streams). Downstream candidates aren't portals, so
+        // there's no portal bonus to carry.
+        const wwPenalty=WW_PENALTY[c.waterway]||0;
+        c.gen=discountedGen;
+        c.composite=+(.3*discountedGen+.25*c.flow+.3*c.impact+.15*c.feas+wwPenalty).toFixed(1);
+      }
     }
   }
 
@@ -899,17 +826,6 @@ async function initMap(){
   map.on('click','candidates',e=>{const f=e.features&&e.features[0];if(f)selectCand(f.properties.idx)});
   map.on('mouseenter','candidates',cursorPointer);
   map.on('mouseleave','candidates',cursorReset);
-  // Cluster / unclustered place handlers — attached ONCE here (X3). These used to
-  // live in loadWorldView, which re-runs on every "← All cities", search-in-city,
-  // and theme reload, so Mapbox accumulated a fresh listener each time → one click
-  // fired openCity() N times → N parallel Overpass fetches. Dormant until the
-  // 'places' layers exist, and they pick up re-added sources automatically.
-  map.on('click','clusters',e=>{map.easeTo({center:e.features[0].geometry.coordinates,zoom:map.getZoom()+3})});
-  map.on('click','unclustered',e=>{openCity(e.features[0].properties.idx)});
-  map.on('mouseenter','clusters',cursorPointer);
-  map.on('mouseleave','clusters',cursorReset);
-  map.on('mouseenter','unclustered',cursorPointer);
-  map.on('mouseleave','unclustered',cursorReset);
   // Clicking blank map (no stream/candidate hit) clears river focus
   map.on('click',e=>{
     if(!focusedRiverKey)return;
@@ -953,8 +869,12 @@ function loadWorldView(){
     'circle-color':['interpolate',['linear'],['get','pop'],1000,'#10b981',100000,'#3b82f6',1000000,'#8b5cf6',10000000,'#22d3ee'],
     'circle-stroke-width':1.5,'circle-stroke-color':'#ffffff'
   }});
-  // Cluster/unclustered click + hover handlers are attached ONCE in initMap (X3) —
-  // re-registering them here leaked a listener per loadWorldView call.
+  map.on('click','clusters',e=>{map.easeTo({center:e.features[0].geometry.coordinates,zoom:map.getZoom()+3})});
+  map.on('click','unclustered',e=>{openCity(e.features[0].properties.idx)});
+  map.on('mouseenter','clusters',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','clusters',()=>map.getCanvas().style.cursor='');
+  map.on('mouseenter','unclustered',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','unclustered',()=>map.getCanvas().style.cursor='');
   document.getElementById('back-btn').classList.remove('vis');
   document.getElementById('city-view').classList.remove('vis');
   document.getElementById('place-list').style.display='';
@@ -991,18 +911,13 @@ async function openCity(idx){
   // Fetch REAL waterway geometry from OSM
   const seed=activeSeed;
   initialFetchInFlight=true;
-  // X2: await into a LOCAL first. A slow fetch for city A must not clobber the
-  // global activeStreams after the user has already opened city B. Only assign
-  // the global once we've confirmed this call is still the active city.
-  let fetched;
   try{
-    fetched=await fetchRealStreams(p.la,p.lo,p.p);
+    activeStreams=await fetchRealStreams(p.la,p.lo,p.p);
   }finally{
     initialFetchInFlight=false;
   }
   // Guard against a stale fetch returning after the user navigated away
   if(activeCityIdx!==idx)return;
-  activeStreams=fetched;
 
   // No waterway data available for this location
   if(!activeStreams||activeStreams.length===0){
@@ -1015,7 +930,7 @@ async function openCity(idx){
         <div style="font-size:28px;margin-bottom:12px">🏜️</div>
         <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:8px">No waterway data available</div>
         <div style="font-size:12px;color:var(--td);line-height:1.6">
-          OpenStreetMap has no mapped rivers, streams, or canals within ${p.p>1e6?'8':'4–6'}km of ${esc(p.n||'this location')}.<br><br>
+          OpenStreetMap has no mapped rivers, streams, or canals within ${p.p>1e6?'8':'4–6'}km of ${p.n||'this location'}.<br><br>
           This can happen in arid regions, areas with poor OSM coverage, or generated township names that don't correspond to real settlements.<br><br>
           Try a nearby larger city, or use the Python pipeline with USGS DEM data for US locations.
         </div>
@@ -1064,7 +979,7 @@ function showStats(){
   document.getElementById('stats').innerHTML=`
     <div class="stat"><div class="stat-v">${n.toLocaleString()}</div><div class="stat-l">Cities</div></div>
     <div class="stat"><div class="stat-v">${cc.size}</div><div class="stat-l">Countries</div></div>
-    <div class="stat"><div class="stat-v">27</div><div class="stat-l">Params</div></div>
+    <div class="stat"><div class="stat-v">28</div><div class="stat-l">Params</div></div>
     <div class="stat"><div class="stat-v">∞</div><div class="stat-l">On-demand</div></div>`;
   document.getElementById('info').textContent=`${n.toLocaleString()} cities · ${cc.size} countries`;
   document.getElementById('sidebar-title').textContent='Global coverage';
@@ -1151,7 +1066,7 @@ function placeItem(idx,p){
   const popStr=p.p>1e6?(p.p/1e6).toFixed(1)+'M':p.p>1e3?(p.p/1e3).toFixed(0)+'K':p.p;
   return`<div class="pl-item" onclick="openCity(${idx})">
     <span class="pl-cc">${CC_FLAGS[p.c]||'🌍'}</span>
-    <div style="flex:1;overflow:hidden"><div class="pl-name">${esc(p.n)}</div><div style="font-size:10px;color:var(--td)">${esc(cName)}</div></div>
+    <div style="flex:1;overflow:hidden"><div class="pl-name">${p.n}</div><div style="font-size:10px;color:var(--td)">${cName}</div></div>
     <span class="pl-pop">${popStr}</span>
   </div>`;
 }
@@ -1168,14 +1083,11 @@ function renderSelectedCandHtml(){
       <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--acc)">${c.composite}</div></div>
       <button class="close" onclick="clearSelectedCand()">×</button>
     </div>
-    <div style="font-size:12px;font-weight:600;color:var(--tb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${esc(c.stream||'Stream')}</div>
+    <div style="font-size:12px;font-weight:600;color:var(--tb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${c.stream||'Stream'}</div>
     <div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div>
     ${ss.map(s=>`<div class="ss-row"><div style="font-size:11px;font-weight:500;color:${s.c}">${s.l} <span style="font-size:9px;color:var(--td)">${s.w}</span></div><div class="ss-bar"><div class="ss-fill" style="width:${s.v}%;background:${s.c}"></div></div><div style="font-family:var(--mono);font-size:11px;text-align:right">${s.v}</div></div>`).join('')}
     <div class="pgrid">
-      ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Stream order',c.stream_order],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':esc(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
-    </div>
-    <div style="margin-top:10px;font-size:9.5px;line-height:1.5;color:var(--td);border-top:1px solid var(--bdr);padding-top:8px">
-      ⓘ Demo values are <strong>model estimates from OSM geometry</strong>, deterministic per location — not live gauge/Census measurements. The explorer is a separate clamped-formula heuristic; the Python pipeline (see <a href="../docs/" style="color:var(--acc)">Docs</a>) runs the full 27-parameter MinMax model.
+      ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Strahler',c.strahler],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
     </div>
   </div>`;
 }
@@ -1213,7 +1125,7 @@ function renderRiverFocusHtml(){
   const loading=riverFetchInFlight?`<div style="font-size:11px;color:var(--acc);font-family:var(--mono);margin-bottom:10px;display:flex;align-items:center;gap:8px"><span class="mini-spinner" style="display:inline-block;width:12px;height:12px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite"></span>Tracing whole river…</div>`:'';
   let html=`
     <button class="river-back" onclick="exitRiverFocus()">← Back to city view</button>
-    <h3 style="font-size:14px;font-weight:600;color:var(--tb);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(focusedRiverName||'River')}</h3>
+    <h3 style="font-size:14px;font-weight:600;color:var(--tb);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${focusedRiverName||'River'}</h3>
     <div style="font-family:var(--mono);font-size:10px;color:var(--td);margin-bottom:12px">RIVER FOCUS · ${segs.length} surface segment${segs.length===1?'':'s'}${culvertSegs.length?` · ${culvertSegs.length} culverted`:''}</div>
     ${loading}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
@@ -1230,7 +1142,7 @@ function renderRiverFocusHtml(){
       const act=i===selectedCand?'active':'';
       return`<div class="cand-item ${act}" onclick="selectCand(${i})">
         <div class="rank ${rc}">${rank+1}</div>
-        <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.stream||'Stream')}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
+        <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.stream||'Stream'}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
         <div style="font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;color:${sc(c.composite)}">${c.composite}</div>
       </div>`;
     }).join('');
@@ -1245,7 +1157,7 @@ function renderCityView(){
   const p=places[activeCityIdx];
   if(!p)return;
   if(focusedRiverKey){el.innerHTML=renderRiverFocusHtml();renderSelectedCandPanel();return}
-  let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${esc(p.n||'Unknown')} · Top ${activeCandidates.length} sites</h3>`;
+  let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${p.n||'Unknown'} · Top ${activeCandidates.length} sites</h3>`;
   if(pipelineStats){
     html+=`<div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px;line-height:1.6">
       ${pipelineStats.scored} evaluated → ${pipelineStats.deployed} deployed (top ${Math.round(pipelineStats.pctile*100)}%)<br>
@@ -1258,7 +1170,7 @@ function renderCityView(){
     const act=i===selectedCand?'active':'';
     return`<div class="cand-item ${act}" onclick="selectCand(${i})">
       <div class="rank ${rc}">${i+1}</div>
-      <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.stream||'Stream')}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
+      <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.stream||'Stream'}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
       <div style="font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;color:${sc(c.composite)}">${c.composite}</div>
     </div>`;
   }).join('');

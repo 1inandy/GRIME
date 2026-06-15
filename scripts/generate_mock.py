@@ -1,5 +1,5 @@
 """
-GRIME — Global Places Database Generator
+gARB — Global Places Database Generator
 Generates 100K+ city/town database from geonamescache + procedural expansion.
 
 Run: python scripts/generate_mock.py
