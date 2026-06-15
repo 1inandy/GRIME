@@ -1,5 +1,5 @@
 """
-gARB — Downstream Impact Parameters
+GRIME — Downstream Impact Parameters
 Drinking water intake proximity, EJ index, protected areas,
 ocean/estuary distance, recreational beach proximity, tourism value, superfund.
 """

@@ -1,4 +1,4 @@
-"""gARB utilities — shared helpers across all modules."""
+"""GRIME utilities — shared helpers across all modules."""
 
 import numpy as np
 import geopandas as gpd
