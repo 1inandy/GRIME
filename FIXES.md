@@ -148,3 +148,23 @@ Environment note: pysheds/py3dep/rioxarray NOT installed here; Census ACS now re
 - `python3 scripts/check_model.py` → "model.json matches code: 27 parameters, weights + gates + curves consistent."
 - `pytest tests/` → **16 passed**.
 - `py_compile core/*.py api/main.py scripts/*.py` clean; div balance even (index 57/57, explore 81/81, **docs 102/102**).
+
+## Phase 6 — Strategic additions (ranked, then high-payoff/low-risk only)
+
+Ranked addition × effort × judge payoff × risk (full table in the summary). Implemented
+the integrity/reproducibility ones; deferred the high-risk/invisible ones.
+
+| # | Addition | Status |
+|---|----------|--------|
+| 2 | Property tests (pytest) | ✅ done in Phase 5 (16 tests) |
+| 3 | **Real robustness figure** — `scripts/robustness_report.py` runs the real Dirichlet sensitivity at **n=500** and writes an actual rank-stability histogram (`dashboard/docs/exports/robustness_hist.png`) + a top-sites table; README §6.3 cites the real numbers (top 4 sites 81–99% top-5 retention). Replaces any synthetic robustness mock. | ✅ implemented |
+| 5a | **Globe perf** — hero Three.js `animate()` and Mapbox `spinDash()` now skip their frame/repaint when off-screen (IntersectionObserver) or the tab is hidden. | ✅ implemented |
+| 4 | **Validation candidates** — robustness report prints the top real Ellerbe sites as field-validation targets; README §6.3 adds an honest validation-roadmap note. (Photographed ground-truth slide can't be fabricated → noted as next step.) | ✅ partial (honest) |
+| 1 | Wire US cities to the real `/api/candidates` pipeline | 🔜 deferred — needs pysheds + network + Census key, unverifiable offline, and risks the "do not break" explorer; the path already exists (`score_candidates.py --live` + `/api/candidates`). |
+| 5b | Parallelize per-candidate EPA calls | 🔜 deferred — threading correctness risk > invisible payoff. |
+| 5c | Cache PAD-US/StreamStats per catchment | 🔜 deferred — low judge payoff (EJ county cache already added in Phase 2). |
+
+**Verification / proof:**
+- `scripts/robustness_report.py` (n=500, seeded): top site South Ellerbe = 99.2% robust; 4 sites ≥80%; histogram PNG (28 KB) written. Reproducible.
+- `candidates.geojson` (now n=500) byte-reproducible across runs.
+- `node --check` landing clean after the IntersectionObserver gating; div balance 57/57.

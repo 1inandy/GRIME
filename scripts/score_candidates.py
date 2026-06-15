@@ -153,7 +153,7 @@ def run_offline():
     gdf = build_synthetic_candidates(SEED)
     print(f"Built {len(gdf)} synthetic candidates (seed={SEED}).")
     summarize_provenance(gdf)
-    scored = sensitivity_analysis(gdf, n_perturbations=200)  # adds robustness_pct
+    scored = sensitivity_analysis(gdf, n_perturbations=500)  # adds robustness_pct
     scored = scored.reset_index(drop=True)
     scored["rank"] = scored.index + 1
     return scored
