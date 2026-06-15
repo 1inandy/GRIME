@@ -193,6 +193,12 @@ function seededRand(seed){
   return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646};
 }
 
+// ═══ HTML ESCAPE (X1 — XSS hardening) ═══════════════════════════
+// Third-party strings (OSM way names → c.stream / focusedRiverName, places.json
+// names/country codes) flow into innerHTML. An OSM way literally named
+// <img src=x onerror=alert(1)> would otherwise execute. Wrap every such string.
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
 // ═══ REAL RIVER DATA FROM OPENSTREETMAP ═════════════════════════
 const OVERPASS_URLS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
 
@@ -826,6 +832,17 @@ async function initMap(){
   map.on('click','candidates',e=>{const f=e.features&&e.features[0];if(f)selectCand(f.properties.idx)});
   map.on('mouseenter','candidates',cursorPointer);
   map.on('mouseleave','candidates',cursorReset);
+  // Cluster / unclustered place handlers — attached ONCE here (X3). These used to
+  // live in loadWorldView, which re-runs on every "← All cities", search-in-city,
+  // and theme reload, so Mapbox accumulated a fresh listener each time → one click
+  // fired openCity() N times → N parallel Overpass fetches. Dormant until the
+  // 'places' layers exist, and they pick up re-added sources automatically.
+  map.on('click','clusters',e=>{map.easeTo({center:e.features[0].geometry.coordinates,zoom:map.getZoom()+3})});
+  map.on('click','unclustered',e=>{openCity(e.features[0].properties.idx)});
+  map.on('mouseenter','clusters',cursorPointer);
+  map.on('mouseleave','clusters',cursorReset);
+  map.on('mouseenter','unclustered',cursorPointer);
+  map.on('mouseleave','unclustered',cursorReset);
   // Clicking blank map (no stream/candidate hit) clears river focus
   map.on('click',e=>{
     if(!focusedRiverKey)return;
@@ -869,12 +886,8 @@ function loadWorldView(){
     'circle-color':['interpolate',['linear'],['get','pop'],1000,'#10b981',100000,'#3b82f6',1000000,'#8b5cf6',10000000,'#22d3ee'],
     'circle-stroke-width':1.5,'circle-stroke-color':'#ffffff'
   }});
-  map.on('click','clusters',e=>{map.easeTo({center:e.features[0].geometry.coordinates,zoom:map.getZoom()+3})});
-  map.on('click','unclustered',e=>{openCity(e.features[0].properties.idx)});
-  map.on('mouseenter','clusters',()=>map.getCanvas().style.cursor='pointer');
-  map.on('mouseleave','clusters',()=>map.getCanvas().style.cursor='');
-  map.on('mouseenter','unclustered',()=>map.getCanvas().style.cursor='pointer');
-  map.on('mouseleave','unclustered',()=>map.getCanvas().style.cursor='');
+  // Cluster/unclustered click + hover handlers are attached ONCE in initMap (X3) —
+  // re-registering them here leaked a listener per loadWorldView call.
   document.getElementById('back-btn').classList.remove('vis');
   document.getElementById('city-view').classList.remove('vis');
   document.getElementById('place-list').style.display='';
@@ -911,13 +924,18 @@ async function openCity(idx){
   // Fetch REAL waterway geometry from OSM
   const seed=activeSeed;
   initialFetchInFlight=true;
+  // X2: await into a LOCAL first. A slow fetch for city A must not clobber the
+  // global activeStreams after the user has already opened city B. Only assign
+  // the global once we've confirmed this call is still the active city.
+  let fetched;
   try{
-    activeStreams=await fetchRealStreams(p.la,p.lo,p.p);
+    fetched=await fetchRealStreams(p.la,p.lo,p.p);
   }finally{
     initialFetchInFlight=false;
   }
   // Guard against a stale fetch returning after the user navigated away
   if(activeCityIdx!==idx)return;
+  activeStreams=fetched;
 
   // No waterway data available for this location
   if(!activeStreams||activeStreams.length===0){
@@ -930,7 +948,7 @@ async function openCity(idx){
         <div style="font-size:28px;margin-bottom:12px">🏜️</div>
         <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:8px">No waterway data available</div>
         <div style="font-size:12px;color:var(--td);line-height:1.6">
-          OpenStreetMap has no mapped rivers, streams, or canals within ${p.p>1e6?'8':'4–6'}km of ${p.n||'this location'}.<br><br>
+          OpenStreetMap has no mapped rivers, streams, or canals within ${p.p>1e6?'8':'4–6'}km of ${esc(p.n||'this location')}.<br><br>
           This can happen in arid regions, areas with poor OSM coverage, or generated township names that don't correspond to real settlements.<br><br>
           Try a nearby larger city, or use the Python pipeline with USGS DEM data for US locations.
         </div>
@@ -1066,7 +1084,7 @@ function placeItem(idx,p){
   const popStr=p.p>1e6?(p.p/1e6).toFixed(1)+'M':p.p>1e3?(p.p/1e3).toFixed(0)+'K':p.p;
   return`<div class="pl-item" onclick="openCity(${idx})">
     <span class="pl-cc">${CC_FLAGS[p.c]||'🌍'}</span>
-    <div style="flex:1;overflow:hidden"><div class="pl-name">${p.n}</div><div style="font-size:10px;color:var(--td)">${cName}</div></div>
+    <div style="flex:1;overflow:hidden"><div class="pl-name">${esc(p.n)}</div><div style="font-size:10px;color:var(--td)">${esc(cName)}</div></div>
     <span class="pl-pop">${popStr}</span>
   </div>`;
 }
@@ -1083,11 +1101,11 @@ function renderSelectedCandHtml(){
       <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--acc)">${c.composite}</div></div>
       <button class="close" onclick="clearSelectedCand()">×</button>
     </div>
-    <div style="font-size:12px;font-weight:600;color:var(--tb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${c.stream||'Stream'}</div>
+    <div style="font-size:12px;font-weight:600;color:var(--tb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${esc(c.stream||'Stream')}</div>
     <div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div>
     ${ss.map(s=>`<div class="ss-row"><div style="font-size:11px;font-weight:500;color:${s.c}">${s.l} <span style="font-size:9px;color:var(--td)">${s.w}</span></div><div class="ss-bar"><div class="ss-fill" style="width:${s.v}%;background:${s.c}"></div></div><div style="font-family:var(--mono);font-size:11px;text-align:right">${s.v}</div></div>`).join('')}
     <div class="pgrid">
-      ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Strahler',c.strahler],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
+      ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Strahler',c.strahler],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':esc(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
     </div>
   </div>`;
 }
@@ -1125,7 +1143,7 @@ function renderRiverFocusHtml(){
   const loading=riverFetchInFlight?`<div style="font-size:11px;color:var(--acc);font-family:var(--mono);margin-bottom:10px;display:flex;align-items:center;gap:8px"><span class="mini-spinner" style="display:inline-block;width:12px;height:12px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite"></span>Tracing whole river…</div>`:'';
   let html=`
     <button class="river-back" onclick="exitRiverFocus()">← Back to city view</button>
-    <h3 style="font-size:14px;font-weight:600;color:var(--tb);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${focusedRiverName||'River'}</h3>
+    <h3 style="font-size:14px;font-weight:600;color:var(--tb);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(focusedRiverName||'River')}</h3>
     <div style="font-family:var(--mono);font-size:10px;color:var(--td);margin-bottom:12px">RIVER FOCUS · ${segs.length} surface segment${segs.length===1?'':'s'}${culvertSegs.length?` · ${culvertSegs.length} culverted`:''}</div>
     ${loading}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
@@ -1142,7 +1160,7 @@ function renderRiverFocusHtml(){
       const act=i===selectedCand?'active':'';
       return`<div class="cand-item ${act}" onclick="selectCand(${i})">
         <div class="rank ${rc}">${rank+1}</div>
-        <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.stream||'Stream'}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
+        <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.stream||'Stream')}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
         <div style="font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;color:${sc(c.composite)}">${c.composite}</div>
       </div>`;
     }).join('');
@@ -1157,7 +1175,7 @@ function renderCityView(){
   const p=places[activeCityIdx];
   if(!p)return;
   if(focusedRiverKey){el.innerHTML=renderRiverFocusHtml();renderSelectedCandPanel();return}
-  let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${p.n||'Unknown'} · Top ${activeCandidates.length} sites</h3>`;
+  let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${esc(p.n||'Unknown')} · Top ${activeCandidates.length} sites</h3>`;
   if(pipelineStats){
     html+=`<div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px;line-height:1.6">
       ${pipelineStats.scored} evaluated → ${pipelineStats.deployed} deployed (top ${Math.round(pipelineStats.pctile*100)}%)<br>
@@ -1170,7 +1188,7 @@ function renderCityView(){
     const act=i===selectedCand?'active':'';
     return`<div class="cand-item ${act}" onclick="selectCand(${i})">
       <div class="rank ${rc}">${i+1}</div>
-      <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.stream||'Stream'}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
+      <div style="overflow:hidden"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.stream||'Stream')}</div><div style="font-size:10px;color:var(--td);font-family:var(--mono)">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div></div>
       <div style="font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;color:${sc(c.composite)}">${c.composite}</div>
     </div>`;
   }).join('');
