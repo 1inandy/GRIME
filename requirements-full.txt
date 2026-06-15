@@ -44,4 +44,3 @@ osmnx==1.9.4
 
 # Utilities
 tqdm>=4.66
-pytest>=7.0

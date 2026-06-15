@@ -1,34 +1,17 @@
-"""GRIME utilities — shared helpers across all modules."""
+"""gARB utilities — shared helpers across all modules."""
 
-import os
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 
 
 # ── Constants ────────────────────────────────────────────────────────
-# NOTE: these defaults are scoped to the Durham, NC / Ellerbe Creek case study.
-# State/county FIPS and the UTM zone are passed explicitly for other regions.
 ELLERBE_BBOX = (-79.05, 35.90, -78.75, 36.05)
 ELLERBE_GAUGE = "02086849"
-# Approx. drainage area above USGS gauge 02086849 (Ellerbe Creek at Club Blvd),
-# used to area-scale gauge discharge to a candidate's catchment (M4). ~8.2 mi².
-ELLERBE_DRAINAGE_KM2 = 21.2
 DURHAM_STATE_FIPS = "37"
 DURHAM_COUNTY_FIPS = "063"
 UTM_CRS = "EPSG:32617"  # UTM zone 17N — covers Durham, NC
 WGS84 = "EPSG:4326"
-
-
-def census_api_key():
-    """Free Census Bureau API key from the CENSUS_API_KEY env var ('' if unset).
-
-    The Census ACS API now rejects keyless requests with a "Missing Key" page,
-    so population-density and EJ features need this set (sign up free at
-    https://api.census.gov/data/key_signup.html). Without it they degrade to
-    fallbacks, which `summarize_provenance` surfaces as constant columns.
-    """
-    return os.getenv("CENSUS_API_KEY", "").strip()
 
 
 def safe_call(fn, *args, default=0.0, **kwargs):

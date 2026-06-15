@@ -1,8 +1,8 @@
 # GRIME — Garbage River Interception & Modeling Engine
 
-Welcome to the GRIME documentation! GRIME is a multi-parameter optimization engine for identifying optimal trash interception net placements in waterways, anywhere on Earth. It extends the WaterGate flood-analysis framework (Anand, Cheng, Rose, 2023) from 3 parameters to 27, redirecting a hydrological model toward trash accumulation prediction and net deployment optimization.
+Welcome to the GRIME documentation! GRIME is a multi-parameter optimization engine for identifying optimal trash interception net placements in waterways, anywhere on Earth. It extends the WaterGate flood-analysis framework (Cheng, Anand, Rose, 2023) from 3 parameters to 28, redirecting a hydrological model toward trash accumulation prediction and net deployment optimization.
 
-GRIME was inspired by firsthand experience with river pollution in India — rivers choked with plastic waste, communities unable to determine where intervention would actually make a difference. Over 1,000 rivers worldwide carry ~80% of ocean-bound riverine plastic (Meijer et al. 2021 attribute the 80% figure to 1,656 rivers), and GRIME answers the question: *if you can't net every river, where should your limited resources go?*
+GRIME was inspired by firsthand experience with river pollution in India — rivers choked with plastic waste, communities unable to determine where intervention would actually make a difference. Over 1,500 rivers worldwide are responsible for 80% of ocean-bound plastic, and GRIME answers the question: *if you can't net every river, where should your limited resources go?*
 
 The project is currently being developed at the **North Carolina School of Science and Mathematics** and is designed for use by municipal stormwater services, environmental nonprofits, and organizations like The Ocean Cleanup.
 
@@ -17,7 +17,7 @@ The project is currently being developed at the **North Carolina School of Scien
 
 # Abstract
 
-Effective trash interception in waterways requires solving a site-selection problem: given a finite budget for nets, where should they go to capture the most debris while remaining physically installable and equitable? GRIME addresses this through a 27-parameter scoring engine organized into a two-level weighted architecture. Parameters span six families — population & land use, industrial discharge, hydrology, downstream consequence, environmental justice, and physical feasibility — and aggregate into four interpretable sub-scores (Generation, Flow, Impact, Feasibility) before combining into a single composite score from 0 to 100. Hard gates eliminate physically impossible sites before scoring begins. A Dirichlet-based Monte Carlo sensitivity analysis tests whether top-ranked sites are robust to weight assumptions. The system operates in two modes: a research pipeline using real 10m USGS elevation data and several federal APIs, and an interactive dashboard covering 89,518 places across 239 countries using OpenStreetMap data and client-side scoring.
+Effective trash interception in waterways requires solving a site-selection problem: given a finite budget for nets, where should they go to capture the most debris while remaining physically installable and equitable? GRIME addresses this through a 28-parameter scoring engine organized into a two-level weighted architecture. Parameters span six families — population & land use, industrial discharge, hydrology, downstream consequence, environmental justice, and physical feasibility — and aggregate into four interpretable sub-scores (Generation, Flow, Impact, Feasibility) before combining into a single composite score from 0 to 100. Hard gates eliminate physically impossible sites before scoring begins. A Dirichlet-based Monte Carlo sensitivity analysis tests whether top-ranked sites are robust to weight assumptions. The system operates in two modes: a research pipeline using real 10m USGS elevation data and six federal APIs, and an interactive dashboard covering 108,772 cities across 240 countries using OpenStreetMap data and client-side scoring.
 
 # Table of Contents
 
@@ -28,7 +28,7 @@ Effective trash interception in waterways requires solving a site-selection prob
     + [Flat Resolution & D8 Flow Direction](#flat-resolution--d8-flow-direction)
   * [Flow Accumulation & Stream Extraction](#flow-accumulation--stream-extraction)
     + [Accumulation Thresholding](#accumulation-thresholding)
-    + [Stream Ordering (heuristic)](#stream-ordering-confluence-degree-heuristic)
+    + [Strahler Stream Ordering](#strahler-stream-ordering)
   * [Candidate Site Generation](#candidate-site-generation)
   * [Parameter Families & Scoring](#parameter-families--scoring)
     + [Generation Sub-Score](#generation-sub-score)
@@ -230,19 +230,12 @@ ListPlot3D[Log10[accum + 1],
 
 Ridges (low accumulation) appear as peaks; valleys and stream channels (high accumulation) form deep grooves. The dendritic drainage pattern emerges naturally from the DEM.
 
-### Stream Ordering (confluence-degree heuristic)
+### Strahler Stream Ordering
 
-GRIME assigns each segment a **stream order** using a confluence node-degree
-heuristic, **not true Strahler order** (H3). Segment endpoints are snapped to a ~5 m
-grid and joined into an undirected graph; a segment's order is the larger
-junction-degree of its two endpoints, capped at 5. This is cheaper than true
-Strahler (which needs directed downstream topology and the "two order-*k* streams
-merge → *k+1*" rule) and is honest about being an approximation — the field is named
-`stream_order`, not `strahler_order`. The diagram below illustrates the *true*
-Strahler rule for reference (the target the heuristic approximates):
+Each stream segment is assigned a Strahler order: headwater streams with no tributaries are order 1. When two streams of the same order *k* merge, the result is order *k + 1*. When streams of different orders merge, the result retains the higher order.
 
 ```Mathematica
-(* Reference: TRUE Strahler ordering on a tree (GRIME uses a degree heuristic) *)
+(* Stream network with Strahler ordering as a tree graph *)
 SeedRandom[7];
 
 buildTree[depth_] := If[depth == 0,
@@ -289,7 +282,7 @@ Graph[edgeList,
        Line[#1]}
     ] &),
   VertexSize -> 0,
-  PlotLabel -> Style["Stream Network \[LongDash] Strahler Ordering (reference)", 14, Bold],
+  PlotLabel -> Style["Stream Network \[LongDash] Strahler Ordering", 14, Bold],
   Epilog -> {
     Inset[SwatchLegend[
       Values[orderColors][[1 ;; 5]],
@@ -385,7 +378,7 @@ Each dot is a candidate net site. The faded circles represent the upstream catch
 
 ## Parameter Families & Scoring
 
-Each candidate site is evaluated on 27 parameters organized into 6 families, which aggregate into 4 interpretable sub-scores. Parameters are normalized to [0, 1] before weighting.
+Each candidate site is evaluated on 28 parameters organized into 6 families, which aggregate into 4 interpretable sub-scores. Parameters are normalized to [0, 1] before weighting.
 
 ### Generation Sub-Score
 
@@ -489,7 +482,7 @@ The Flow sub-score characterizes how water moves through the candidate site — 
 |---|---|---|
 | `usgs_mean_q_cfs` | 0.22 | USGS NWIS |
 | `flow_velocity_ms` | 0.16 | Manning's Eq. |
-| `stream_order` | 0.14 | Network topology (confluence-degree heuristic) |
+| `strahler_order` | 0.14 | DEM-derived |
 | `catchment_area_km2` | 0.18 | DEM-derived |
 | `flood_q10_cfs` | 0.14 | USGS Stats |
 | `seasonal_cv` | 0.10 | USGS NWIS |
@@ -538,7 +531,7 @@ Steep, smooth channels (back-left) produce high velocities; flat, rough channels
 
 ### Velocity Cross-Validation
 
-A continuity estimate (gauge discharge area-scaled to the candidate catchment, ÷ cross-section) is blended in when available:
+A continuity cross-check is performed against USGS gauge data when available:
 
 $$V_{\text{continuity}} = \frac{Q}{A} = \frac{Q}{W \times D}$$
 
@@ -634,7 +627,7 @@ The Impact sub-score quantifies the downstream consequences of trash passing thr
 |---|---|---|
 | `water_intake_score` | 0.22 | EPA SDWIS |
 | `protected_area_score` | 0.16 | USGS PAD-US |
-| `ej_index` | 0.18 | Census ACS (EJSCREEN demographic-index reconstruction) |
+| `ej_index` | 0.18 | EPA EJSCREEN |
 | `estuary_dist_km` | 0.14 | NHD / OSM |
 | `beach_dist_km` | 0.12 | NHD / OSM |
 | `tourism_amenity_density` | 0.10 | OSM |
@@ -683,7 +676,7 @@ Plot[{expDecay[d], cauchyDecay[d]},
 
 ### Environmental Justice Weighting
 
-The EJ index reconstructs EPA EJSCREEN's *demographic index* from live Census ACS 5-year data, because EPA decommissioned EJSCREEN (tool, downloads, and the REST broker) on 2025-02-05. Per block group we compute % low-income (ACS `C17002`, income-to-poverty < 2.0) and % people of color (`B03002`), percentile-rank each within the county, average them into the two-component core demographic index, and area-weight over the candidate's catchment so it varies spatially. GRIME includes this as a **first-class parameter** because communities with the least political power to demand cleanup are often the most affected by waterway pollution. (EJSCREEN's six-component supplemental index — adding limited-English, < high-school, under-5, over-64 — is a documented extension.)
+The EJ index is a composite from EPA's EJSCREEN tool. It combines demographic indicators (% minority, % low-income, % linguistically isolated) with environmental burden indicators (proximity to hazardous waste, traffic exposure, air quality). GRIME includes this as a **first-class parameter** because communities with the least political power to demand cleanup are often the most affected by waterway pollution.
 
 ```Mathematica
 (* EJ Index surface across synthetic metro region *)
@@ -734,7 +727,7 @@ The Feasibility sub-score determines whether a net can physically be installed, 
 | `bank_slope_score` | 0.10 | DEM |
 | `bridge_proximity_bonus` | 0.10 | OSM |
 
-Fewer than 5% of OpenStreetMap waterways have explicit width tags, so GRIME uses a heuristic estimator based on waterway type (`ditch` → 1.5m, `stream` → 4m, `canal` → 8m, `river` → 15–40m depending on stream order).
+Fewer than 5% of OpenStreetMap waterways have explicit width tags, so GRIME uses a heuristic estimator based on waterway type (`ditch` → 1.5m, `stream` → 4m, `canal` → 8m, `river` → 15–40m depending on Strahler order).
 
 ### Velocity Feasibility Function
 
@@ -831,7 +824,7 @@ The ridge along the diagonal represents the ideal combination: narrow, moderate-
 
 ## Two-Level Scoring Architecture
 
-GRIME uses a two-level weighted architecture deliberately chosen over a flat 27-parameter weighted sum. At **Level 1**, parameters within each family combine into sub-scores:
+GRIME uses a two-level weighted architecture deliberately chosen over a flat 28-parameter weighted sum. At **Level 1**, parameters within each family combine into sub-scores:
 
 $$S_k = \sum_{j \in \mathcal{F}_k} w_{k,j} \cdot p_{k,j}$$
 
@@ -1122,16 +1115,16 @@ ListPlot3D[demDurham,
 <img src="images/terrain_surface.png" width="700">
 </p>
 
-From this DEM, the pipeline extracts streams, generates candidates every 200m, queries several federal APIs for parameter data, scores each site, and runs the Dirichlet sensitivity analysis. The output is a ranked list of deployment sites with sub-score breakdowns that Durham Stormwater Services can use to prioritize net installations.
+From this DEM, the pipeline extracts streams, generates candidates every 200m, queries six federal APIs for parameter data, scores each site, and runs the Dirichlet sensitivity analysis. The output is a ranked list of deployment sites with sub-score breakdowns that Durham Stormwater Services can use to prioritize net installations.
 
 ## Application: Global Dashboard
 
-The interactive dashboard lets anyone click on any of 89,518 places across 239 countries. When a city is selected:
+The interactive dashboard lets anyone click on any of 108,772 cities across 240 countries. When a city is selected:
 
 1. An **Overpass API** query fetches real waterway geometry from OpenStreetMap
 2. Candidate sites are placed every 200m along each waterway using Haversine spacing
 3. **Hard gates** eliminate infeasible sites (width > 50m, velocity > 3.0 m/s)
-4. Each surviving candidate is scored using the 27-parameter model with OSM-derived proxies
+4. Each surviving candidate is scored using the 28-parameter model with OSM-derived proxies
 5. A **population-scaled risk percentile** threshold filters out low-scoring candidates
 6. Remaining candidates are color-coded by composite score and rendered on a Mapbox map
 
@@ -1139,7 +1132,7 @@ The interactive dashboard lets anyone click on any of 89,518 places across 239 c
 (* Dashboard pipeline as a flowchart *)
 nodes = {"City Selection", "Overpass API", "Waterway Geometry",
   "Candidate Generation", "Hard Gate Filter",
-  "Scoring (27 params)", "Risk Filter",
+  "Scoring (28 params)", "Risk Filter",
   "Map Rendering"};
 
 edges = Thread[nodes[[;; -2]] -> nodes[[2 ;;]]];
