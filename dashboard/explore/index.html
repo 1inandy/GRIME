@@ -112,7 +112,7 @@ body.theme-light .hm button.active{border-color:var(--acc)!important}
 </style>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><div id="load-msg">Loading GRIME — 108,772 cities...</div></div>
+<div id="loading"><div class="spinner"></div><div id="load-msg">Loading GRIME — 89,518 places...</div></div>
 <div id="app">
 <div id="header">
   <h1><a href="../" style="text-decoration:none;color:inherit"><span>G</span>RIME</a></h1>
@@ -997,7 +997,7 @@ function showStats(){
   document.getElementById('stats').innerHTML=`
     <div class="stat"><div class="stat-v">${n.toLocaleString()}</div><div class="stat-l">Cities</div></div>
     <div class="stat"><div class="stat-v">${cc.size}</div><div class="stat-l">Countries</div></div>
-    <div class="stat"><div class="stat-v">28</div><div class="stat-l">Params</div></div>
+    <div class="stat"><div class="stat-v">27</div><div class="stat-l">Params</div></div>
     <div class="stat"><div class="stat-v">∞</div><div class="stat-l">On-demand</div></div>`;
   document.getElementById('info').textContent=`${n.toLocaleString()} cities · ${cc.size} countries`;
   document.getElementById('sidebar-title').textContent='Global coverage';
