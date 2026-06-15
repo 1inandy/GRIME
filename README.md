@@ -90,7 +90,7 @@ A naive approach — placing traps at the largest rivers — fails because:
 
 ### Constraints and assumptions
 
-- All data sources must be free and require no API keys (census, EPA, USGS, OSM)
+- All data sources must be free and low-friction (EPA/USGS/OSM are keyless; Census ACS uses a free, instant API key — see `.env.example`)
 - The model assumes stationary barrier-style traps deployable in channels ≤30m wide (~100 ft)
 - Scoring weights are set by informed heuristic and literature, not supervised learning (no ground-truth dataset of "correct" trap placements exists at scale)
 - The system must produce results in <15 seconds per city for interactive demo use
@@ -109,9 +109,9 @@ graph TD
     D --> E[Stream Network Extraction]
     E --> F[Candidate Site Generation]
 
-    G[EPA APIs - TRI ECHO EJSCREEN SDWIS FRS] --> H[Parameter Computation - 27 params x 6 families]
+    G[EPA APIs - TRI ECHO SDWIS FRS] --> H[Parameter Computation - 27 params x 6 families]
     I[USGS APIs - NWIS StreamStats PAD-US] --> H
-    J[Census APIs - ACS TIGER] --> H
+    J[Census APIs - ACS TIGER incl. EJ index] --> H
     K[OSM - Overpass API] --> H
     F --> H
 
@@ -328,15 +328,36 @@ d = 2R · atan2(√a, √(1−a))
 
 where R = 6,371,000 m. This is used instead of Euclidean distance because the candidate set can span several kilometers, where flat-earth approximation introduces meaningful error at high latitudes.
 
-### 5.9 Environmental justice composite
+### 5.9 Environmental justice index (reconstructed from Census ACS)
 
-The EJ priority score combines three EPA EJSCREEN percentiles:
+> **Why this changed.** EPA removed EJSCREEN — the tool, the data downloads, and the
+> `ejscreenRESTbroker.aspx` ArcGIS server — on **2025-02-05**, and the White House
+> removed CEJST on **2025-01-22**; neither has an official live replacement (the
+> suit to restore EJSCREEN was dismissed on standing, 2026-03-13). Because EJSCREEN's
+> demographic index *is* percentile-ranked ACS demographics, GRIME reconstructs it
+> directly from the **live Census ACS 5-year API** (`core.impact.get_ej_index`),
+> which we control, instead of calling a dead endpoint. Sources:
+> [EELP tracker](https://eelp.law.harvard.edu/tracker/epa-added-environmental-health-indicators-to-ejscreen/),
+> [EDGI](https://envirodatagov.org/epa-removes-ejscreen-from-its-website/),
+> [CEJST removal](https://eelp.law.harvard.edu/tracker/ceqs-climate-economic-justice-screening-tool-removed/),
+> reconstruction mirror [screening-tools.com](https://screening-tools.com/epa-ejscreen).
+
+We compute EJSCREEN's two-component **core demographic index** per block group:
 
 ```
-EJ = (0.4 · P_discharge + 0.3 · P_minority + 0.3 · P_income) / 100
+demographic_index_bg = mean( pct_rank(% low-income) , pct_rank(% people of color) )
+EJ = area-weighted mean of demographic_index_bg over the catchment        ∈ [0, 1]
 ```
 
-where P_discharge is the wastewater discharge EJ percentile, P_minority is the minority population percentile, and P_income is the low-income percentile. All are [0, 100] percentiles from EJSCREEN. The result is [0, 1].
+- **% low-income** — ACS table `C17002` (income-to-poverty ratio < 2.0).
+- **% people of color** — `1 − (non-Hispanic white / total)` from `B03002`.
+- Percentile-ranked within the county, then area-weighted over the candidate's
+  catchment — so the index **varies across catchments** (no longer a constant).
+
+The six-component *supplemental* index (adding limited-English `C16002`,
+< high-school `B15003`, under-5 and over-64 `B01001`) is a documented extension;
+the two-component core index above is EPA's headline definition. The deprecated
+`get_ejscreen_index` is retained only so old callers degrade to a neutral 0.5.
 
 ---
 
@@ -567,7 +588,7 @@ Fields: **n**=name, **c**=ISO country code, **p**=population, **la**=latitude, *
 | 14 | Runoff coefficient C | dimensionless | Flow | 0.06 | NLCD k-means |
 | 15 | Drinking water intake proximity | exp(-d/10) | Impact | 0.22 | EPA SDWIS / ECHO |
 | 16 | Protected area proximity | score | Impact | 0.16 | USGS PAD-US |
-| 17 | Environmental justice index | [0,1] | Impact | 0.18 | EPA EJSCREEN |
+| 17 | Environmental justice index | [0,1] | Impact | 0.18 | Census ACS (EJSCREEN demographic-index reconstruction) |
 | 18 | Ocean/estuary proximity | km (inverted) | Impact | 0.14 | NHD terminus |
 | 19 | Recreational beach proximity | km (inverted) | Impact | 0.12 | EPA BEACH Program |
 | 20 | Tourism/recreation value | amenity count | Impact | 0.10 | OSM amenity density |
@@ -668,7 +689,7 @@ grime/
 | Overpass API | None | Informal | 12s | Procedural generation |
 | USGS NWIS | None | None published | 30s | Hardcoded Ellerbe Creek stats |
 | EPA ECHO | None | None published | 30s | Empty GeoDataFrame |
-| EPA EJSCREEN | None | None published | 30s | 0.5 (neutral) |
+| ~~EPA EJSCREEN~~ (decommissioned 2025-02-05) | — | — | — | EJ index reconstructed from Census ACS instead (see §5.9) |
 | Census ACS | None | None published | 30s | Durham average (500/km²) |
 | USGS 3DEP | None | None published | 60s | Fatal — no fallback |
 

@@ -17,9 +17,10 @@ python3 --version || { echo "FATAL: Python 3 not found"; exit 1; }
 echo "[2/5] Installing dependencies..."
 pip install -r requirements.txt --quiet 2>/dev/null || pip install -r requirements.txt
 
-# 3. Generate mock data (safety net)
-echo "[3/5] Generating mock data..."
+# 3. Generate mock data (safety net) + check external endpoints (incl. EJ source)
+echo "[3/5] Generating mock data + endpoint health check..."
 python3 scripts/generate_mock.py
+python3 scripts/healthcheck.py || echo "  (a required data source is down — see above)"
 
 # 4. Start API in background
 echo "[4/5] Starting API on port 8000..."
