@@ -48,3 +48,30 @@ Environment note: pysheds/py3dep/rioxarray NOT installed here; Census ACS now re
 - `grep` for unescaped `${p.n|c.stream|focusedRiverName|cName}` in templates → only 3 hits, all `textContent` (inert).
 - `on('click','clusters'|'unclustered')` now appears only inside `initMap` (lines 840–841); none in `loadWorldView`.
 - div balance unchanged (explore 80/80).
+
+## Phase 1 — Claims, counts & hygiene
+
+| ID | Fix | Status |
+|----|-----|--------|
+| C5 | "28" → **27** everywhere: README (prose, mermaid, ℝ²⁸→ℝ²⁷, §6.2/§17 pseudocode, footer), landing hero SVG + meta line, explorer stat tile, docs index/Overview.md/documentation.md, `core/scoring.py` docstrings. Weight dicts verified 7/7/7/6 = 27, each family sums to 1.0. | ✅ |
+| H1 | "108,772 cities / 240 countries" → **89,518 places / 239 countries** and "cities"→"places" in all ~17 locations (README, landing, explorer splash+counter, docs ×3); added a procedural-generation provenance note to the README data table. | ✅ |
+| C6 | Implemented real `optimize_weights(candidates_df, known_good_indices)` in `core/scoring.py` (lazy `skopt.gp_minimize`, objective = mean rank of known-good sites); README §6.4 status reworded to match. | ✅ |
+| M6 | Added `GET /map` route (serves dashboard HTML) so README §11 is truthful; created `.env.example` (`MAPBOX_TOKEN`, `CENSUS_API_KEY`, `GRIME_ALLOWED_ORIGIN`). | ✅ |
+| H4 | Created `.gitignore` (config.js, .env, data/, *.gpkg, __pycache__/, *.pyc, .venv/, .DS_Store, /uvicorn); `git rm --cached .DS_Store uvicorn`. Added `LICENSE` (MIT, © Soham Kela 2026). | ✅ |
+| L1 | `gARB`/`gRIME` → **GRIME** in all of `core/`, `scripts/generate_mock.py`, `api/main.py` title, `start.sh`. | ✅ |
+| L2 | Removed the stray 0-byte `uvicorn` file (untracked + gitignored). | ✅ |
+| L3 | Hero stats re-sourced with real citations (Borrelle 2020 / Geyer 2017 / Eriksen 2014; fixed the 91% misattribution to Geyer's actual recycling stat); awards link to wef.org/sjwp + smathhacks.ncssm.edu (was `href="#"`). | ✅ |
+| L7 | "six federal APIs" → "several federal APIs" / "five live APIs + PAD-US dataset" in Overview.md + documentation.md. | ✅ |
+| L8 | Plastic-rivers stat now cites Meijer et al. 2021 (1,656 rivers, ~80%) in Overview.md + documentation.md. | ✅ |
+| start.sh | Step 5 curls `/api/stats` (JSON) instead of `/` (HTML) — the old pipe to `json.tool` crashed under `set -e`; dropped "Hackathon" framing. | ✅ |
+
+**Verification / proof:**
+- `grep "28 param|108,772|240 countries|gARB|gRIME|1,500 rivers"` across README+dashboard+core+scripts+api → **CLEAN**; no `href="#"`.
+- 27 params: gen=7 flow=7 impact=7 feas=6; each `*_WEIGHTS` sums to 1.000.
+- `optimize_weights` runs: synthetic set where known-good = highest-impact sites → optimizer returns impact weight 0.80 (largest), weights sum 1.0.
+- `git check-ignore` resolves config.js/.env/data//__pycache__//.DS_Store/uvicorn; `.gitignore` + `.env.example` + `LICENSE` all exist; `.DS_Store`/`uvicorn` no longer tracked.
+- `node --check` clean (landing + explorer); `py_compile core/*.py api/main.py scripts/*.py` clean; div balance unchanged (index 57/57, explore 80/80).
+- `/map` now present among `@app.get` routes.
+
+> M2 (MinMax failure-mode doc) is intentionally deferred to Phase 5 — it must document the *post-C2* behavior (constant columns dropped + weights renormalized), which doesn't exist until Phase 3.
+> docs/index.html div imbalance (102/100) is fixed in Phase 5 (docs reconciliation).

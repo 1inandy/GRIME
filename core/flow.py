@@ -1,5 +1,5 @@
 """
-gARB — Flow Transport Parameters
+GRIME — Flow Transport Parameters
 USGS discharge, Manning's velocity, Strahler order, catchment area,
 flood return period, seasonal variability, runoff coefficient.
 """

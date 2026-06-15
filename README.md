@@ -3,7 +3,7 @@ Video - https://www.youtube.com/watch?v=GsYtVGVTPWM
 
 ## 1. Executive Summary
 
-GRIME is a multi-parameter optimization system that identifies optimal locations for deploying trash interception barriers ("nets") on urban waterways. It evaluates candidate sites across **28 geospatial parameters** organized into **6 parameter families**, producing **4 sub-scores** that combine into a single composite ranking per candidate location.
+GRIME is a multi-parameter optimization system that identifies optimal locations for deploying trash interception barriers ("nets") on urban waterways. It evaluates candidate sites across **27 geospatial parameters** organized into **6 parameter families**, producing **4 sub-scores** that combine into a single composite ranking per candidate location.
 
 **What makes it technically interesting:**
 - A two-level weighted scoring architecture (parameters → sub-scores → composite) that is both interpretable and tunable
@@ -11,7 +11,7 @@ GRIME is a multi-parameter optimization system that identifies optimal locations
 - Manning's equation applied to estimate flow velocity from DEM slope and channel geometry, with feasibility gates that eliminate sites where deployment is physically impossible
 - Monte Carlo sensitivity analysis via Dirichlet-perturbed weight vectors to assess ranking robustness
 - Three-phase candidate placement algorithm: spatial constraint satisfaction → full-parameter scoring → population-scaled risk-percentile filtering
-- On-demand real waterway geometry from OpenStreetMap's Overpass API for 108,772 cities across 240 countries
+- On-demand real waterway geometry from OpenStreetMap's Overpass API for 89,518 places across 239 countries
 
 **Scope:** Site selection modeling and scoring. GRIME does not design the physical trap, predict trash composition, or model individual debris trajectories.
 
@@ -109,7 +109,7 @@ graph TD
     D --> E[Stream Network Extraction]
     E --> F[Candidate Site Generation]
 
-    G[EPA APIs - TRI ECHO EJSCREEN SDWIS FRS] --> H[Parameter Computation - 28 params x 6 families]
+    G[EPA APIs - TRI ECHO EJSCREEN SDWIS FRS] --> H[Parameter Computation - 27 params x 6 families]
     I[USGS APIs - NWIS StreamStats PAD-US] --> H
     J[Census APIs - ACS TIGER] --> H
     K[OSM - Overpass API] --> H
@@ -139,7 +139,14 @@ graph TD
 | Scoring Engine | `core/scoring.py` | Normalize, weight, composite, sensitivity analysis |
 | API Server | `api/main.py` | REST + WebSocket endpoints serving scored GeoJSON |
 | Dashboard | `dashboard/index.html` | Interactive map with on-demand OSM waterway fetching and client-side scoring |
-| Places Database | `mock_data/places.json` | 108,772 city/town records across 240 countries (7MB compact JSON) |
+| Places Database | `mock_data/places.json` | 89,518 place records across 239 countries (~6MB compact JSON) |
+
+> **About the places database.** The 89,518 records come from `geonamescache` (real
+> cities/towns with population ≥ 100) plus procedurally generated nearby townships
+> (`scripts/generate_mock.py`, seeded for reproducibility). They exist only to give
+> the explorer a global set of clickable starting points — waterway geometry and
+> all scoring are computed live from OpenStreetMap at click time, so the procedural
+> names never enter a score. We say "places," not "cities," for this reason.
 
 ### Data flow
 
@@ -159,7 +166,7 @@ Mode 2 exists because Mode 1 takes 3–5 minutes per watershed and requires inst
 
 ### 4.1 Two-level weighted scoring
 
-The 28 raw parameters are not directly comparable (population density in persons/km² vs flow velocity in m/s vs a binary land ownership flag). The system handles this through two-level aggregation:
+The 27 raw parameters are not directly comparable (population density in persons/km² vs flow velocity in m/s vs a binary land ownership flag). The system handles this through two-level aggregation:
 
 1. **Parameter level:** Each raw parameter is MinMax-normalized to [0, 1] independently within the candidate set, then multiplied by its within-family weight. The weighted sum produces a sub-score in [0, 100].
 
@@ -206,7 +213,7 @@ A minimum floor of 5 deployed sites ensures the model always produces enough out
 
 ### 5.1 Composite scoring function
 
-Let **x** ∈ ℝ²⁸ be the raw parameter vector for a candidate site. The composite score S(**x**) is:
+Let **x** ∈ ℝ²⁷ be the raw parameter vector for a candidate site. The composite score S(**x**) is:
 
 ```
 S(x) = Σ(k=1..4) ωk · Gk(x)
@@ -399,7 +406,7 @@ FUNCTION generate_candidates(streams, pop, country):
     // ── Phase 2: Score every valid position ──
     scored ← []
     FOR EACH pos IN valid_positions:
-        compute 28 parameters (simplified model)
+        compute 27 parameters (simplified model)
         compute 4 sub-scores
         compute composite
         scored.add(pos with scores)
@@ -448,7 +455,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
     RETURN normalize(result.x)
 ```
 
-**Status:** Implemented in `core/scoring.py` but not yet run against real ground-truth data.
+**Status:** Implemented in `core/scoring.py` as `optimize_weights(candidates_df, known_good_indices)` — a Gaussian-process `gp_minimize` over the four sub-score weights whose objective minimizes the mean rank of known-good sites. Not yet run against real ground-truth trap locations (no validated dataset yet), so the shipped weights remain the heuristic defaults.
 
 ---
 
@@ -456,7 +463,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 ### ADR-1: Two-level scoring instead of flat weighted sum
 
-**Decision:** Aggregate 28 parameters into 4 sub-scores, then combine sub-scores into a composite.
+**Decision:** Aggregate 27 parameters into 4 sub-scores, then combine sub-scores into a composite.
 
 **Context:** A flat 28-weight sum is opaque — changing one weight has a non-obvious effect.
 
@@ -591,7 +598,7 @@ grime/
 ├── dashboard/
 │   └── index.html              # Mapbox map, Overpass integration, client-side scoring
 ├── mock_data/
-│   └── places.json             # 108,772 cities, 240 countries (7MB)
+│   └── places.json             # 89,518 places, 239 countries (6MB)
 ├── scripts/
 │   └── generate_mock.py        # Builds places.json from geonamescache
 ├── notebooks/
@@ -630,7 +637,7 @@ grime/
 ### Dashboard (demo mode)
 
 1. Browser opens `dashboard/index.html`
-2. Fetches `places.json` (7MB) → parses 108,772 cities
+2. Fetches `places.json` (6MB) → parses 89,518 places
 3. Mapbox GL JS renders clustered city markers
 4. User clicks city → `openCity(idx)` fires
 5. POST to Overpass API → returns waterway geometry as JSON
@@ -762,13 +769,13 @@ pip install -r requirements-full.txt
 
 ### Dashboard demo (90-second path)
 
-1. Open map → 108,772 cities visible as clustered dots
+1. Open map → 89,518 places visible as clustered dots
 2. Search "Durham" → click → fly to Durham, NC
 3. Wait 3s → real Ellerbe Creek geometry appears with scored candidate dots
 4. Click top-ranked site → score breakdown panel shows 4 sub-scores
 5. Toggle "Waterways" → OSM overlay confirms alignment
 6. Toggle "Light theme" → clean beige presentation mode
-7. Explain the 28-parameter model and show weight sensitivity
+7. Explain the 27-parameter model and show weight sensitivity
 
 ### Python pipeline on custom watershed
 
@@ -790,7 +797,7 @@ curl http://localhost:8000/api/weights
 
 | Operation | Time | Bottleneck |
 |-----------|------|-----------|
-| Dashboard initial load | ~3s | Parsing 7MB places.json |
+| Dashboard initial load | ~3s | Parsing ~6MB places.json |
 | Overpass API query | 2–8s | Network + OSM server |
 | Client-side placement + scoring | <100ms | Haversine collision checks |
 | Python DEM pipeline (full) | 30–90s | py3dep HTTP fetch + pysheds |
@@ -890,4 +897,4 @@ MIT.
 
 ---
 
-*GRIME · 28 parameters · 6 families · 108,772 cities · 240 countries*
+*GRIME · 27 parameters · 6 families · 89,518 places · 239 countries*

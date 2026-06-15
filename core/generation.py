@@ -1,5 +1,5 @@
 """
-gARB — Trash Generation Parameters
+GRIME — Trash Generation Parameters
 Population density, impervious surface, road density, TRI, NPDES, CSO, 311 complaints.
 
 All APIs are free and require no keys unless noted.

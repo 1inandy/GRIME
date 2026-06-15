@@ -1,6 +1,6 @@
 """
-gARB — Composite Scoring Model
-28 parameters → 4 sub-scores → 1 composite score per candidate site.
+GRIME — Composite Scoring Model
+27 parameters → 4 sub-scores → 1 composite score per candidate site.
 
 Architecture:
   Parameters → [MinMax normalize] → [weighted sum] → Sub-score (0-100)
@@ -137,13 +137,82 @@ def sensitivity_analysis(candidates_df, n_perturbations=50):
     return baseline.sort_values("composite_score", ascending=False)
 
 
+# ── Bayesian Weight Optimization (C6) ────────────────────────────────
+
+def optimize_weights(candidates_df, known_good_indices, n_calls=40, random_state=42):
+    """
+    Gaussian-process (Bayesian) optimization of the four sub-score weights so that
+    known-good deployment sites rank as near the top as possible.
+
+    Parameters
+    ----------
+    candidates_df : (Geo)DataFrame. If the four ``*_score`` columns are already
+        present they are used directly; otherwise they are computed from the
+        per-family parameter weights via :func:`compute_subscore`.
+    known_good_indices : iterable of ``candidates_df`` index labels that are
+        known-good sites (e.g. field-validated accumulation points).
+    n_calls : gp_minimize evaluations. random_state : reproducibility.
+
+    Returns
+    -------
+    dict mapping ``generation_score``/``flow_score``/``impact_score``/
+    ``feasibility_score`` to optimized weights that sum to 1.0.
+
+    scikit-optimize is imported lazily; an informative ImportError is raised if
+    it is not installed.
+    """
+    try:
+        from skopt import gp_minimize
+        from skopt.space import Real
+    except ImportError as e:  # pragma: no cover - exercised only without skopt
+        raise ImportError(
+            "optimize_weights requires scikit-optimize "
+            "(pip install scikit-optimize)."
+        ) from e
+
+    df = candidates_df.copy()
+    families = (
+        ("generation_score", GENERATION_WEIGHTS),
+        ("flow_score", FLOW_WEIGHTS),
+        ("impact_score", IMPACT_WEIGHTS),
+        ("feasibility_score", FEASIBILITY_WEIGHTS),
+    )
+    for col, fam_w in families:
+        if col not in df.columns:
+            df[col] = compute_subscore(df, fam_w)
+
+    sub = df[[c for c, _ in families]].to_numpy(dtype=float)
+    good = [df.index.get_loc(i) for i in known_good_indices if i in df.index]
+    if not good:
+        raise ValueError("none of known_good_indices are present in candidates_df")
+
+    n = len(df)
+
+    def objective(w):
+        w = np.asarray(w, dtype=float)
+        w = w / w.sum()
+        composite = sub @ w
+        order = np.argsort(-composite)              # best → worst
+        rank = np.empty(n, dtype=int)
+        rank[order] = np.arange(n)                  # rank 0 = top of the list
+        return float(np.mean(rank[good]))           # minimize mean rank of good sites
+
+    space = [Real(0.05, 0.60, name=s)
+             for s in ("generation", "flow", "impact", "feasibility")]
+    result = gp_minimize(objective, space, n_calls=n_calls, random_state=random_state)
+
+    w = np.asarray(result.x, dtype=float)
+    w = w / w.sum()
+    return {c: float(w[i]) for i, (c, _) in enumerate(families)}
+
+
 # ── Full Feature Pipeline ────────────────────────────────────────────
 
 def build_all_features(candidates_gdf, bbox, stream_gdf=None,
                        dem_array=None, dem_transform=None,
                        max_workers=4):
     """
-    Compute all 28 parameter features for all candidates.
+    Compute all 27 parameter features for all candidates.
     Uses threading for API calls. Returns enriched GeoDataFrame.
     """
     df = candidates_gdf.copy()

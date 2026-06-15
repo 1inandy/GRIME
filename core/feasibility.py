@@ -1,5 +1,5 @@
 """
-gARB — Deployment Feasibility Parameters
+GRIME — Deployment Feasibility Parameters
 Road access, channel width, flow velocity gates, land ownership,
 bank slope stability, bridge proximity bonus.
 """

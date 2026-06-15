@@ -1,5 +1,5 @@
 """
-gARB Core Pipeline
+GRIME Core Pipeline
 DEM → fill → flow direction → accumulation → stream network → candidate sites
 
 This is the foundation. Get this working FIRST before anything else.
@@ -256,7 +256,7 @@ def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="gARB DEM Pipeline")
+    parser = argparse.ArgumentParser(description="GRIME DEM Pipeline")
     parser.add_argument("--bbox", type=str, default="-79.05,35.90,-78.75,36.05",
                         help="Bounding box: west,south,east,north")
     parser.add_argument("--resolution", type=int, default=10, help="DEM resolution in meters")

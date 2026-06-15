@@ -1,5 +1,5 @@
 """
-gRIME API — FastAPI backend
+GRIME API — FastAPI backend
 Serves scored candidate sites, score breakdowns, and real-time updates via WebSocket.
 
 Run: uvicorn api.main:app --reload --port 8000
@@ -321,6 +321,15 @@ async def serve_landing():
 @app.get("/dashboard")
 async def serve_dashboard():
     """Dashboard page."""
+    landing = dashboard_dir / "index.html"
+    if landing.exists():
+        return FileResponse(landing)
+    return JSONResponse(status_code=404, content={"error": "Dashboard not found"})
+
+
+@app.get("/map")
+async def serve_map():
+    """Alias that serves the dashboard HTML (documented in README §11)."""
     landing = dashboard_dir / "index.html"
     if landing.exists():
         return FileResponse(landing)
