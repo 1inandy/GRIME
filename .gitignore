@@ -6,6 +6,10 @@ dashboard/config.js
 data/
 *.gpkg
 
+# Pipeline runtime cache + byproducts (osmnx/py3dep HTTP cache, raw stream network)
+cache/
+mock_data/streams.geojson
+
 # Python
 __pycache__/
 *.pyc

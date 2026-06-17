@@ -37,9 +37,14 @@ from pathlib import Path
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
+from dotenv import load_dotenv
 
 # Allow `python3 scripts/score_candidates.py` from anywhere (repo root on path).
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Read CENSUS_API_KEY (and friends) from the gitignored .env at the repo root,
+# pinned to the repo path so it loads regardless of the current directory.
+load_dotenv(os.path.join(_REPO_ROOT, ".env"))
+sys.path.insert(0, _REPO_ROOT)
 
 from core import UTM_CRS, WGS84
 from core.flow import estimate_runoff_coefficient
@@ -164,14 +169,32 @@ def run_live(bbox=None):
     from core.pipeline import run_pipeline, process_hydrology, fetch_dem
     from core.scoring import build_all_features
     bbox = bbox or ELLERBE_BBOX
-    # run_pipeline returns (stream_gdf, candidates); we re-derive fdir for slope.
+    # Fetch + condition the DEM ONCE, then thread that hydrology into run_pipeline
+    # so it does not fetch/condition the DEM a second time (the old code called
+    # fetch_dem + process_hydrology here AND again inside run_pipeline).
     dem = fetch_dem(bbox)
-    grid, fdir, acc, elevation, transform = process_hydrology(dem, bbox)
-    stream_gdf, candidates = run_pipeline(bbox=bbox)
+    hydrology = process_hydrology(dem, bbox)
+    grid, fdir, acc, elevation, transform = hydrology
+    # Stream/candidate density: a 10 m DEM at the default 500-cell threshold (0.05
+    # km²) yields a ~2 M-segment network and tens of thousands of candidates — far
+    # too many for per-candidate federal/OSM lookups. Use a hydrologically
+    # meaningful channel threshold (≈2 km² drainage) and a 1.5 km along-stream
+    # spacing → a tractable ~150-site real network across the Ellerbe/Eno streams.
+    LIVE_THRESHOLD = 20000   # accumulation cells (×100 m² = 2.0 km² min drainage)
+    LIVE_SPACING_M = 1500
+    stream_gdf, candidates, _ = run_pipeline(
+        bbox=bbox, hydrology=hydrology, return_hydrology=True,
+        threshold=LIVE_THRESHOLD, spacing_m=LIVE_SPACING_M)
+    # Candidates stay in UTM: build_all_features' per-candidate catchment discs and
+    # all distance maths are metre-based, and lat/lon for API lookups are already
+    # columns on the candidates (so we must NOT reproject the geometry to WGS84,
+    # which would turn the metre buffers into ~degree-sized polygons and collapse
+    # the per-candidate generation/EJ features to constant fallbacks).
     scored = build_all_features(
-        candidates.to_crs(WGS84), bbox, stream_gdf=stream_gdf,
+        candidates, bbox, stream_gdf=stream_gdf,
         dem_array=elevation, dem_transform=transform, fdir=fdir,
     )
+    np.random.seed(SEED)  # reproducible Dirichlet draws for robustness_pct
     scored = sensitivity_analysis(scored, n_perturbations=200).reset_index(drop=True)
     scored["rank"] = scored.index + 1
     return scored
@@ -187,14 +210,27 @@ def write_geojson(scored, mode):
                       "geometry": {"type": "Point",
                                    "coordinates": [round(r.geometry.x, 6), round(r.geometry.y, 6)]},
                       "properties": props})
+    if mode == "live":
+        note = ("Scored by scripts/score_candidates.py (live pipeline). Real USGS 3DEP "
+                "10 m DEM → UTM reprojection → pysheds D8 fill/flowdir/accumulation → "
+                "stream network (≥2 km² drainage) → candidate sites; the 27 parameters "
+                "come from live endpoints where available — Census ACS 5-yr (population "
+                "density + EJSCREEN demographic-index reconstruction), USGS NWIS gauge, "
+                "OSM drive network / leisure+tourism features, EPA TRI/FRS — with "
+                "summarize_provenance reporting which vary per-candidate vs. fall back "
+                "(dead endpoints: EPA ECHO, USGS StreamStats, EPA EJSCREEN, Durham 311; "
+                "NLCD imperviousness not served by py3dep). Scoring is the real shipped "
+                "code: hard gates, MinMax + C2 constant-column drop, M5 velocity curve, "
+                "two-level composite, Dirichlet sensitivity.")
+    else:
+        note = ("Scored by scripts/score_candidates.py (deterministic offline mode, "
+                "seed=42). In offline mode the scoring (hard gates, MinMax+constant-drop, "
+                "M5 velocity curve, composite, Dirichlet sensitivity) is the real "
+                "shipped code; raw parameters are deterministic synthetic estimates, "
+                "not live gauge/Census measurements.")
     fc = {
         "type": "FeatureCollection",
-        "note": ("Scored by scripts/score_candidates.py "
-                 f"({'live pipeline' if mode == 'live' else 'deterministic offline mode, seed=42'}). "
-                 "In offline mode the scoring (hard gates, MinMax+constant-drop, "
-                 "M5 velocity curve, composite, Dirichlet sensitivity) is the real "
-                 "shipped code; raw parameters are deterministic synthetic estimates, "
-                 "not live gauge/Census measurements."),
+        "note": note,
         "features": feats,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -202,9 +238,12 @@ def write_geojson(scored, mode):
         json.dump(fc, f, indent=1, sort_keys=True)
         f.write("\n")
     print(f"Wrote {len(feats)} scored candidates → {OUT}")
+    top = scored.iloc[0]
+    # Live candidates have no synthetic `stream_name`; fall back to a segment label.
+    label = top.get("stream_name") or f"segment {int(top.get('segment_id', 0))}"
     print(f"  composite range: {scored['composite_score'].min():.2f}"
           f"–{scored['composite_score'].max():.2f}; "
-          f"top: {scored.iloc[0]['stream_name']} = {scored.iloc[0]['composite_score']:.2f}")
+          f"top: {label} = {top['composite_score']:.2f}")
 
 
 def main():

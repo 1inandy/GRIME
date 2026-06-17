@@ -44,24 +44,8 @@ def get_discharge_stats(site_no=ELLERBE_GAUGE, start="2000-01-01", end="2023-12-
         )
 
         discharge = df["00060_Mean"].dropna()
-
-        peaks, _ = nwis.get_peaks(sites=site_no)
-        peak_values = peaks["peak_va"].dropna().astype(float)
-
-        stats = {
-            "mean_q_cfs": float(discharge.mean()),
-            "median_q_cfs": float(discharge.median()),
-            "peak_q_cfs": float(peak_values.mean()) if len(peak_values) > 0 else float(discharge.quantile(0.99)),
-            "max_q_cfs": float(peak_values.max()) if len(peak_values) > 0 else float(discharge.max()),
-            "cv": float(discharge.std() / discharge.mean()) if discharge.mean() > 0 else 1.0,
-            "high_flow_days": int((discharge > discharge.quantile(0.9)).sum()),
-            # L6: count of annual-peak *records*, not guaranteed-distinct years.
-            "n_peak_records": len(peak_values),
-        }
-        return stats
-
     except Exception as e:
-        print(f"  [warn] USGS data fetch failed: {e}")
+        print(f"  [warn] USGS daily-values fetch failed: {e}")
         # Ellerbe Creek typical values as fallback
         return {
             "mean_q_cfs": 12.5,
@@ -72,6 +56,28 @@ def get_discharge_stats(site_no=ELLERBE_GAUGE, start="2000-01-01", end="2023-12-
             "high_flow_days": 36,
             "n_peak_records": 20,
         }
+
+    # Annual peaks are a separate NWIS service (and `get_peaks` was renamed to
+    # `get_discharge_peaks` in dataretrieval ≥1.0). Tolerate its absence so the real
+    # daily-value stats survive — fall back to daily-flow quantiles for the peak.
+    peak_values = None
+    try:
+        peaks, _ = nwis.get_discharge_peaks(sites=site_no)
+        peak_values = peaks["peak_va"].dropna().astype(float)
+    except Exception as e:
+        print(f"  [warn] USGS peaks fetch failed ({e}); using daily-value quantiles")
+    has_peaks = peak_values is not None and len(peak_values) > 0
+
+    return {
+        "mean_q_cfs": float(discharge.mean()),
+        "median_q_cfs": float(discharge.median()),
+        "peak_q_cfs": float(peak_values.mean()) if has_peaks else float(discharge.quantile(0.99)),
+        "max_q_cfs": float(peak_values.max()) if has_peaks else float(discharge.max()),
+        "cv": float(discharge.std() / discharge.mean()) if discharge.mean() > 0 else 1.0,
+        "high_flow_days": int((discharge > discharge.quantile(0.9)).sum()),
+        # L6: count of annual-peak *records*, not guaranteed-distinct years.
+        "n_peak_records": len(peak_values) if has_peaks else 0,
+    }
 
 
 # ── 3.2 Flow Velocity — Manning's Equation ──────────────────────────

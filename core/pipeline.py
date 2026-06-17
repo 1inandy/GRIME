@@ -15,7 +15,7 @@ from pathlib import Path
 from core import ELLERBE_BBOX, UTM_CRS, WGS84
 
 
-def fetch_dem(bbox, resolution=10):
+def fetch_dem(bbox, resolution=10, retries=4, backoff=5.0):
     """
     Fetch DEM from USGS 3DEP via py3dep, then **reproject to UTM** (C1).
 
@@ -25,10 +25,28 @@ def fetch_dem(bbox, resolution=10):
     slope reach walked ~1.1M cells off the bottom of the DEM. Reprojecting to UTM
     (metre, near-square cells) before any hydrology fixes both C1a and C1b.
     """
+    import time
     import py3dep
 
     print(f"Fetching DEM for bbox={bbox} at {resolution}m resolution...")
-    dem = py3dep.get_map("DEM", bbox, resolution=resolution, crs=WGS84)
+    # USGS 3DEP's WMS (elevation.nationalmap.gov) intermittently 502s on the
+    # GetCapabilities precheck py3dep runs; retry with backoff so a transient
+    # gateway error doesn't kill the whole live run.
+    last_err = None
+    dem = None
+    for attempt in range(1, retries + 1):
+        try:
+            dem = py3dep.get_map("DEM", bbox, resolution=resolution, crs=WGS84)
+            break
+        except Exception as e:
+            last_err = e
+            print(f"  [retry] 3DEP DEM fetch attempt {attempt}/{retries} failed: {e}")
+            if attempt < retries:
+                time.sleep(backoff * attempt)
+    if dem is None:
+        raise RuntimeError(
+            f"3DEP DEM fetch failed after {retries} attempts"
+        ) from last_err
     # Reproject to UTM so downstream pixel maths are in metres.
     dem = dem.rio.reproject(UTM_CRS)
     px = abs(dem.rio.transform()[0])
@@ -39,54 +57,58 @@ def fetch_dem(bbox, resolution=10):
 
 def process_hydrology(dem_raster, bbox):
     """
-    Run pysheds hydrological processing:
+    Run pysheds hydrological processing (pysheds ≥0.3/0.5 API):
     fill_pits → fill_depressions → resolve_flats → flowdir → accumulation
 
-    Returns (grid, fdir, acc) objects.
+    Returns (grid, fdir, acc, elevation_array, transform).
+
+    NOTE: pysheds dropped the old ``Grid().add_gridded_data(...)`` /
+    string-named-dataset API (it errored under the pinned pysheds≥0.4). The
+    modern API reads rasters via ``Grid.from_raster`` and threads ``Raster``
+    objects through each step. The DEM is already reprojected to UTM
+    (``fetch_dem``), so we write it to a temporary GeoTIFF and let pysheds inherit
+    the affine / CRS / nodata from it.
     """
+    import os
+    import tempfile
     from pysheds.grid import Grid
 
     print("Running hydrological processing...")
 
-    # Initialize grid from the DEM raster
-    # py3dep returns xarray DataArray — extract values and affine
-    values = dem_raster.values.squeeze()
-    transform = dem_raster.rio.transform()
-    crs_str = str(dem_raster.rio.crs)
+    if dem_raster.rio.nodata is None:
+        dem_raster = dem_raster.rio.write_nodata(-9999.0)
 
-    grid = Grid()
-    grid.add_gridded_data(
-        values, data_name="dem",
-        affine=transform,
-        crs=crs_str,
-        nodata=dem_raster.rio.nodata or -9999
-    )
+    tmp = tempfile.NamedTemporaryFile(suffix=".tif", delete=False)
+    tmp.close()
+    try:
+        dem_raster.rio.to_raster(tmp.name)
+        grid = Grid.from_raster(tmp.name)
+        dem = grid.read_raster(tmp.name)
 
-    # Condition the DEM
-    print("  Filling pits...")
-    pit_filled = grid.fill_pits("dem")
-    grid.add_gridded_data(pit_filled, data_name="pit_filled", affine=transform, crs=crs_str)
+        # Condition the DEM
+        print("  Filling pits...")
+        pit_filled = grid.fill_pits(dem)
 
-    print("  Filling depressions...")
-    flooded = grid.fill_depressions("pit_filled")
-    grid.add_gridded_data(flooded, data_name="flooded", affine=transform, crs=crs_str)
+        print("  Filling depressions...")
+        flooded = grid.fill_depressions(pit_filled)
 
-    print("  Resolving flats...")
-    inflated = grid.resolve_flats("flooded")
-    grid.add_gridded_data(inflated, data_name="inflated", affine=transform, crs=crs_str)
+        print("  Resolving flats...")
+        inflated = grid.resolve_flats(flooded)
 
-    print("  Computing flow direction (D8)...")
-    fdir = grid.flowdir("inflated")
-    grid.add_gridded_data(fdir, data_name="fdir", affine=transform, crs=crs_str)
+        print("  Computing flow direction (D8)...")
+        fdir = grid.flowdir(inflated)
 
-    print("  Computing flow accumulation...")
-    acc = grid.accumulation("fdir")
-    grid.add_gridded_data(acc, data_name="acc", affine=transform, crs=crs_str)
+        print("  Computing flow accumulation...")
+        acc = grid.accumulation(fdir)
+    finally:
+        os.unlink(tmp.name)
 
-    max_acc = float(np.nanmax(acc))
+    elevation = np.asarray(dem, dtype=float)   # raw elevation, grid-aligned
+    transform = grid.affine
+    max_acc = float(np.nanmax(np.asarray(acc)))
     print(f"  Max accumulation: {max_acc:.0f} cells")
 
-    return grid, fdir, acc, values, transform
+    return grid, fdir, acc, elevation, transform
 
 
 def extract_streams(grid, fdir, acc, threshold=500):
@@ -95,7 +117,13 @@ def extract_streams(grid, fdir, acc, threshold=500):
     threshold: minimum accumulation cells to be considered a stream.
     """
     print(f"Extracting stream network (threshold={threshold})...")
-    streams = grid.extract_river_network("fdir", "acc", threshold=threshold)
+    # pysheds ≥0.3's extract_river_network takes a BOOLEAN mask of channelized
+    # cells as its 2nd arg — not the raw accumulation. The old call passed `acc`
+    # (every acc>0 cell read as "channel" → ~2M degenerate per-cell segments) plus
+    # a `threshold=` kwarg that silently lands in **kwargs (forwarded to .view) and
+    # is ignored. Build the channel mask explicitly: cells draining ≥ threshold.
+    mask = acc > threshold
+    streams = grid.extract_river_network(fdir, mask)
     n_features = len(streams.get("features", []))
     print(f"  Extracted {n_features} stream segments")
     return streams
@@ -202,20 +230,46 @@ def compute_catchment_area(grid, fdir, acc, candidate_row, candidate_col, pixel_
     return max(area_km2, 0.01)
 
 
+def snap_to_channel(acc, r, c, radius=2):
+    """Snap a candidate pixel to the highest-accumulation cell in a small window.
+
+    Candidates are interpolated along the *vector* stream network; mapping them back
+    onto the accumulation raster can land a cell or two off the channel (low acc →
+    catchment collapses to the 0.01 km² clamp floor). Snapping to the local
+    max-accumulation cell recovers the true channel pour point so the catchment area
+    reflects the stream the candidate sits on.
+    """
+    acc = np.asarray(acc)
+    nr, nc = acc.shape
+    r0, r1 = max(0, r - radius), min(nr, r + radius + 1)
+    c0, c1 = max(0, c - radius), min(nc, c + radius + 1)
+    window = acc[r0:r1, c0:c1]
+    if window.size == 0 or not np.isfinite(window).any():
+        return r, c
+    dr, dc = np.unravel_index(np.nanargmax(window), window.shape)
+    return r0 + int(dr), c0 + int(dc)
+
+
 def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
-                 spacing_m=200, output_dir="mock_data"):
+                 spacing_m=200, output_dir="mock_data",
+                 hydrology=None, return_hydrology=False):
     """
     Full pipeline: DEM → streams → candidates → GeoJSON output.
     This is what you run before the hackathon to validate everything.
+
+    ``hydrology`` lets a caller pass a precomputed
+    ``(grid, fdir, acc, elevation, transform)`` tuple so the DEM is not fetched +
+    conditioned twice (run_live reuses the one it already built). Set
+    ``return_hydrology=True`` to get that tuple back alongside the results.
     """
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    # Step 1: Fetch DEM
-    dem = fetch_dem(bbox, resolution=resolution)
-
-    # Step 2: Hydrological processing
-    grid, fdir, acc, elevation, transform = process_hydrology(dem, bbox)
+    # Steps 1-2: Fetch DEM + hydrological processing (reuse if provided).
+    if hydrology is None:
+        dem = fetch_dem(bbox, resolution=resolution)
+        hydrology = process_hydrology(dem, bbox)
+    grid, fdir, acc, elevation, transform = hydrology
 
     # Step 3: Extract stream network
     streams = extract_streams(grid, fdir, acc, threshold=threshold)
@@ -226,11 +280,12 @@ def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
         json.dump(streams, f)
     print(f"Saved stream network to {stream_path}")
 
-    # Step 4: Convert to GeoDataFrame and compute stream order (H3 heuristic)
-    stream_gdf = streams_to_geodataframe(streams)
+    # Step 4: Convert to GeoDataFrame and compute stream order (H3 heuristic).
+    # The pysheds grid is UTM, so the extracted stream coords are UTM metres.
+    stream_gdf = streams_to_geodataframe(streams, source_crs=UTM_CRS)
     if stream_gdf.empty:
         print("ERROR: No streams extracted. Try lowering the threshold.")
-        return None, None
+        return (None, None, hydrology) if return_hydrology else (None, None)
 
     stream_gdf = compute_stream_order(stream_gdf)
 
@@ -245,8 +300,11 @@ def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
         pt = row.geometry  # UTM
         col = int((pt.x - transform[2]) / transform[0])
         r = int((pt.y - transform[5]) / transform[4])
-        r = np.clip(r, 0, elevation.shape[0] - 1)
-        col = np.clip(col, 0, elevation.shape[1] - 1)
+        r = int(np.clip(r, 0, elevation.shape[0] - 1))
+        col = int(np.clip(col, 0, elevation.shape[1] - 1))
+        # Snap to the channel (max-accumulation cell nearby) so the catchment area
+        # reflects the real stream rather than an off-channel pixel (C1a clamp).
+        r, col = snap_to_channel(acc, r, col, radius=2)
 
         # Lat/lon for API lookups (StreamStats etc.) computed once per candidate.
         pt_wgs = gpd.GeoDataFrame(
@@ -269,6 +327,8 @@ def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
     cand_wgs.to_file(cand_path, driver="GeoJSON")
     print(f"Saved {len(candidates)} candidates to {cand_path}")
 
+    if return_hydrology:
+        return stream_gdf, candidates, hydrology
     return stream_gdf, candidates
 
 

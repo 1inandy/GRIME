@@ -41,6 +41,39 @@ def safe_call(fn, *args, default=0.0, **kwargs):
         return default
 
 
+# ── Shared OSM drive-network cache ───────────────────────────────────
+# Both road density (total km / catchment area) and road access (distance to the
+# nearest road) need the bbox's drive network. Fetching it once (it is a large
+# Overpass query) and reusing it for every candidate is the difference between a
+# multi-hour run and a few minutes — the data is identical for every candidate.
+_DRIVE_GRAPH_CACHE = {}
+
+
+def osm_drive_graph(bbox):
+    """Fetch + cache the OSM drive network for ``bbox`` once.
+
+    Returns ``{"nodes_utm": GeoDataFrame, "length_km": float}`` (nodes reprojected
+    to UTM for metre-based nearest-road distance), or ``None`` on any failure.
+    """
+    key = tuple(round(float(x), 6) for x in bbox)
+    if key in _DRIVE_GRAPH_CACHE:
+        return _DRIVE_GRAPH_CACHE[key]
+    try:
+        import osmnx as ox
+        west, south, east, north = bbox
+        G = ox.graph_from_bbox(north, south, east, west, network_type="drive")
+        nodes, edges = ox.graph_to_gdfs(G)
+        out = {
+            "nodes_utm": nodes.to_crs(UTM_CRS),
+            "length_km": float(edges["length"].sum()) / 1000.0,
+        }
+    except Exception as e:
+        print(f"  [warn] osm_drive_graph: {e}")
+        out = None
+    _DRIVE_GRAPH_CACHE[key] = out
+    return out
+
+
 def bbox_to_polygon(bbox, crs=WGS84):
     """Convert (west, south, east, north) bbox to a GeoDataFrame polygon."""
     from shapely.geometry import box

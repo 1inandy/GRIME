@@ -50,8 +50,8 @@ CHECKS = [
      "" if KEY else "no CENSUS_API_KEY set — ACS now rejects keyless requests"),
     ("Census TIGERweb (block-group geometry)", "GET",
      "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/"
-     "tigerWMS_ACS2022/MapServer/10/query",
-     {"where": "STATE=37 AND COUNTY=063", "outFields": "GEOID",
+     "tigerWMS_ACS2022/MapServer/8/query",
+     {"where": "STATE='37' AND COUNTY='063'", "outFields": "GEOID",
       "f": "json", "returnGeometry": "false", "resultRecordCount": "1"}, False, ""),
     ("EPA EJSCREEN broker (DEAD — expected DOWN, C4)", "GET",
      "https://ejscreen.epa.gov/mapper/ejscreenRESTbroker.aspx",

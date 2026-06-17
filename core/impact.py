@@ -123,10 +123,12 @@ def _fetch_county_demographics(state_fips, county_fips):
                         + df["pct_poc"].rank(pct=True)) / 2
     df["GEOID"] = (df["state"] + df["county"] + df["tract"] + df["block group"])
 
+    # Layer 8 = "Census Block Groups" (layer 10 is school districts); STATE/COUNTY
+    # are string fields and must be quoted or ArcGIS rejects the query.
     tiger_url = (
         f"https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/"
-        f"tigerWMS_ACS2022/MapServer/10/query?"
-        f"where=STATE={state_fips}+AND+COUNTY={county_fips}"
+        f"tigerWMS_ACS2022/MapServer/8/query?"
+        f"where=STATE='{state_fips}'+AND+COUNTY='{county_fips}'"
         f"&outFields=GEOID&f=geojson&returnGeometry=true"
     )
     try:
@@ -188,10 +190,35 @@ PROTECTION_WEIGHTS = {
 }
 
 
-def get_protected_area_score(candidate_point_utm, distance_km=20):
+# OSM feature collections (parks, tourism amenities) for the whole bbox, fetched
+# once and filtered per candidate — replaces a slow per-candidate features_from_point
+# Overpass query (the protected-area one used a 20 km radius).
+_OSM_FEATURES_CACHE = {}
+
+
+def _bbox_osm_features(bbox, tags, label):
+    """All OSM features matching ``tags`` in ``bbox`` (UTM), cached. None on failure."""
+    if bbox is None:
+        return None
+    key = (tuple(round(float(x), 6) for x in bbox), label)
+    if key in _OSM_FEATURES_CACHE:
+        return _OSM_FEATURES_CACHE[key]
+    try:
+        import osmnx as ox
+        west, south, east, north = bbox
+        gdf = ox.features_from_bbox(north, south, east, west, tags=tags).to_crs(UTM_CRS)
+        result = gdf
+    except Exception as e:
+        print(f"  [warn] osm features {label}: {e}")
+        result = None
+    _OSM_FEATURES_CACHE[key] = result
+    return result
+
+
+def get_protected_area_score(candidate_point_utm, distance_km=20, bbox=None):
     """
     Score based on proximity to protected areas.
-    Uses PAD-US if cached locally, otherwise estimates from OSM.
+    Uses PAD-US if cached locally, otherwise estimates from OSM (bbox-cached).
     """
     try:
         # Try PAD-US local cache first
@@ -214,7 +241,18 @@ def get_protected_area_score(candidate_point_utm, distance_km=20):
         return score
 
     except Exception:
-        # Fallback: use OSM parks
+        # Fallback: use OSM parks/protected areas (whole-bbox set, cached).
+        feats = _bbox_osm_features(
+            bbox,
+            {"leisure": ["park", "nature_reserve"], "boundary": "protected_area"},
+            "protected",
+        )
+        if feats is not None:
+            if feats.empty:
+                return 0.0
+            near = feats[feats.intersects(candidate_point_utm.buffer(distance_km * 1000))]
+            return min(len(near) * 0.1, 1.0)
+        # No bbox / fetch failed → per-point OSM query.
         try:
             import osmnx as ox
             pt_wgs = gpd.GeoDataFrame(
@@ -233,8 +271,15 @@ def get_protected_area_score(candidate_point_utm, distance_km=20):
 
 # ── 6.4 Superfund Site Proximity ─────────────────────────────────────
 
+_SUPERFUND_CACHE = {}
+
+
 def get_superfund_sites(catchment_bbox):
-    """Pull Superfund (CERCLIS/NPL) sites from EPA FRS API."""
+    """Pull Superfund (CERCLIS/NPL) sites from EPA FRS API. Cached by bbox (same
+    region result for every candidate)."""
+    key = tuple(round(float(x), 6) for x in catchment_bbox)
+    if key in _SUPERFUND_CACHE:
+        return _SUPERFUND_CACHE[key]
     west, south, east, north = catchment_bbox
     url = "https://ofmpub.epa.gov/frs_public2/frs_rest_services.get_facilities"
     params = {
@@ -247,17 +292,20 @@ def get_superfund_sites(catchment_bbox):
         r = requests.get(url, params=params, timeout=30)
         data = r.json().get("Results", {}).get("FRSFacility", [])
         if not data:
-            return gpd.GeoDataFrame()
-        return gpd.GeoDataFrame(
-            data,
-            geometry=[
-                Point(float(f["Longitude83"]), float(f["Latitude83"]))
-                for f in data if f.get("Longitude83") and f.get("Latitude83")
-            ],
-            crs=WGS84,
-        ).to_crs(UTM_CRS)
+            result = gpd.GeoDataFrame()
+        else:
+            result = gpd.GeoDataFrame(
+                data,
+                geometry=[
+                    Point(float(f["Longitude83"]), float(f["Latitude83"]))
+                    for f in data if f.get("Longitude83") and f.get("Latitude83")
+                ],
+                crs=WGS84,
+            ).to_crs(UTM_CRS)
     except Exception:
-        return gpd.GeoDataFrame()
+        result = gpd.GeoDataFrame()
+    _SUPERFUND_CACHE[key] = result
+    return result
 
 
 def superfund_proximity_score(candidate_point_utm, catchment_bbox):
@@ -306,8 +354,15 @@ def estimate_beach_distance_km(lat, lon):
 
 # ── 6.6 Tourism / Recreation Value ──────────────────────────────────
 
-def get_tourism_amenity_density(candidate_point_utm, radius_km=2):
-    """Count parks, trails, and recreation amenities from OSM."""
+def get_tourism_amenity_density(candidate_point_utm, radius_km=2, bbox=None):
+    """Count parks, trails, and recreation amenities from OSM (bbox-cached)."""
+    feats = _bbox_osm_features(bbox, {"leisure": True, "tourism": True}, "tourism")
+    if feats is not None:
+        if feats.empty:
+            return 0.0
+        near = feats[feats.intersects(candidate_point_utm.buffer(radius_km * 1000))]
+        return len(near) / max(radius_km ** 2 * math.pi, 1)
+    # No bbox / fetch failed → per-point OSM query.
     try:
         import osmnx as ox
         pt_wgs = gpd.GeoDataFrame(
@@ -361,7 +416,7 @@ def compute_impact_features(candidate_row, intakes_gdf=None, bbox=None):
             water_intake_score, point_utm, intakes_gdf, default=0.0
         ),
         "protected_area_score": safe_call(
-            get_protected_area_score, point_utm, default=0.2
+            get_protected_area_score, point_utm, bbox=bbox, default=0.2
         ),
         "ej_index": safe_call(
             get_ej_index, catchment_poly, default=0.5
@@ -369,7 +424,7 @@ def compute_impact_features(candidate_row, intakes_gdf=None, bbox=None):
         "estuary_dist_km": estimate_estuary_distance_km(lat, lon),
         "beach_dist_km": estimate_beach_distance_km(lat, lon),  # H5: distinct reference
         "tourism_amenity_density": safe_call(
-            get_tourism_amenity_density, point_utm, default=1.0
+            get_tourism_amenity_density, point_utm, bbox=bbox, default=1.0
         ),
         "superfund_score": safe_call(
             superfund_proximity_score, point_utm, bbox, default=0.0

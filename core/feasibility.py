@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
-from core import UTM_CRS, WGS84, safe_call
+from core import UTM_CRS, WGS84, safe_call, osm_drive_graph
 
 
 # ── 7.1 Road Access Distance (OSMnx) ────────────────────────────────
@@ -33,6 +33,23 @@ def compute_road_access_distance(candidate_lon, candidate_lat):
         return dist_m
     except Exception:
         return 500.0  # assume moderate access
+
+
+def road_access_distance_cached(point_utm, bbox=None, lon=None, lat=None):
+    """Distance (m) to the nearest road.
+
+    Uses the cached bbox drive network (``core.osm_drive_graph`` — one Overpass
+    fetch shared across all candidates, nearest node in metres) when ``bbox`` is
+    available; otherwise falls back to the per-point graph query. This replaces a
+    ~18 s/candidate ``graph_from_point`` call with a metre-accurate KD-tree lookup.
+    """
+    if bbox is not None:
+        info = osm_drive_graph(bbox)
+        if info is not None and info.get("nodes_utm") is not None and not info["nodes_utm"].empty:
+            return float(info["nodes_utm"].geometry.distance(point_utm).min())
+    if lon is not None and lat is not None:
+        return compute_road_access_distance(lon, lat)
+    return 500.0
 
 
 def road_access_score(dist_m):
@@ -194,15 +211,17 @@ FEASIBILITY_WEIGHTS = {
 
 
 def compute_feasibility_features(candidate_row, stream_gdf=None,
-                                  nbi_gdf=None, dem_array=None, pixel_size_m=10):
+                                  nbi_gdf=None, dem_array=None, pixel_size_m=10,
+                                  bbox=None):
     """Compute all feasibility features for a single candidate."""
     point_utm = candidate_row.geometry
     lat = candidate_row.get("lat", 36.0)
     lon = candidate_row.get("lon", -78.9)
     velocity = candidate_row.get("flow_velocity_ms", 0.5)
 
-    # Road access
-    road_dist = safe_call(compute_road_access_distance, lon, lat, default=500.0)
+    # Road access — nearest road via the cached bbox drive network (metres).
+    road_dist = safe_call(road_access_distance_cached, point_utm, bbox, lon, lat,
+                          default=500.0)
 
     # Channel width
     width = 5.0

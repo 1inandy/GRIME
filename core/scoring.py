@@ -316,7 +316,7 @@ def build_all_features(candidates_gdf, bbox, stream_gdf=None,
         # Feasibility features
         feas_feats = compute_feasibility_features(
             row, stream_gdf=stream_gdf,
-            dem_array=dem_array,
+            dem_array=dem_array, bbox=bbox,
         )
         for k, v in feas_feats.items():
             df.at[idx, k] = v
