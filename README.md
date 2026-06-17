@@ -3,7 +3,7 @@ Video - https://www.youtube.com/watch?v=GsYtVGVTPWM
 
 ## 1. Executive Summary
 
-GRIME is a multi-parameter optimization system that identifies optimal locations for deploying trash interception barriers ("nets") on urban waterways. It evaluates candidate sites across **28 geospatial parameters** organized into **6 parameter families**, producing **4 sub-scores** that combine into a single composite ranking per candidate location.
+GRIME is a multi-parameter optimization system that identifies optimal locations for deploying trash interception barriers ("nets") on urban waterways. It evaluates candidate sites across **27 geospatial parameters** organized into **6 parameter families**, producing **4 sub-scores** that combine into a single composite ranking per candidate location.
 
 **What makes it technically interesting:**
 - A two-level weighted scoring architecture (parameters → sub-scores → composite) that is both interpretable and tunable
@@ -11,7 +11,7 @@ GRIME is a multi-parameter optimization system that identifies optimal locations
 - Manning's equation applied to estimate flow velocity from DEM slope and channel geometry, with feasibility gates that eliminate sites where deployment is physically impossible
 - Monte Carlo sensitivity analysis via Dirichlet-perturbed weight vectors to assess ranking robustness
 - Three-phase candidate placement algorithm: spatial constraint satisfaction → full-parameter scoring → population-scaled risk-percentile filtering
-- On-demand real waterway geometry from OpenStreetMap's Overpass API for 108,772 cities across 240 countries
+- On-demand real waterway geometry from OpenStreetMap's Overpass API for 89,518 places across 239 countries
 
 **Scope:** Site selection modeling and scoring. GRIME does not design the physical trap, predict trash composition, or model individual debris trajectories.
 
@@ -90,7 +90,7 @@ A naive approach — placing traps at the largest rivers — fails because:
 
 ### Constraints and assumptions
 
-- All data sources must be free and require no API keys (census, EPA, USGS, OSM)
+- All data sources must be free and low-friction (EPA/USGS/OSM are keyless; Census ACS uses a free, instant API key — see `.env.example`)
 - The model assumes stationary barrier-style traps deployable in channels ≤30m wide (~100 ft)
 - Scoring weights are set by informed heuristic and literature, not supervised learning (no ground-truth dataset of "correct" trap placements exists at scale)
 - The system must produce results in <15 seconds per city for interactive demo use
@@ -109,9 +109,9 @@ graph TD
     D --> E[Stream Network Extraction]
     E --> F[Candidate Site Generation]
 
-    G[EPA APIs - TRI ECHO EJSCREEN SDWIS FRS] --> H[Parameter Computation - 28 params x 6 families]
+    G[EPA APIs - TRI ECHO SDWIS FRS] --> H[Parameter Computation - 27 params x 6 families]
     I[USGS APIs - NWIS StreamStats PAD-US] --> H
-    J[Census APIs - ACS TIGER] --> H
+    J[Census APIs - ACS TIGER incl. EJ index] --> H
     K[OSM - Overpass API] --> H
     F --> H
 
@@ -139,7 +139,14 @@ graph TD
 | Scoring Engine | `core/scoring.py` | Normalize, weight, composite, sensitivity analysis |
 | API Server | `api/main.py` | REST + WebSocket endpoints serving scored GeoJSON |
 | Dashboard | `dashboard/index.html` | Interactive map with on-demand OSM waterway fetching and client-side scoring |
-| Places Database | `mock_data/places.json` | 108,772 city/town records across 240 countries (7MB compact JSON) |
+| Places Database | `mock_data/places.json` | 89,518 place records across 239 countries (~6MB compact JSON) |
+
+> **About the places database.** The 89,518 records come from `geonamescache` (real
+> cities/towns with population ≥ 100) plus procedurally generated nearby townships
+> (`scripts/generate_mock.py`, seeded for reproducibility). They exist only to give
+> the explorer a global set of clickable starting points — waterway geometry and
+> all scoring are computed live from OpenStreetMap at click time, so the procedural
+> names never enter a score. We say "places," not "cities," for this reason.
 
 ### Data flow
 
@@ -159,7 +166,7 @@ Mode 2 exists because Mode 1 takes 3–5 minutes per watershed and requires inst
 
 ### 4.1 Two-level weighted scoring
 
-The 28 raw parameters are not directly comparable (population density in persons/km² vs flow velocity in m/s vs a binary land ownership flag). The system handles this through two-level aggregation:
+The 27 raw parameters are not directly comparable (population density in persons/km² vs flow velocity in m/s vs a binary land ownership flag). The system handles this through two-level aggregation:
 
 1. **Parameter level:** Each raw parameter is MinMax-normalized to [0, 1] independently within the candidate set, then multiplied by its within-family weight. The weighted sum produces a sub-score in [0, 100].
 
@@ -206,7 +213,7 @@ A minimum floor of 5 deployed sites ensures the model always produces enough out
 
 ### 5.1 Composite scoring function
 
-Let **x** ∈ ℝ²⁸ be the raw parameter vector for a candidate site. The composite score S(**x**) is:
+Let **x** ∈ ℝ²⁷ be the raw parameter vector for a candidate site. The composite score S(**x**) is:
 
 ```
 S(x) = Σ(k=1..4) ωk · Gk(x)
@@ -246,7 +253,7 @@ where:
 - **R** is the hydraulic radius (m) = A_cross / P_wetted, approximated as rectangular channel: R = (W × D) / (W + 2D), where depth D ≈ 0.3W (bankfull approximation)
 - **S** is the channel slope (dimensionless), computed from DEM as elevation difference over a 100m reach: S = (Z_here − Z_downstream) / 100, clamped to minimum 0.0001
 
-A continuity cross-check is performed: V_continuity = Q / A_cross, where Q is the USGS-measured discharge converted to m³/s. The final velocity estimate is the geometric mean of Manning's and continuity estimates:
+A continuity estimate is blended in: V_continuity = Q_site / A_cross, where Q_site is the gauge discharge **area-scaled to the candidate's own catchment** (M4: site-specific, now that catchment area is real km²) and converted to m³/s. The final velocity is the geometric mean of the Manning and continuity estimates (a soft blend, not a fully independent measurement):
 
 ```
 V_final = sqrt(V_Manning · V_continuity)
@@ -321,15 +328,36 @@ d = 2R · atan2(√a, √(1−a))
 
 where R = 6,371,000 m. This is used instead of Euclidean distance because the candidate set can span several kilometers, where flat-earth approximation introduces meaningful error at high latitudes.
 
-### 5.9 Environmental justice composite
+### 5.9 Environmental justice index (reconstructed from Census ACS)
 
-The EJ priority score combines three EPA EJSCREEN percentiles:
+> **Why this changed.** EPA removed EJSCREEN — the tool, the data downloads, and the
+> `ejscreenRESTbroker.aspx` ArcGIS server — on **2025-02-05**, and the White House
+> removed CEJST on **2025-01-22**; neither has an official live replacement (the
+> suit to restore EJSCREEN was dismissed on standing, 2026-03-13). Because EJSCREEN's
+> demographic index *is* percentile-ranked ACS demographics, GRIME reconstructs it
+> directly from the **live Census ACS 5-year API** (`core.impact.get_ej_index`),
+> which we control, instead of calling a dead endpoint. Sources:
+> [EELP tracker](https://eelp.law.harvard.edu/tracker/epa-added-environmental-health-indicators-to-ejscreen/),
+> [EDGI](https://envirodatagov.org/epa-removes-ejscreen-from-its-website/),
+> [CEJST removal](https://eelp.law.harvard.edu/tracker/ceqs-climate-economic-justice-screening-tool-removed/),
+> reconstruction mirror [screening-tools.com](https://screening-tools.com/epa-ejscreen).
+
+We compute EJSCREEN's two-component **core demographic index** per block group:
 
 ```
-EJ = (0.4 · P_discharge + 0.3 · P_minority + 0.3 · P_income) / 100
+demographic_index_bg = mean( pct_rank(% low-income) , pct_rank(% people of color) )
+EJ = area-weighted mean of demographic_index_bg over the catchment        ∈ [0, 1]
 ```
 
-where P_discharge is the wastewater discharge EJ percentile, P_minority is the minority population percentile, and P_income is the low-income percentile. All are [0, 100] percentiles from EJSCREEN. The result is [0, 1].
+- **% low-income** — ACS table `C17002` (income-to-poverty ratio < 2.0).
+- **% people of color** — `1 − (non-Hispanic white / total)` from `B03002`.
+- Percentile-ranked within the county, then area-weighted over the candidate's
+  catchment — so the index **varies across catchments** (no longer a constant).
+
+The six-component *supplemental* index (adding limited-English `C16002`,
+< high-school `B15003`, under-5 and over-64 `B01001`) is a documented extension;
+the two-component core index above is EPA's headline definition. The deprecated
+`get_ejscreen_index` is retained only so old callers degrade to a neutral 0.5.
 
 ---
 
@@ -371,47 +399,61 @@ FUNCTION condition_dem(dem):
 
 **Output:** Ranked array of candidate objects with scores and parameters
 
+> **This is a separate, honestly-labeled heuristic, not the Python model.** The
+> explorer scores client-side with clamped closed-form formulas (no MinMax), using
+> OSM-estimated widths and **deterministic per-candidate values seeded by each
+> site's own coordinates** (so rankings are stable across pan/zoom — no
+> `Math.random()` for any named quantity). It is a fast interactive approximation;
+> the Python pipeline (§5–6.1) is the real 27-parameter MinMax model.
+
 ```
 FUNCTION generate_candidates(streams, pop, country):
     // ── Phase 1: Constraint satisfaction ──
-    MIN_SPACE ← 120m
+    SAME_STREAM_SPACE ← 500m   // wide gaps along one waterway (occlusion makes
+    CROSS_STREAM_SPACE ← 300m  // a 2nd net 500m downstream largely redundant)
     MAX_WIDTH ← 30m
     placed ← []
     valid_positions ← []
 
     FOR EACH stream IN streams:
         IF stream.width > MAX_WIDTH: CONTINUE
-        cap ← traffic_capacity(stream)
+        cap ← waterway_capacity(stream)
         count_on_stream ← 0
-        dist_since_last ← MIN_SPACE
+        dist_since_last ← SAME_STREAM_SPACE
 
         FOR EACH point IN stream.coords:
             dist_since_last += haversine(previous_point, point)
-            IF dist_since_last < MIN_SPACE: CONTINUE
-            IF any p in placed where haversine(p, point) < MIN_SPACE: CONTINUE
+            IF dist_since_last < SAME_STREAM_SPACE: CONTINUE
+            IF any p in placed where haversine(p, point) < CROSS_STREAM_SPACE: CONTINUE
             IF count_on_stream >= cap: CONTINUE
-
-            placed.add(point)
-            count_on_stream++
-            dist_since_last ← 0
+            placed.add(point); count_on_stream++; dist_since_last ← 0
             valid_positions.add(point with metadata)
 
-    // ── Phase 2: Score every valid position ──
-    scored ← []
+    // ── Phase 2: Score every valid position (deterministic, coord-seeded) ──
     FOR EACH pos IN valid_positions:
-        compute 28 parameters (simplified model)
-        compute 4 sub-scores
-        compute composite
-        scored.add(pos with scores)
+        pr ← seeded_rng(hash(pos.lat, pos.lon) + seed)   // STABLE per site
+        compute clamped sub-scores + composite using pr() (no Math.random)
 
-    // ── Phase 3: Risk-percentile selection ──
-    scored.sort_by(composite, descending)
-    pctile ← population_scaled_percentile(pop)
-    cutoff ← max(5, ceil(len(scored) * pctile))
-    RETURN scored[0:cutoff]
+    // ── Phase 3: Greedy selection with multiplicative upstream occlusion ──
+    // NOT a static top-N%. Each time we place a net we discount every still-unplaced
+    // candidate that is DOWNSTREAM on the same river (chained across OSM ways by
+    // computeWayOrder, ordered by (wayOrder, coordIdx)) — a net already catches most
+    // debris, so a downstream net only sees the passthrough (1 − η)^k of trash.
+    η ← 0.65                                  // catch efficiency per net
+    target ← min(250, max(5, ceil(len * population_percentile)))
+    WHILE selected < target:
+        sort remaining by current composite; best ← pop highest; selected.add(best)
+        FOR EACH downstream c on best's river:
+            c.generation ← c.raw_generation × (1 − η)^(nets_upstream_on_river)
+            recompute c.composite
+    RETURN selected
 ```
 
-**Complexity:** Phase 1 is O(n × m) where n is total coordinate points and m is placed candidates. Phase 2 is O(k) where k is valid positions. Phase 3 is O(k log k) for sorting. In practice k < 200 and the entire function runs in <100ms.
+**Complexity:** Phase 1 is O(n × m); Phase 2 is O(k); the greedy Phase 3 is
+O(target × k). In practice k < 250 and the whole function runs in <100 ms.
+Upstream occlusion (η = 0.65 compounding) is the original part of the system — it
+spreads nets across waterways instead of clustering them on the single highest-trash
+reach. See §6.3 for the robustness analysis.
 
 ### 6.3 Sensitivity Analysis (Dirichlet Monte Carlo)
 
@@ -431,6 +473,18 @@ FUNCTION sensitivity_analysis(candidates, n_perturbations=50):
     RETURN baseline with robustness column
 ```
 
+**Real results (reproducible).** `python3 scripts/robustness_report.py` runs this at
+**n = 500** on the scored candidates and writes an actual rank-stability histogram to
+`dashboard/docs/exports/robustness_hist.png` (not a synthetic mock). On the shipped
+Ellerbe candidate set, the top 4 sites retain a top-5 position in **81–99 %** of
+perturbed-weight runs, so the leading recommendations are robust to reasonable weight
+changes while lower-ranked sites are weight-sensitive (as expected).
+
+**Field-validation candidates (roadmap).** The top sites the model flags — South
+Ellerbe (composite 68, 99 % robust) and the upper Sandy Creek reaches — are the
+natural targets for ground-truthing against photographed accumulation points; that
+validation is the next step before any deployment claim.
+
 ### 6.4 Bayesian Weight Optimization (Optional Enhancement)
 
 When ground-truth trap locations are available, weights can be optimized via scikit-optimize:
@@ -448,7 +502,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
     RETURN normalize(result.x)
 ```
 
-**Status:** Implemented in `core/scoring.py` but not yet run against real ground-truth data.
+**Status:** Implemented in `core/scoring.py` as `optimize_weights(candidates_df, known_good_indices)` — a Gaussian-process `gp_minimize` over the four sub-score weights whose objective minimizes the mean rank of known-good sites. Not yet run against real ground-truth trap locations (no validated dataset yet), so the shipped weights remain the heuristic defaults.
 
 ---
 
@@ -456,7 +510,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 ### ADR-1: Two-level scoring instead of flat weighted sum
 
-**Decision:** Aggregate 28 parameters into 4 sub-scores, then combine sub-scores into a composite.
+**Decision:** Aggregate 27 parameters into 4 sub-scores, then combine sub-scores into a composite.
 
 **Context:** A flat 28-weight sum is opaque — changing one weight has a non-obvious effect.
 
@@ -482,7 +536,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 **Context:** pysheds/rasterio have C dependencies that fail on Windows. Dashboard must work by opening one HTML file.
 
-**Chosen approach:** Simplified JS scoring model that parallels the Python implementation but uses OSM-estimated widths and seeded random parameter generation rather than real API data.
+**Chosen approach:** A **separate, simplified JS heuristic** — not a parity port of the Python model. It uses clamped closed-form formulas (no MinMax normalization), OSM-estimated widths, and deterministic per-candidate values seeded by each site's own coordinates (stable across re-render). It shares the *framing* — four sub-scores and the greedy upstream-occlusion placement — but the numbers are model estimates from OSM geometry, not the Python pipeline's API-driven, MinMax-normalized output. The explorer UI labels them as such, and the Python pipeline remains the source of truth for real scoring.
 
 **Consequences:** Dashboard scores are approximate. Python pipeline is the authoritative scoring implementation.
 
@@ -520,7 +574,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
     "impervious_pct": 51.8,
     "usgs_mean_q_cfs": 37.0,
     "flow_velocity_ms": 1.377,
-    "strahler_order": 5,
+    "stream_order": 5,
     "catchment_area_km2": 63.5,
     "channel_width_m": 13.1,
     "ej_index": 0.595,
@@ -553,14 +607,14 @@ Fields: **n**=name, **c**=ISO country code, **p**=population, **la**=latitude, *
 | 7 | Litter complaint density | reports/km² | Generation | 0.10 | Durham 311 / local GIS |
 | 8 | USGS mean discharge Q | cfs | Flow | 0.22 | USGS NWIS |
 | 9 | Flow velocity | m/s | Flow | 0.16 | Manning's eq from DEM |
-| 10 | Strahler stream order | ordinal | Flow | 0.14 | Computed from topology |
+| 10 | Stream order (confluence-degree heuristic) | ordinal | Flow | 0.14 | Network topology (H3: not true Strahler) |
 | 11 | Catchment area A | km² | Flow | 0.18 | pysheds DEM analysis |
 | 12 | Flood return period Q10 | cfs | Flow | 0.14 | USGS StreamStats |
 | 13 | Seasonal flow variability | CV | Flow | 0.10 | USGS NWIS annual stats |
-| 14 | Runoff coefficient C | dimensionless | Flow | 0.06 | NLCD k-means |
+| 14 | Runoff coefficient C | dimensionless | Flow | 0.06 | Linear impervious→C (C=0.05+0.009·I) |
 | 15 | Drinking water intake proximity | exp(-d/10) | Impact | 0.22 | EPA SDWIS / ECHO |
 | 16 | Protected area proximity | score | Impact | 0.16 | USGS PAD-US |
-| 17 | Environmental justice index | [0,1] | Impact | 0.18 | EPA EJSCREEN |
+| 17 | Environmental justice index | [0,1] | Impact | 0.18 | Census ACS (EJSCREEN demographic-index reconstruction) |
 | 18 | Ocean/estuary proximity | km (inverted) | Impact | 0.14 | NHD terminus |
 | 19 | Recreational beach proximity | km (inverted) | Impact | 0.12 | EPA BEACH Program |
 | 20 | Tourism/recreation value | amenity count | Impact | 0.10 | OSM amenity density |
@@ -591,7 +645,7 @@ grime/
 ├── dashboard/
 │   └── index.html              # Mapbox map, Overpass integration, client-side scoring
 ├── mock_data/
-│   └── places.json             # 108,772 cities, 240 countries (7MB)
+│   └── places.json             # 89,518 places, 239 countries (6MB)
 ├── scripts/
 │   └── generate_mock.py        # Builds places.json from geonamescache
 ├── notebooks/
@@ -630,7 +684,7 @@ grime/
 ### Dashboard (demo mode)
 
 1. Browser opens `dashboard/index.html`
-2. Fetches `places.json` (7MB) → parses 108,772 cities
+2. Fetches `places.json` (6MB) → parses 89,518 places
 3. Mapbox GL JS renders clustered city markers
 4. User clicks city → `openCity(idx)` fires
 5. POST to Overpass API → returns waterway geometry as JSON
@@ -661,7 +715,7 @@ grime/
 | Overpass API | None | Informal | 12s | Procedural generation |
 | USGS NWIS | None | None published | 30s | Hardcoded Ellerbe Creek stats |
 | EPA ECHO | None | None published | 30s | Empty GeoDataFrame |
-| EPA EJSCREEN | None | None published | 30s | 0.5 (neutral) |
+| ~~EPA EJSCREEN~~ (decommissioned 2025-02-05) | — | — | — | EJ index reconstructed from Census ACS instead (see §5.9) |
 | Census ACS | None | None published | 30s | Durham average (500/km²) |
 | USGS 3DEP | None | None published | 60s | Fatal — no fallback |
 
@@ -762,13 +816,13 @@ pip install -r requirements-full.txt
 
 ### Dashboard demo (90-second path)
 
-1. Open map → 108,772 cities visible as clustered dots
+1. Open map → 89,518 places visible as clustered dots
 2. Search "Durham" → click → fly to Durham, NC
 3. Wait 3s → real Ellerbe Creek geometry appears with scored candidate dots
 4. Click top-ranked site → score breakdown panel shows 4 sub-scores
 5. Toggle "Waterways" → OSM overlay confirms alignment
 6. Toggle "Light theme" → clean beige presentation mode
-7. Explain the 28-parameter model and show weight sensitivity
+7. Explain the 27-parameter model and show weight sensitivity
 
 ### Python pipeline on custom watershed
 
@@ -790,7 +844,7 @@ curl http://localhost:8000/api/weights
 
 | Operation | Time | Bottleneck |
 |-----------|------|-----------|
-| Dashboard initial load | ~3s | Parsing 7MB places.json |
+| Dashboard initial load | ~3s | Parsing ~6MB places.json |
 | Overpass API query | 2–8s | Network + OSM server |
 | Client-side placement + scoring | <100ms | Haversine collision checks |
 | Python DEM pipeline (full) | 30–90s | py3dep HTTP fetch + pysheds |
@@ -804,11 +858,13 @@ No formal benchmarks have been run. Times above are observed during development.
 
 | Failure | Impact | Mitigation |
 |---------|--------|-----------|
-| Overpass API down/slow | No real waterway data | Procedural fallback auto-activates |
-| EPA/USGS API timeout | Missing parameter values | `safe_call()` returns fallback defaults |
+| Overpass API down/slow | No real waterway data | Explorer shows an explicit "no waterway data" state (no procedural rivers) |
+| EPA/USGS API timeout | Missing parameter values | `safe_call()` returns fallback defaults; `summarize_provenance` flags the resulting constant columns each run |
+| Census ACS needs a key | Population/EJ fall back | `CENSUS_API_KEY` (free) enables live values; otherwise neutral defaults |
+| EPA EJSCREEN endpoint dead | EJ would be constant | EJ reconstructed from live Census ACS instead (C4, §5.9) |
 | Mapbox token missing | Map blank | Fatal for dashboard; replace token |
 | pysheds DEM fetch fails | No stream network | Fatal for Python pipeline; mock data works |
-| MinMax with identical values | Division by zero | Returns 0.5 for all candidates |
+| MinMax on a **constant column** | sklearn maps it to **0** (not 0.5), silently deleting its weight | `compute_subscore` **drops constant columns and renormalizes** the surviving weights (logged); an all-constant family returns a neutral 50 |
 
 ---
 
@@ -824,12 +880,22 @@ No formal benchmarks have been run. Times above are observed during development.
 
 ## 18. Testing Strategy
 
-**Current state: No automated tests.** Validation is:
-1. `notebooks/validate_pipeline.ipynb` — manual pipeline verification
-2. Visual inspection of stream networks in geojson.io
-3. Dashboard visual QA — verify rivers align with satellite
+**Automated tests:** `pytest tests/` — 16 property tests over the real scoring code:
+composite ∈ [0, 100]; family weights sum to 1; `compute_subscore` drops a constant
+column + renormalizes (and an all-constant family → neutral 50); hard gates remove
+the right rows; Manning velocity is monotonic in slope; the velocity favorability
+curve is peaked; occlusion `(1−η)^k` is non-increasing; estuary/beach distances are
+decorrelated; the width-order fallback never trips the gate; the EJ area-weighting
+varies across catchments; `optimize_weights` returns a valid simplex point.
 
-**Recommended if continuing:** Unit tests for `compute_subscore()`, Manning's velocity, hard gates. Property test: composite always in [0, 100].
+**Model drift guard:** `python3 scripts/check_model.py` asserts the Python constants
+match `model.json` (the single source of truth for weights, gates, and curves).
+
+**Other validation:**
+1. `notebooks/validate_pipeline.ipynb` — pipeline verification + endpoint health
+2. `scripts/healthcheck.py` — external endpoint connectivity (incl. the EJ source)
+3. `scripts/score_candidates.py` — reproducibly regenerates the scored GeoJSON
+4. Dashboard visual QA — verify rivers align with satellite imagery
 
 ---
 
@@ -880,7 +946,7 @@ No formal benchmarks have been run. Times above are observed during development.
 | **Hard gate** | Binary feasibility check that eliminates a candidate |
 | **NPDES** | National Pollutant Discharge Elimination System |
 | **NBI** | National Bridge Inventory |
-| **Strahler order** | Stream classification: order 1 = headwater, higher = larger |
+| **Stream order** | Confluence-degree heuristic (H3): order 1 = headwater/leaf, higher = more junctions. Not true Strahler. |
 | **Sub-score** | Intermediate score (0–100) for one parameter family |
 | **TRI** | Toxic Release Inventory |
 
@@ -890,4 +956,4 @@ MIT.
 
 ---
 
-*GRIME · 28 parameters · 6 families · 108,772 cities · 240 countries*
+*GRIME · 27 parameters · 6 families · 89,518 places · 239 countries*

@@ -1,14 +1,25 @@
-.DS_Store
-*/.DS_Store
-
+# Secrets / config (never commit real tokens)
+dashboard/config.js
 .env
-.env.*
-!.env.example
 
+# Local data artifacts
+data/
+*.gpkg
+
+# Pipeline runtime cache + byproducts (osmnx/py3dep HTTP cache, raw stream network)
+cache/
+mock_data/streams.geojson
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
 .venv/
 venv/
-env/
-__pycache__/
-*.py[cod]
+.ipynb_checkpoints/
 
-dashboard/config.js
+# OS / editor cruft
+.DS_Store
+
+# Stray uvicorn redirect file (see L2)
+/uvicorn

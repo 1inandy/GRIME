@@ -1,17 +1,34 @@
-"""gARB utilities — shared helpers across all modules."""
+"""GRIME utilities — shared helpers across all modules."""
 
+import os
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point
 
 
 # ── Constants ────────────────────────────────────────────────────────
+# NOTE: these defaults are scoped to the Durham, NC / Ellerbe Creek case study.
+# State/county FIPS and the UTM zone are passed explicitly for other regions.
 ELLERBE_BBOX = (-79.05, 35.90, -78.75, 36.05)
 ELLERBE_GAUGE = "02086849"
+# Approx. drainage area above USGS gauge 02086849 (Ellerbe Creek at Club Blvd),
+# used to area-scale gauge discharge to a candidate's catchment (M4). ~8.2 mi².
+ELLERBE_DRAINAGE_KM2 = 21.2
 DURHAM_STATE_FIPS = "37"
 DURHAM_COUNTY_FIPS = "063"
 UTM_CRS = "EPSG:32617"  # UTM zone 17N — covers Durham, NC
 WGS84 = "EPSG:4326"
+
+
+def census_api_key():
+    """Free Census Bureau API key from the CENSUS_API_KEY env var ('' if unset).
+
+    The Census ACS API now rejects keyless requests with a "Missing Key" page,
+    so population-density and EJ features need this set (sign up free at
+    https://api.census.gov/data/key_signup.html). Without it they degrade to
+    fallbacks, which `summarize_provenance` surfaces as constant columns.
+    """
+    return os.getenv("CENSUS_API_KEY", "").strip()
 
 
 def safe_call(fn, *args, default=0.0, **kwargs):
@@ -22,6 +39,39 @@ def safe_call(fn, *args, default=0.0, **kwargs):
     except Exception as e:
         print(f"  [warn] {fn.__name__}: {e}")
         return default
+
+
+# ── Shared OSM drive-network cache ───────────────────────────────────
+# Both road density (total km / catchment area) and road access (distance to the
+# nearest road) need the bbox's drive network. Fetching it once (it is a large
+# Overpass query) and reusing it for every candidate is the difference between a
+# multi-hour run and a few minutes — the data is identical for every candidate.
+_DRIVE_GRAPH_CACHE = {}
+
+
+def osm_drive_graph(bbox):
+    """Fetch + cache the OSM drive network for ``bbox`` once.
+
+    Returns ``{"nodes_utm": GeoDataFrame, "length_km": float}`` (nodes reprojected
+    to UTM for metre-based nearest-road distance), or ``None`` on any failure.
+    """
+    key = tuple(round(float(x), 6) for x in bbox)
+    if key in _DRIVE_GRAPH_CACHE:
+        return _DRIVE_GRAPH_CACHE[key]
+    try:
+        import osmnx as ox
+        west, south, east, north = bbox
+        G = ox.graph_from_bbox(north, south, east, west, network_type="drive")
+        nodes, edges = ox.graph_to_gdfs(G)
+        out = {
+            "nodes_utm": nodes.to_crs(UTM_CRS),
+            "length_km": float(edges["length"].sum()) / 1000.0,
+        }
+    except Exception as e:
+        print(f"  [warn] osm_drive_graph: {e}")
+        out = None
+    _DRIVE_GRAPH_CACHE[key] = out
+    return out
 
 
 def bbox_to_polygon(bbox, crs=WGS84):
