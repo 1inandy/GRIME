@@ -1,6 +1,8 @@
 # Secrets / config (never commit real tokens)
 dashboard/config.js
 .env
+.env.*
+!.env.example
 
 # Local data artifacts
 data/
@@ -12,14 +14,15 @@ mock_data/streams.geojson
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 .venv/
 venv/
+env/
 .ipynb_checkpoints/
 
 # OS / editor cruft
 .DS_Store
+*/.DS_Store
 
 # Stray uvicorn redirect file (see L2)
 /uvicorn
