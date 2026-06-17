@@ -1,5 +1,5 @@
 """
-gRIME API — FastAPI backend
+GRIME API — FastAPI backend
 Serves scored candidate sites, score breakdowns, and real-time updates via WebSocket.
 
 Run: uvicorn api.main:app --reload --port 8000
@@ -26,10 +26,14 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-# CORS — allow the dashboard to connect from any origin during dev
+# CORS (M8). Open by default for the public-data local demo. Before grime.world
+# serves this API publicly, set GRIME_ALLOWED_ORIGIN (comma-separated) to lock it
+# to the deploy origin(s) instead of "*".
+_allowed = os.getenv("GRIME_ALLOWED_ORIGIN", "").strip()
+_origins = [o.strip() for o in _allowed.split(",") if o.strip()] or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -147,7 +151,7 @@ async def get_candidate_detail(candidate_id: int):
                 "parameters": {
                     k: props.get(k, 0)
                     for k in [
-                        "usgs_mean_q_cfs", "flow_velocity_ms", "strahler_order",
+                        "usgs_mean_q_cfs", "flow_velocity_ms", "stream_order",
                         "catchment_area_km2", "flood_q10_cfs", "seasonal_cv",
                         "runoff_coeff_C",
                     ]
@@ -203,7 +207,7 @@ async def get_weights():
             },
             "flow": {
                 "usgs_mean_q_cfs": 0.22, "flow_velocity_ms": 0.16,
-                "strahler_order": 0.14, "catchment_area_km2": 0.18,
+                "stream_order": 0.14, "catchment_area_km2": 0.18,
                 "flood_q10_cfs": 0.14, "seasonal_cv": 0.10,
                 "runoff_coeff_C": 0.06,
             },
@@ -321,6 +325,15 @@ async def serve_landing():
 @app.get("/dashboard")
 async def serve_dashboard():
     """Dashboard page."""
+    landing = dashboard_dir / "index.html"
+    if landing.exists():
+        return FileResponse(landing)
+    return JSONResponse(status_code=404, content={"error": "Dashboard not found"})
+
+
+@app.get("/map")
+async def serve_map():
+    """Alias that serves the dashboard HTML (documented in README §11)."""
     landing = dashboard_dir / "index.html"
     if landing.exists():
         return FileResponse(landing)
