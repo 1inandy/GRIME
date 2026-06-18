@@ -8,7 +8,7 @@ Run: uvicorn api.main:app --reload --port 8000
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 import json
 import asyncio
@@ -72,12 +72,29 @@ def load_candidates(force_mock=False):
 
 # ── REST Endpoints ───────────────────────────────────────────────────
 
+@app.get("/healthz", include_in_schema=False)
+async def healthcheck():
+    """Lightweight liveness check for the hosting platform."""
+    return {"status": "ok"}
+
+
 @app.get("/api/config")
 def get_config():
     token = os.getenv("MAPBOX_TOKEN", "")
     if not token:
         raise HTTPException(status_code=500, detail="Mapbox token not configured")
     return {"mapbox_token": token}
+
+
+@app.get("/dashboard/config.js", include_in_schema=False)
+def get_dashboard_config():
+    """Serve deployment config without requiring a tracked token file."""
+    token = os.getenv("MAPBOX_TOKEN", "")
+    return Response(
+        content=f"const MAPBOX_TOKEN = {json.dumps(token)};\n",
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.get("/api/candidates")

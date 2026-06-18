@@ -759,9 +759,11 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 
-# 3. Configure secrets (both files are gitignored)
-cp dashboard/config.example.js dashboard/config.js   # then paste your Mapbox pk.* token
+# 3. Configure secrets
 cp .env.example .env                                  # then set MAPBOX_TOKEN=...
+
+# Optional: only needed if opening dashboard HTML directly instead of through FastAPI
+cp dashboard/config.example.js dashboard/config.js
 
 # 4. Generate the places database (one-time)
 python scripts/generate_mock.py
@@ -771,6 +773,36 @@ python -m uvicorn api.main:app --reload --port 8000
 ```
 
 Open **http://localhost:8000/** — landing page. **/explore** for the map app. **/api/swagger** for API docs.
+
+### Deploy to Heroku
+
+The repository includes a `Procfile`, `.python-version`, and `app.json`. Heroku
+installs `requirements.txt` and starts the FastAPI app on its assigned `$PORT`.
+Python 3.12 is selected because it is supported by Heroku and by the optional
+scientific dependencies in `requirements-full.txt`.
+
+```bash
+# Creates the app and adds a "heroku" git remote.
+heroku create --stack heroku-26
+
+# Required for the map. Use a URL-restricted public Mapbox token.
+heroku config:set MAPBOX_TOKEN=pk.your_public_token
+
+# Optional: enables live Census-backed features.
+heroku config:set CENSUS_API_KEY=your_key
+
+# Deploy the current main branch.
+git push heroku main
+
+# Verify the dyno and open the app.
+heroku ps
+heroku open /healthz
+heroku open
+```
+
+If deploying a branch other than `main`, use
+`git push heroku your-branch:main`. Runtime logs are available with
+`heroku logs --tail`.
 
 ### Run again next session
 

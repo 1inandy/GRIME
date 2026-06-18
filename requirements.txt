@@ -1,4 +1,4 @@
-# GRIME — Web server dependencies (Render / production)
+# GRIME — Web server dependencies (Heroku / production)
 # For the full hydrology pipeline, use: pip install -r requirements-full.txt
 
 fastapi>=0.110
