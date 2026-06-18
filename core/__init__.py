@@ -42,10 +42,10 @@ def safe_call(fn, *args, default=0.0, **kwargs):
 
 
 # ── Shared OSM drive-network cache ───────────────────────────────────
-# Both road density (total km / catchment area) and road access (distance to the
-# nearest road) need the bbox's drive network. Fetching it once (it is a large
-# Overpass query) and reusing it for every candidate is the difference between a
-# multi-hour run and a few minutes — the data is identical for every candidate.
+# Both road density (catchment-clipped road km / catchment area) and road access
+# (distance to the nearest road) need the bbox's drive network. Fetching it once
+# (it is a large Overpass query) and reusing it for every candidate is the
+# difference between a multi-hour run and a few minutes.
 _DRIVE_GRAPH_CACHE = {}
 
 
@@ -62,10 +62,18 @@ def osm_drive_graph(bbox):
         import osmnx as ox
         west, south, east, north = bbox
         G = ox.graph_from_bbox(north, south, east, west, network_type="drive")
-        nodes, edges = ox.graph_to_gdfs(G)
+        # Road density measures physical road length, not directed graph arcs.
+        # Convert to an undirected graph so two-way streets are not double-counted.
+        try:
+            road_graph = ox.convert.to_undirected(G)
+        except AttributeError:  # osmnx 1.x compatibility
+            road_graph = ox.utils_graph.get_undirected(G)
+        nodes, edges = ox.graph_to_gdfs(road_graph)
+        edges_utm = edges.to_crs(UTM_CRS)
         out = {
             "nodes_utm": nodes.to_crs(UTM_CRS),
-            "length_km": float(edges["length"].sum()) / 1000.0,
+            "edges_utm": edges_utm,
+            "length_km": float(edges_utm.geometry.length.sum()) / 1000.0,
         }
     except Exception as e:
         print(f"  [warn] osm_drive_graph: {e}")
