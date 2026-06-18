@@ -1,0 +1,27 @@
+{
+  "name": "GRIME",
+  "description": "Garbage River Interception and Modeling Engine",
+  "repository": "https://github.com/1inandy/GRIME",
+  "keywords": [
+    "fastapi",
+    "geospatial",
+    "hydrology",
+    "environment"
+  ],
+  "stack": "heroku-26",
+  "env": {
+    "MAPBOX_TOKEN": {
+      "description": "A Mapbox public token (pk.*) used by the dashboard.",
+      "required": true
+    },
+    "CENSUS_API_KEY": {
+      "description": "Optional Census Bureau API key for live population and environmental-justice data.",
+      "required": false
+    },
+    "GRIME_ALLOWED_ORIGIN": {
+      "description": "Optional comma-separated list of origins allowed to call the API.",
+      "required": false
+    }
+  },
+  "success_url": "/"
+}
