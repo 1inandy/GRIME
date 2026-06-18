@@ -337,8 +337,8 @@ def get_impervious_pct(catchment_polygon, bbox):
 
 def get_road_density(catchment_polygon, catchment_area_km2, bbox):
     """
-    Compute road density (km/km²) from the OSM drive network over the bbox,
-    divided by the candidate's own catchment area (so it varies per candidate).
+    Compute road density (km/km²) from OSM drive-network edges clipped to the
+    candidate's catchment polygon.
     The (large) bbox drive network is fetched once and shared via
     ``core.osm_drive_graph`` — re-pulling it per candidate was the single slowest
     call in build_all_features.
@@ -346,7 +346,19 @@ def get_road_density(catchment_polygon, catchment_area_km2, bbox):
     info = osm_drive_graph(bbox)
     if info is None:
         return 5.0  # Durham average fallback
-    return info["length_km"] / max(catchment_area_km2, 0.01)
+    edges = info.get("edges_utm")
+    if edges is None or edges.empty:
+        return 0.0
+
+    # Bounding-box prefilter keeps the per-candidate intersection cheap while the
+    # shared graph remains cached for the whole run.
+    minx, miny, maxx, maxy = catchment_polygon.bounds
+    nearby = edges.cx[minx:maxx, miny:maxy]
+    if nearby.empty:
+        return 0.0
+    clipped = nearby.geometry.intersection(catchment_polygon)
+    road_km = float(clipped.length.sum()) / 1000.0
+    return road_km / max(catchment_area_km2, 0.01)
 
 
 # ── Aggregate Generation Score ───────────────────────────────────────

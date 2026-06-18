@@ -313,9 +313,12 @@ def build_all_features(candidates_gdf, bbox, stream_gdf=None,
         for k, v in flow_feats.items():
             df.at[idx, k] = v
 
-        # Feasibility features
+        # Feasibility depends on the velocity computed just above. Refresh the row
+        # from df so it sees the newly written flow features instead of the stale
+        # Series yielded by iterrows().
+        row_with_flow = df.loc[idx]
         feas_feats = compute_feasibility_features(
-            row, stream_gdf=stream_gdf,
+            row_with_flow, stream_gdf=stream_gdf,
             dem_array=dem_array, bbox=bbox,
         )
         for k, v in feas_feats.items():

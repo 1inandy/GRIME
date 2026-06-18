@@ -91,7 +91,10 @@ async def get_candidates(
     Optional filters: min_score, top_n, subscore sort.
     """
     data = load_candidates()
-    features = data.get("features", [])
+    # Sorting must not mutate the shared cache: candidate IDs are positional, so a
+    # previous request sorted by another sub-score must not change what
+    # /api/candidates/{candidate_id} refers to.
+    features = list(data.get("features", []))
 
     if min_score is not None:
         features = [
