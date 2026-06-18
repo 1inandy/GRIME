@@ -19,6 +19,7 @@ from core.scoring import (
     summarize_provenance,
 )
 from core.generation import GENERATION_WEIGHTS
+import core.generation as generation
 from core.flow import (
     FLOW_WEIGHTS, compute_flow_velocity, velocity_feasibility,
     velocity_transport_favorability, estimate_runoff_coefficient,
@@ -144,6 +145,25 @@ def test_width_fallback_bounded():
         assert w < 50.0  # never self-trips the 50 m hard gate
 
 
+# ── road density uses catchment-local road length ───────────────────
+
+def test_road_density_clips_cached_network_to_catchment(monkeypatch):
+    edges = gpd.GeoDataFrame(
+        {"geometry": [
+            LineString([(0, 500), (1000, 500)]),
+            LineString([(2000, 500), (3000, 500)]),
+        ]},
+        crs="EPSG:32617",
+    )
+    monkeypatch.setattr(
+        generation, "osm_drive_graph",
+        lambda bbox: {"edges_utm": edges, "length_km": 2.0},
+    )
+    catchment = box(0, 0, 1000, 1000)  # 1 km² containing exactly 1 km of road
+    density = generation.get_road_density(catchment, 1.0, (0, 0, 1, 1))
+    assert density == pytest.approx(1.0)
+
+
 # ── C4: EJ index area-weighting varies across catchments ─────────────
 
 def test_ej_index_varies_across_catchments():
@@ -169,3 +189,73 @@ def test_optimize_weights_valid():
     w = optimize_weights(scored, good, n_calls=15, random_state=1)
     assert abs(sum(w.values()) - 1.0) < 1e-9
     assert all(v > 0 for v in w.values())
+
+
+# ── integration regressions ─────────────────────────────────────────
+
+def test_build_features_passes_computed_velocity_to_feasibility(monkeypatch):
+    import core.scoring as scoring
+
+    seen = []
+    monkeypatch.setattr(scoring, "get_discharge_stats", lambda: {
+        "mean_q_cfs": 1.0, "median_q_cfs": 1.0, "peak_q_cfs": 1.0,
+        "max_q_cfs": 1.0, "cv": 1.0, "high_flow_days": 1,
+        "n_peak_records": 1,
+    })
+    monkeypatch.setattr(scoring, "get_drinking_water_intakes", lambda: gpd.GeoDataFrame())
+    monkeypatch.setattr(scoring, "compute_flow_features", lambda row, **kwargs: {
+        "usgs_mean_q_cfs": 1.0, "flow_velocity_ms": 2.4, "stream_order": 2,
+        "catchment_area_km2": 1.0, "flood_q10_cfs": 1.0,
+        "seasonal_cv": 1.0, "runoff_coeff_C": 0.2,
+    })
+
+    def fake_feasibility(row, **kwargs):
+        seen.append(row.get("flow_velocity_ms"))
+        return {
+            "road_access_score": 1.0, "channel_width_score": 1.0,
+            "velocity_feasibility": velocity_feasibility(row["flow_velocity_ms"]),
+            "land_ownership": 1.0, "bank_slope_score": 1.0,
+            "bridge_proximity_bonus": 0.0,
+        }
+
+    monkeypatch.setattr(scoring, "compute_feasibility_features", fake_feasibility)
+    monkeypatch.setattr(
+        scoring, "compute_generation_features",
+        lambda *args, **kwargs: {k: 1.0 for k in GENERATION_WEIGHTS},
+    )
+    monkeypatch.setattr(
+        scoring, "compute_impact_features",
+        lambda *args, **kwargs: {k: 1.0 for k in IMPACT_WEIGHTS},
+    )
+
+    candidates = gpd.GeoDataFrame([{
+        "geometry": Point(700000, 4000000), "lat": 36.0, "lon": -79.0,
+        "catchment_area_km2": 1.0,
+    }], crs="EPSG:32617")
+    scoring.build_all_features(candidates, (-79.1, 35.9, -78.8, 36.1))
+    assert seen == [2.4]
+
+
+def test_candidate_sort_does_not_mutate_cached_ids(monkeypatch):
+    import asyncio
+    import api.main as api
+
+    features = [
+        {
+            "type": "Feature", "geometry": {"type": "Point", "coordinates": [0, 0]},
+            "properties": {"composite_score": 90, "generation_score": 10},
+        },
+        {
+            "type": "Feature", "geometry": {"type": "Point", "coordinates": [1, 1]},
+            "properties": {"composite_score": 80, "generation_score": 99},
+        },
+    ]
+    monkeypatch.setattr(
+        api, "load_candidates",
+        lambda force_mock=False: {"type": "FeatureCollection", "features": features},
+    )
+
+    before = asyncio.run(api.get_candidate_detail(0))["location"]
+    asyncio.run(api.get_candidates(min_score=None, top_n=None, subscore="generation_score"))
+    after = asyncio.run(api.get_candidate_detail(0))["location"]
+    assert before == after == [0, 0]

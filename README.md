@@ -793,7 +793,9 @@ python3 -m uvicorn api.main:app --reload --port 8000
 
 ### Windows / full hydrology pipeline
 
-For the full Python pipeline (rasterio, fiona, pysheds), use conda — pip wheels for these often fail on Windows:
+Use Python 3.9–3.12 for the full scientific/test stack; `requirements-full.txt`
+currently pins NumPy below 2.0, whose wheels are not available for Python 3.13+.
+For the full pipeline on Windows (rasterio, fiona, pysheds), use conda:
 
 ```powershell
 conda install -c conda-forge rasterio fiona geopandas pysheds
@@ -806,6 +808,7 @@ pip install -r requirements-full.txt
 |---|---|---|
 | `command not found: python` | macOS only has `python3` | Activate the venv, or use `python3` |
 | `No module named uvicorn` | Deps not installed in the active Python | `python -m pip install -r requirements.txt` (note `python -m pip`, not bare `pip`) |
+| NumPy install fails on Python 3.13+ | Full stack pins `numpy<2.0` | Create the full-pipeline venv with Python 3.9–3.12 |
 | `Mapbox token not configured` (500 from `/api/config`) | `.env` missing or `MAPBOX_TOKEN=` empty | `cp .env.example .env` and fill in the token |
 | Port 8000 in use | Old uvicorn still running | `lsof -i :8000` to find PID, or pass `--port 8001` |
 | Empty candidates / blank map | Mock data not generated | `python scripts/generate_mock.py` |
@@ -874,19 +877,21 @@ No formal benchmarks have been run. Times above are observed during development.
 - Mapbox token is a publishable (`pk.*`) client-side token. It lives in `dashboard/config.js` (gitignored) and in `.env` (also gitignored). Use `dashboard/config.example.js` and `.env.example` as templates. Restrict the token by URL in the Mapbox dashboard before deploying anywhere public.
 - Overpass queries use numeric interpolation only — no injection risk
 - places.json contains only public geographic data, no PII
-- All external APIs are read-only and keyless
+- External APIs are read-only; Census ACS uses the optional `CENSUS_API_KEY`
 
 ---
 
 ## 18. Testing Strategy
 
-**Automated tests:** `pytest tests/` — 16 property tests over the real scoring code:
+**Automated tests:** `pytest tests/` — 19 property and integration tests over the real scoring code:
 composite ∈ [0, 100]; family weights sum to 1; `compute_subscore` drops a constant
 column + renormalizes (and an all-constant family → neutral 50); hard gates remove
 the right rows; Manning velocity is monotonic in slope; the velocity favorability
 curve is peaked; occlusion `(1−η)^k` is non-increasing; estuary/beach distances are
 decorrelated; the width-order fallback never trips the gate; the EJ area-weighting
-varies across catchments; `optimize_weights` returns a valid simplex point.
+varies across catchments; road density clips the cached OSM network to each
+catchment; computed velocity reaches feasibility scoring; API sorting does not
+change positional candidate IDs; `optimize_weights` returns a valid simplex point.
 
 **Model drift guard:** `python3 scripts/check_model.py` asserts the Python constants
 match `model.json` (the single source of truth for weights, gates, and curves).
