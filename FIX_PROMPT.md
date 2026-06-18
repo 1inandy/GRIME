@@ -96,7 +96,7 @@ A judge can falsify each of these in seconds. Fix them everywhere they appear.
 - **L1 — `gARB` codename → GRIME** across `core/*.py`, `scripts/generate_mock.py`, `start.sh`, and the API title ("gRIME"→"GRIME"). Verify: `grep -rn "gARB\|gRIME" core scripts api start.sh` → none.
 - **L2 — stray `uvicorn` file** at repo root: `git rm --cached uvicorn && rm -f uvicorn` (covered by `.gitignore` from H4).
 - **L3 — hero stats + award links.** Landing shows `11M+ / 91% / 5T` with no source and awards link to `href="#"`. Source the stats (see L8) and link the real SJWP + SMathHacks pages, or soften. Verify: no `href="#"` in the awards row.
-- **L7 — "six federal APIs"** undercounts (you also use StreamStats, FRS/CERCLIS, TIGER, Overpass). Reword to "five core APIs + PAD‑US dataset" (or list all). 
+- **L7 — "six federal APIs"** undercounts (you also use StreamStats, FRS/CERCLIS, TIGER, Overpass). Reword to "five core APIs + PAD‑US dataset" (or list all).
 - **L8 — rivers/plastic stat.** "Over 1,500 rivers = 80%" is defensible via Meijer et al. 2021 (1,656 rivers) — cite it explicitly and add the source link to preempt the "I thought it was ~1,000" challenge.
 
 **Phase 1 verify:** all greps above clean; div balance unchanged; README endpoint table matches routes; `node --check` clean.

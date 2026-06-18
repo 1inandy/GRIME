@@ -205,7 +205,7 @@ chain of real bugs, each fixed:
   re-fetched once per candidate; they're now fetched once and cached, turning a
   multi-hour run into minutes.
 
-**The result.** 147 real candidate sites; catchment 2.0–115.9 km²; composite 17.5–62.7;
+**The result.** 147 real candidate sites; catchment 2.0–115.9 km²; composite 13.4–61.9;
 fully reproducible from `score_candidates.py`.
 
 ## 9. Engineering foundation
@@ -213,8 +213,10 @@ fully reproducible from `score_candidates.py`.
 - **`model.json`** is now the single source of truth for weights, gates, spacing, and
   curves, with `check_model.py` asserting the code matches it (so docs and code can't
   silently drift apart again).
-- **A 16-test pytest suite** checks invariants (composite ∈ [0,100], gates monotone,
-  occlusion non-increasing, constant-column handling).
+- **A 19-test pytest suite** checks invariants and integration regressions
+  (composite ∈ [0,100], gates monotone, occlusion non-increasing, constant-column
+  handling, flow→feasibility propagation, stable API candidate IDs, and
+  catchment-clipped road density).
 - **CORS** is now lockable to a deploy origin via an env var.
 - A real **n=500 Dirichlet robustness** figure replaces any mock.
 - `.gitignore`, `LICENSE`, and `.env.example` were added (the README referenced all
@@ -224,12 +226,12 @@ fully reproducible from `score_candidates.py`.
 
 ## The data-coverage reality (read this before the competition)
 
-The pipeline now runs on real data, but **only 10 of the 27 parameters vary per site;
-17 are constant.** That breaks down honestly as:
+The pipeline now runs on real data, but **only 11 of the 27 parameters vary per site;
+16 are constant.** That breaks down honestly as:
 
-- **Live and varying (10):** population density, road density, flow velocity, stream
-  order, catchment area, EJ index, estuary distance, beach distance, tourism density,
-  road access.
+- **Live and varying (11):** population density, catchment-clipped road density,
+  flow velocity, stream order, catchment area, EJ index, estuary distance, beach
+  distance, tourism density, road access, and velocity feasibility.
 - **Live but basin-wide constant (3):** gauge mean flow, seasonal CV, flood Q10 (one
   gauge value for the whole catchment).
 - **Saturated or derived-constant (4):** protected-area score, runoff coefficient, and
