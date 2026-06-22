@@ -699,17 +699,49 @@ function generateCandidates(streams,pop,cc,seed){
 }
 
 // ═══ GEOJSON BUILDERS (stamp riverKey onto features so paint expressions can dim non-matches) ═
-function buildStreamGeo(streams){
-  return{type:'FeatureCollection',features:(streams||[]).map(s=>({
-    type:'Feature',geometry:{type:'LineString',coordinates:s.coords},
-    properties:{name:s.name,riverKey:riverKeyOf(s),order:s.order,underground:s.underground?1:0}
-  }))};
-}
 function buildCandidateGeo(cands){
   return{type:'FeatureCollection',features:(cands||[]).map((c,i)=>({
     type:'Feature',geometry:{type:'Point',coordinates:[c.lon,c.lat]},
     properties:{idx:i,composite:c.composite,riverKey:c.riverKey||riverKeyOf({baseName:c.stream,name:c.stream})}
   }))};
+}
+
+// Drawn-stream selector: from the full fetched network (drawStreams) keep only the
+// rivers that carry at least one candidate net site. The match is by riverKey (the
+// same key used for occlusion / river-focus), NOT per-segment — so a named river that
+// has a site draws its WHOLE length (every segment sharing that key), while site-less
+// tributaries are hidden. Derived from activeCandidates, so it stays correct wherever
+// the streams source is (re)built: openCity, pan-autoload rescore, draw-only pan, and
+// style/theme reloads (which re-enter openCity). Candidate generation is untouched.
+function siteDrawStreams(){
+  const siteRiverKeys=new Set(activeCandidates.map(c=>c.riverKey));
+  return drawStreams.filter(s=>siteRiverKeys.has(riverKeyOf(s)));
+}
+
+// Distance (m) from a point [lon,lat] to the nearest candidate site. One representative
+// point per stream keeps this O(streams × sites) and cheap (~1k × ~70).
+function nearestSiteDistM(pt,sites){
+  let min=Infinity;
+  for(let i=0;i<sites.length;i++){const d=hvM(pt[1],pt[0],sites[i][1],sites[i][0]);if(d<min)min=d;}
+  return min===Infinity?1e6:min;
+}
+
+// Build the streams source: the FULL fetched network, each feature stamped with
+// hasSite (1 if its river carries a candidate net, else 0) and distM (a context
+// stream's distance from its midpoint vertex to the nearest site). Site-bearing rivers
+// draw full-opacity on the existing layers; every other waterway draws on the context
+// layers, faded by distM — a soft distance halo for spatial context without clutter.
+// Recomputed wherever the source is (re)built, so it re-fades when candidates change.
+function buildStreamLayerGeo(){
+  const siteRiverKeys=new Set(activeCandidates.map(c=>c.riverKey));
+  const sites=activeCandidates.map(c=>[c.lon,c.lat]);
+  return{type:'FeatureCollection',features:drawStreams.map(s=>{
+    const hasSite=siteRiverKeys.has(riverKeyOf(s));
+    let distM=0;
+    if(!hasSite){const mid=s.coords[Math.floor(s.coords.length/2)];distM=Math.round(nearestSiteDistM(mid,sites));}
+    return{type:'Feature',geometry:{type:'LineString',coordinates:s.coords},
+      properties:{name:s.name,riverKey:riverKeyOf(s),order:s.order,underground:s.underground?1:0,hasSite:hasSite?1:0,distM}};
+  })};
 }
 
 // ═══ PAN-AUTOLOAD: progressive fetch as the user explores ═══════
@@ -841,7 +873,7 @@ function scheduleRescore(){
 
 function refreshMapSources(){
   const sSrc=map.getSource('streams');
-  if(sSrc)sSrc.setData(buildStreamGeo(drawStreams));  // full network → continuous rivers
+  if(sSrc)sSrc.setData(buildStreamLayerGeo());  // site rivers full; others fade by distance
   const cSrc=map.getSource('candidates');
   if(cSrc)cSrc.setData(buildCandidateGeo(activeCandidates));
   // Re-apply focus paint in case the new data introduced more matching features
@@ -849,12 +881,19 @@ function refreshMapSources(){
 }
 
 // Lightweight redraw of just the streams layer (used when new geometry arrived but
-// no new candidate-eligible streams did, so a full re-score is unnecessary).
+// no new candidate-eligible streams did, so a full re-score is unnecessary). Still
+// re-applies the has-a-site filter so panning reveals more of an existing site-river
+// without surfacing site-less tributaries.
 function refreshStreamsSource(){
   const sSrc=map.getSource('streams');
-  if(sSrc)sSrc.setData(buildStreamGeo(drawStreams));
+  if(sSrc)sSrc.setData(buildStreamLayerGeo());
   if(focusedRiverKey)applyFocusPaint();
 }
+
+// Context (no-site) waterways fade with distance to the nearest candidate net:
+// brightest right beside a site-bearing river, ~transparent far away. Driven per
+// feature by the distM property stamped in buildStreamLayerGeo().
+const CONTEXT_FADE=['interpolate',['linear'],['get','distM'],0,0.35,1500,0.12,4000,0.03];
 
 // ═══ RIVER FOCUS: click a stream to trace the entire named river ═
 // Original opacity values restored when focus is cleared.
@@ -862,6 +901,8 @@ const ORIG_PAINT={
   'streams':{'line-opacity':0.9},
   'streams-outline':{'line-opacity':0.4},
   'streams-underground':{'line-opacity':0.6},
+  'streams-context':{'line-opacity':CONTEXT_FADE},
+  'streams-context-underground':{'line-opacity':CONTEXT_FADE},
   'candidates':{'circle-opacity':1.0,'circle-stroke-opacity':1.0},
   'cand-glow':{'circle-opacity':0.25}
 };
@@ -878,6 +919,9 @@ function applyFocusPaint(){
   setIf('streams','line-opacity',expr(0.95,0.15));
   setIf('streams-outline','line-opacity',expr(0.5,0.08));
   setIf('streams-underground','line-opacity',expr(0.7,0.12));
+  // Context lines (always non-focused rivers) recede to a whisper during focus.
+  setIf('streams-context','line-opacity',0.06);
+  setIf('streams-context-underground','line-opacity',0.06);
   setIf('candidates','circle-opacity',expr(1.0,0.18));
   setIf('candidates','circle-stroke-opacity',expr(1.0,0.18));
   setIf('cand-glow','circle-opacity',expr(0.35,0.05));
@@ -1040,7 +1084,7 @@ function loadWorldView(){
 }
 
 function clearLayers(){
-  ['stream-labels','streams-underground','streams-outline','streams','cand-glow','candidates','cluster-count','clusters','unclustered'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
+  ['stream-labels','streams-underground','streams-outline','streams','streams-context','streams-context-underground','cand-glow','candidates','cluster-count','clusters','unclustered'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
   ['places','streams','candidates'].forEach(id=>{if(map.getSource(id))map.removeSource(id)});
 }
 
@@ -1106,21 +1150,27 @@ async function openCity(idx){
 
   activeCandidates=generateCandidates(activeStreams,p.p,p.c,seed);
 
-  // Draw streams — surface solid cyan, underground dashed orange. Uses the FULL
-  // network (drawStreams) so rivers render continuous, not the gated candidate set.
-  map.addSource('streams',{type:'geojson',data:buildStreamGeo(drawStreams)});
-  map.addLayer({id:'streams-outline',type:'line',source:'streams',filter:['==',['get','underground'],0],paint:{'line-color':'#000','line-width':['interpolate',['linear'],['get','order'],1,4,4,7],'line-opacity':.4},layout:{'line-cap':'round','line-join':'round'}});
-  map.addLayer({id:'streams',type:'line',source:'streams',filter:['==',['get','underground'],0],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.5,4,4],'line-opacity':.9},layout:{'line-cap':'round','line-join':'round'}});
-  map.addLayer({id:'streams-underground',type:'line',source:'streams',filter:['==',['get','underground'],1],paint:{'line-color':'#f59e0b','line-width':2,'line-opacity':.6,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
-  map.addLayer({id:'stream-labels',type:'symbol',source:'streams',layout:{'symbol-placement':'line','text-field':['get','name'],'text-size':12,'text-font':['DIN Pro Medium','Arial Unicode MS Regular'],'text-offset':[0,-1],'text-allow-overlap':false},paint:{'text-color':'#fff','text-halo-color':'#000','text-halo-width':1.5}});
+  // Draw streams from the full network. Rivers with a candidate site (hasSite=1) render
+  // full-opacity on the styled layers below; every other waterway (hasSite=0) renders on
+  // the CONTEXT layers, faded by distance to the nearest site — a soft halo, not on/off.
+  map.addSource('streams',{type:'geojson',data:buildStreamLayerGeo()});
+  // Context layers first so they sit UNDER the bright site-bearing rivers.
+  map.addLayer({id:'streams-context',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],0]],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,0.8,4,2.5],'line-opacity':CONTEXT_FADE},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams-context-underground',type:'line',source:'streams',filter:['all',['==',['get','underground'],1],['==',['get','hasSite'],0]],paint:{'line-color':'#f59e0b','line-width':1.5,'line-opacity':CONTEXT_FADE,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
+  // Site-bearing rivers — full opacity, full styling (dark outline + labels).
+  map.addLayer({id:'streams-outline',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],1]],paint:{'line-color':'#000','line-width':['interpolate',['linear'],['get','order'],1,4,4,7],'line-opacity':.4},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],1]],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.5,4,4],'line-opacity':.9},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams-underground',type:'line',source:'streams',filter:['all',['==',['get','underground'],1],['==',['get','hasSite'],1]],paint:{'line-color':'#f59e0b','line-width':2,'line-opacity':.6,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'stream-labels',type:'symbol',source:'streams',filter:['==',['get','hasSite'],1],layout:{'symbol-placement':'line','text-field':['get','name'],'text-size':12,'text-font':['DIN Pro Medium','Arial Unicode MS Regular'],'text-offset':[0,-1],'text-allow-overlap':false},paint:{'text-color':'#fff','text-halo-color':'#000','text-halo-width':1.5}});
 
   // Draw candidates (click + hover handlers are attached once in initMap)
   map.addSource('candidates',{type:'geojson',data:buildCandidateGeo(activeCandidates)});
   map.addLayer({id:'cand-glow',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,12,55,22],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-opacity':.25,'circle-blur':1}});
   map.addLayer({id:'candidates',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,6,55,12],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-stroke-width':2.5,'circle-stroke-color':'#fff'}});
 
-  const nSurface=drawStreams.filter(s=>!s.underground).length;     // reflects what's drawn
-  const nUnderground=drawStreams.filter(s=>s.underground).length;
+  const drawn=siteDrawStreams();                                   // only site-bearing rivers
+  const nSurface=drawn.filter(s=>!s.underground).length;           // reflects what's drawn
+  const nUnderground=drawn.filter(s=>s.underground).length;
   const nPortals=(activeStreams._portals||[]).length;
   const portalInfo=nUnderground>0?` · ${nUnderground} culverts · ${nPortals} portals`:'';
   document.getElementById('info').textContent=`${p.n||'Unknown'} · ${activeCandidates.length} nets · ${nSurface} surface rivers${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%`;
