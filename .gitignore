@@ -29,3 +29,6 @@ env/
 
 # Generated offline scoring output (reproducible; never the live dataset)
 mock_data/candidates_offline.geojson
+
+# Before/after comparison artifacts (contain the Mapbox token via token.js)
+comparison/
