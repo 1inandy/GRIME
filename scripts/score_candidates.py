@@ -21,11 +21,17 @@ Two modes:
            and the Dirichlet sensitivity analysis. Only the raw per-candidate
            PARAMETERS are deterministic **synthetic estimates** (seeded; clearly
            labeled in the output's `note`), because the live DEM/federal APIs are
-           not available offline. This makes the shipped file byte-reproducible
+           not available offline. This makes the offline file byte-reproducible
            while honestly not claiming to be live field data.
 
-Run:  python3 scripts/score_candidates.py            # offline, reproducible
-      python3 scripts/score_candidates.py --live      # full real pipeline
+Output paths: offline mode writes to mock_data/candidates_offline.geojson so the
+frozen live-run dataset (mock_data/candidates.geojson — what the API serves) can
+never be silently replaced by synthetic data. Writing over a file that carries
+the live-pipeline provenance note requires an explicit --force.
+
+Run:  python3 scripts/score_candidates.py            # offline → candidates_offline.geojson
+      python3 scripts/score_candidates.py --live      # full real pipeline → candidates.geojson
+      python3 scripts/score_candidates.py --out PATH   # explicit output path
 """
 import argparse
 import json
@@ -53,11 +59,14 @@ from core.feasibility import (
 )
 from core.impact import estimate_estuary_distance_km, estimate_beach_distance_km
 from core.scoring import (
-    compute_composite_score, sensitivity_analysis, summarize_provenance,
+    ALL_PARAMS, compute_composite_score, sensitivity_analysis, summarize_provenance,
 )
 
 SEED = 42
-OUT = Path("mock_data/candidates.geojson")
+# The frozen live-pipeline dataset the API serves — must never be silently
+# overwritten (offline runs write to a separate path; see overwrite guard).
+LIVE_OUT = Path("mock_data/candidates.geojson")
+OFFLINE_OUT = Path("mock_data/candidates_offline.geojson")
 
 # Synthetic Ellerbe-Creek-area tributaries (name, urbanization 0-1, polyline of
 # (lat, lon) from upstream→downstream). Deterministic geometry near Durham, NC.
@@ -200,7 +209,25 @@ def run_live(bbox=None):
     return scored
 
 
-def write_geojson(scored, mode):
+def is_live_artifact(path):
+    """True if ``path`` holds output stamped with the live-pipeline provenance
+    note — i.e. the frozen dataset that must not be silently destroyed."""
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return "(live pipeline)" in data.get("note", "")
+    except Exception:
+        return False
+
+
+def write_geojson(scored, mode, out=None, force=False):
+    out = Path(out) if out is not None else (LIVE_OUT if mode == "live" else OFFLINE_OUT)
+    if out.exists() and is_live_artifact(out) and not force:
+        sys.exit(
+            f"REFUSING to overwrite {out}: it contains live-pipeline output "
+            "(the frozen scored dataset the API serves). Re-run with --force "
+            "to overwrite it deliberately, or pass --out for a different path."
+        )
     scored = scored.to_crs(WGS84)
     feats = []
     for _, r in scored.iterrows():
@@ -228,16 +255,34 @@ def write_geojson(scored, mode):
                 "M5 velocity curve, composite, Dirichlet sensitivity) is the real "
                 "shipped code; raw parameters are deterministic synthetic estimates, "
                 "not live gauge/Census measurements.")
+    # Per-run provenance, computed from the actual output rather than asserted:
+    # which of the 27 parameters really varied per-candidate, and which sat on a
+    # constant (fallback/dead-endpoint or genuinely uniform) value. The static
+    # note above describes methodology; this block states what happened.
+    present = [c for c in ALL_PARAMS if c in scored.columns]
+    varying = sorted(c for c in present if scored[c].nunique(dropna=False) > 1)
+    constant = sorted(c for c in present if c not in varying)
+    note += (f" Per-run provenance: {len(varying)}/{len(ALL_PARAMS)} parameters "
+             f"varied per-candidate in this output; {len(constant)} were constant "
+             f"({', '.join(constant) if constant else 'none'}).")
     fc = {
         "type": "FeatureCollection",
         "note": note,
+        "provenance": {
+            "mode": mode,
+            "n_parameters": len(ALL_PARAMS),
+            "varying": varying,
+            "constant": constant,
+        },
         "features": feats,
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUT, "w") as f:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w") as f:
         json.dump(fc, f, indent=1, sort_keys=True)
         f.write("\n")
-    print(f"Wrote {len(feats)} scored candidates → {OUT}")
+    print(f"Wrote {len(feats)} scored candidates → {out}")
+    print(f"  provenance: {len(varying)}/{len(ALL_PARAMS)} varying · "
+          f"{len(constant)} constant")
     top = scored.iloc[0]
     # Live candidates have no synthetic `stream_name`; fall back to a segment label.
     label = top.get("stream_name") or f"segment {int(top.get('segment_id', 0))}"
@@ -250,9 +295,16 @@ def main():
     ap = argparse.ArgumentParser(description="Reproducibly score GRIME candidates")
     ap.add_argument("--live", action="store_true",
                     help="run the real DEM+API pipeline (needs pysheds/py3dep/network)")
+    ap.add_argument("--out", default=None,
+                    help="output path (default: mock_data/candidates.geojson for "
+                         "--live, mock_data/candidates_offline.geojson otherwise)")
+    ap.add_argument("--force", action="store_true",
+                    help="allow overwriting a file that carries the live-pipeline "
+                         "provenance note (the frozen dataset)")
     args = ap.parse_args()
     scored = run_live() if args.live else run_offline()
-    write_geojson(scored, "live" if args.live else "offline")
+    write_geojson(scored, "live" if args.live else "offline",
+                  out=args.out, force=args.force)
 
 
 if __name__ == "__main__":
