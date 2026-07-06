@@ -69,7 +69,11 @@ def load_candidates(force_mock=False):
             print(f"Loaded candidates from {p}")
             return _candidates_cache
 
-    # No data at all — return empty GeoJSON
+    # No data at all — serve an empty collection, but say so loudly instead of
+    # letting every endpoint silently report zero candidates.
+    print(f"[warn] no candidates file found under {MOCK_DIR} — serving an "
+          "empty FeatureCollection (run scripts/score_candidates.py, or "
+          "restore mock_data/candidates.geojson)")
     return {"type": "FeatureCollection", "features": []}
 
 

@@ -9,19 +9,32 @@ Run it in CI / the verify step.
 
 Run: python3 scripts/check_model.py   (exit 0 = match, 1 = drift)
 """
+import inspect
 import json
+import math
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.scoring import SUB_SCORE_WEIGHTS
-from core.generation import GENERATION_WEIGHTS
-from core.flow import FLOW_WEIGHTS, estimate_runoff_coefficient, velocity_feasibility
-from core.impact import IMPACT_WEIGHTS as IMPACT_W
-from core.feasibility import FEASIBILITY_WEIGHTS, channel_width_score
+import pandas as pd
+import geopandas as gpd
+from shapely.geometry import LineString, Point
 
-MODEL = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "model.json")
+from core.scoring import SUB_SCORE_WEIGHTS, apply_hard_gates
+from core.generation import GENERATION_WEIGHTS
+from core.flow import (
+    FLOW_WEIGHTS, estimate_runoff_coefficient, velocity_feasibility,
+    velocity_transport_favorability,
+)
+from core.impact import IMPACT_WEIGHTS as IMPACT_W
+from core.feasibility import FEASIBILITY_WEIGHTS, channel_width_score, get_channel_width
+from core.pipeline import generate_candidates
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL = os.path.join(_ROOT, "model.json")
+EXPLORE_HTML = os.path.join(_ROOT, "dashboard", "explore", "index.html")
 
 
 def approx(a, b, tol=1e-9):
@@ -85,12 +98,80 @@ def main():
         if not approx(channel_width_score(w), exp):
             errors.append(f"channel_width_score({w})={channel_width_score(w)} != {exp}")
 
+    # 6) velocity transport-favorability Gaussian (Flow-side, M5) — previously
+    # undocumented in model.json and unguarded, so its constants could drift
+    # silently while the checker stayed green.
+    vt = m["curves"]["velocity_transport_favorability"]
+    center, width = float(vt["center"]), float(vt["width"])
+    for v in (0.0, 0.3, center, 1.5, 2.5):
+        expected = math.exp(-(((v - center) / width) ** 2))
+        got = velocity_transport_favorability(v)
+        if not approx(got, expected, 1e-9):
+            errors.append(f"velocity_transport_favorability({v})={got} != {expected} "
+                          f"(model center={center}, width={width})")
+
+    # 7) hard gates — probe the gate actually used (apply_hard_gates) against the
+    # model.json thresholds: velocity strictly < max, width inclusive [min, max],
+    # ownership strictly > min_exclusive.
+    hg = m["hard_gates"]
+    vmax = float(hg["flow_velocity_ms_max"])
+    wmin, wmax = float(hg["channel_width_m_min"]), float(hg["channel_width_m_max"])
+    own_min = float(hg["land_ownership_min_exclusive"])
+    probe = pd.DataFrame({
+        #                      keep   drop   keep  drop        keep  drop        keep       drop
+        "flow_velocity_ms":  [vmax - 1e-6, vmax, 1.0, 1.0,      1.0, 1.0,        1.0,       1.0],
+        "channel_width_m":   [5.0,   5.0,  wmin, wmin - 1e-6,  wmax, wmax + 1e-6, 5.0,      5.0],
+        "land_ownership":    [0.5,   0.5,  0.5,  0.5,          0.5,  0.5,        own_min + 1e-6, own_min],
+    })
+    kept = set(apply_hard_gates(probe).index)
+    if kept != {0, 2, 4, 6}:
+        errors.append(f"hard gates: expected to keep rows {{0,2,4,6}} of the probe, kept {sorted(kept)} "
+                      f"(velocity<{vmax} strict, width [{wmin},{wmax}] inclusive, ownership>{own_min})")
+
+    # 8) spacing — pipeline default and the explorer's JS constants
+    spacing = m["spacing_m"]
+    code_spacing = inspect.signature(generate_candidates).parameters["spacing_m"].default
+    if code_spacing != spacing["pipeline_along_stream"]:
+        errors.append(f"spacing pipeline_along_stream: code default {code_spacing} != "
+                      f"model {spacing['pipeline_along_stream']}")
+    try:
+        js = open(EXPLORE_HTML).read()
+        js_checks = [
+            (r"SAME_STREAM_SPACE\s*=\s*(\d+)", spacing["explorer_same_stream"], "explorer_same_stream"),
+            (r"CROSS_STREAM_SPACE\s*=\s*(\d+)", spacing["explorer_cross_stream"], "explorer_cross_stream"),
+            (r"CATCH_EFFICIENCY\s*=\s*([\d.]+)", m["occlusion"]["catch_efficiency_eta"], "occlusion eta"),
+        ]
+        for pattern, model_val, label in js_checks:
+            match = re.search(pattern, js)
+            if not match:
+                errors.append(f"{label}: constant not found in dashboard/explore/index.html")
+            elif not approx(float(match.group(1)), float(model_val), 1e-9):
+                errors.append(f"{label}: explorer JS {match.group(1)} != model {model_val}")
+    except OSError as e:
+        errors.append(f"explorer HTML unreadable for spacing/occlusion check: {e}")
+
+    # 9) width-order fallback — probe get_channel_width on a stream lacking any
+    # width attribute and compare against the model.json formula.
+    formula = m["width_order_fallback"]["formula"]
+    for order in (1, 2, 3, 4, 5):
+        sg = gpd.GeoDataFrame(
+            {"stream_order": [order], "geometry": [LineString([(0, 0), (100, 0)])]},
+            crs="EPSG:32617",
+        )
+        got = get_channel_width(Point(50, 5), sg)
+        expected = eval(formula, {"__builtins__": {}}, {"min": min, "order": order})
+        if not approx(got, expected, 1e-9):
+            errors.append(f"width_order_fallback(order={order}): code {got} != formula {expected}")
+
     if errors:
         print("MODEL DRIFT DETECTED:")
         for e in errors:
             print("  -", e)
         sys.exit(1)
-    print(f"model.json matches code: {n} parameters, weights + gates + curves consistent.")
+    print(f"model.json matches code: {n} parameters; validated param+subscore weights, "
+          "runoff formula, velocity feasibility/transport curves, channel-width curve, "
+          "hard gates, spacing + occlusion constants (pipeline & explorer), and the "
+          "width-order fallback.")
     sys.exit(0)
 
 

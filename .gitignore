@@ -26,3 +26,6 @@ env/
 
 # Stray uvicorn redirect file (see L2)
 /uvicorn
+
+# Generated offline scoring output (reproducible; never the live dataset)
+mock_data/candidates_offline.geojson
