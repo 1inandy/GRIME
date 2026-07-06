@@ -56,6 +56,12 @@ def compute_subscore(df, weights):
     neutral 50 (not 0).
     M5: velocity enters Flow through a peaked transport-favorability curve, not raw
     (raw monotonic-good would fight the Feasibility velocity gate).
+
+    Interpretation note: because every varying parameter — including feasibility
+    inputs that arrive as calibrated absolute [0,1] curve scores — is MinMax'd
+    within the batch, sub-scores are batch-relative rankings, not absolute
+    suitability values; they are not comparable across separately scored regions
+    (see model.json parameter_notes.normalization).
     """
     cols = [c for c in weights.keys() if c in df.columns]
     if not cols:
@@ -100,17 +106,22 @@ def compute_subscore(df, weights):
 def summarize_provenance(df):
     """
     C2/C4 support: print a loud per-run summary of how many of the 27 parameters
-    actually vary per-candidate (live) versus are constant (fallback/dead endpoint).
-    Makes constant columns and dead endpoints visible every run.
+    actually vary per-candidate versus are constant (fallback/dead endpoint or
+    genuinely uniform). Makes constant columns and dead endpoints visible every run.
+
+    Note: "varies" is NOT the same as "live" — offline synthetic runs vary all 27
+    by construction — so this summary deliberately reports variation only and
+    leaves the live-vs-synthetic labeling to the caller's output note.
     """
     present = [c for c in ALL_PARAMS if c in df.columns]
     varying = [c for c in present if df[c].nunique(dropna=False) > 1]
     constant = [c for c in present if c not in varying]
     print("=" * 66)
     print(f"  PROVENANCE: {len(varying)}/{len(ALL_PARAMS)} parameters vary "
-          f"per-candidate (live) · {len(constant)} constant (fallback)")
+          f"per-candidate · {len(constant)} constant "
+          f"(fallback/dead endpoint or uniform in this run)")
     if constant:
-        print(f"  constant/fallback: {', '.join(constant)}")
+        print(f"  constant: {', '.join(constant)}")
     missing = [c for c in ALL_PARAMS if c not in present]
     if missing:
         print(f"  missing entirely: {', '.join(missing)}")

@@ -1647,9 +1647,19 @@ document.getElementById('theme-toggle').addEventListener('click',()=>{
 // ═══ INIT ═══════════════════════════════════════════════════════
 async function init(){
   await initMap();
+  // Honest failure state: a missing token means a blank/broken basemap — say so
+  // instead of silently rendering black tiles at a demo.
+  if(!mapboxgl.accessToken){
+    document.getElementById('load-msg').innerHTML='Mapbox token not configured.<br><span style="font-size:11px;color:var(--td)">Set MAPBOX_TOKEN (env) or dashboard/config.js — see README Quick Start.</span>';
+    return;
+  }
   document.getElementById('load-msg').textContent='Loading cities database...';
   places=await loadPlaces();
   places=places.filter(p=>p&&p.n&&p.c&&p.la!=null&&p.lo!=null);
+  if(places.length===0){
+    document.getElementById('load-msg').innerHTML='Couldn’t load the cities database (mock_data/places.json).<br><span style="font-size:11px;color:var(--td)">Serve the app via the API (http://localhost:8000/explore) rather than opening the file directly.</span>';
+    return;
+  }
   const n=places.length.toLocaleString();
   const cc=new Set(places.map(p=>p.c)).size;
   document.getElementById('load-msg').textContent=`${n} cities loaded`;

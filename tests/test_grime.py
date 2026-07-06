@@ -289,6 +289,85 @@ def test_candidate_detail_round_trip_on_shipped_data():
         assert detail["location"] == f["geometry"]["coordinates"]
 
 
+def test_write_geojson_refuses_to_overwrite_live_artifact(tmp_path):
+    """The frozen live-pipeline dataset must never be silently replaced: any
+    write targeting a file that carries the live-provenance note exits before
+    touching it unless --force is passed."""
+    import json as _json
+    import scripts.score_candidates as sc
+
+    live = tmp_path / "candidates.geojson"
+    live.write_text(_json.dumps({
+        "type": "FeatureCollection",
+        "note": "Scored by scripts/score_candidates.py (live pipeline). ...",
+        "features": [],
+    }))
+    assert sc.is_live_artifact(live)
+
+    with pytest.raises(SystemExit) as excinfo:
+        # guard fires before the payload is touched, so a placeholder is fine
+        sc.write_geojson(object(), "offline", out=live)
+    assert "REFUSING" in str(excinfo.value)
+    # the live file is untouched
+    assert "live pipeline" in live.read_text()
+
+    # a non-live note is not protected
+    plain = tmp_path / "other.geojson"
+    plain.write_text(_json.dumps({"type": "FeatureCollection", "note": "offline", "features": []}))
+    assert not sc.is_live_artifact(plain)
+
+
+def test_written_geojson_provenance_reports_actual_split(tmp_path):
+    """The output's top-level provenance block must state which parameters really
+    varied vs sat constant in that run — computed from the data, not asserted."""
+    import json as _json
+    import scripts.score_candidates as sc
+
+    rows = []
+    for i in range(3):
+        rows.append({
+            "geometry": Point(-78.9 + i * 0.01, 36.0),
+            "composite_score": 50.0 + i,
+            "stream_name": "Test Creek", "segment_id": i,
+            "population_density": 100.0 + i,   # varies
+            "impervious_pct": 35.0,            # constant fallback
+        })
+    gdf = gpd.GeoDataFrame(rows, crs="EPSG:4326")
+    out = tmp_path / "scored.geojson"
+    sc.write_geojson(gdf, "offline", out=out)
+
+    data = _json.load(open(out))
+    prov = data["provenance"]
+    assert prov["mode"] == "offline"
+    assert "population_density" in prov["varying"]
+    assert "impervious_pct" in prov["constant"]
+    assert "varied per-candidate" in data["note"]
+    assert "impervious_pct" in data["note"]
+
+
+def test_summarize_provenance_does_not_claim_live(capsys):
+    """Regression: varying parameters were previously printed as '(live)', which
+    mislabeled offline synthetic runs as live data."""
+    df = pd.DataFrame({
+        "population_density": [1.0, 2.0],
+        "impervious_pct": [35.0, 35.0],
+    })
+    result = summarize_provenance(df)
+    out = capsys.readouterr().out
+    assert "(live)" not in out
+    assert result["varying"] == ["population_density"]
+    assert result["constant"] == ["impervious_pct"]
+
+
+def test_offline_default_output_is_not_the_live_path():
+    """Regression for the audit's H-severity finding: the default (offline) run
+    must not target mock_data/candidates.geojson."""
+    import scripts.score_candidates as sc
+    assert sc.OFFLINE_OUT != sc.LIVE_OUT
+    assert sc.LIVE_OUT.name == "candidates.geojson"
+    assert "offline" in sc.OFFLINE_OUT.name
+
+
 def test_effective_weights_drop_constant_params(monkeypatch):
     """/api/weights must report effective weight 0.0 for constant-fallback
     parameters and renormalize the survivors (mirrors core.scoring)."""
