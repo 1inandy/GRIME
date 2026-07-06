@@ -1,0 +1,145 @@
+"""
+Tests for core.real_sources — the real per-site data fetchers/parsers wired in by
+scripts/wire_real_data.py. Network calls are monkeypatched with recorded fixtures
+(shapes captured from the live endpoints on 2026-07-06), so these run offline and
+in CI. The regression fixtures below pin the two things most likely to break
+silently: the EROM cfs (no cms conversion) and the TRI longitude-sign fix.
+"""
+import os
+import sys
+
+import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from core import real_sources as rs
+
+
+# ── flood Q10 — USGS SIR 2014-5030 Table 7 HR1 (verified coefficients) ──
+
+def test_flood_q10_matches_sir2014_hr1_equations():
+    # small basin (DA ≤ 3 mi²): 381·DA^0.7536·10^(0.0076·IMP)
+    da_km2 = 5.0                    # 1.93 mi²
+    da_mi2 = da_km2 * rs.KM2_TO_MI2
+    exp_small = 381.0 * da_mi2 ** 0.7536 * 10 ** (0.0076 * 30.0)
+    assert rs.flood_q10_cfs_sir2014(da_km2, 30.0) == pytest.approx(exp_small, rel=1e-6)
+
+    # large basin (3 < DA ≤ 436 mi²): 484·DA^0.5539·10^(0.0060·IMP)
+    da_km2 = 40.0                   # 15.4 mi²
+    da_mi2 = da_km2 * rs.KM2_TO_MI2
+    exp_large = 484.0 * da_mi2 ** 0.5539 * 10 ** (0.0060 * 25.0)
+    assert rs.flood_q10_cfs_sir2014(da_km2, 25.0) == pytest.approx(exp_large, rel=1e-6)
+
+
+def test_flood_q10_monotonic_and_guarded():
+    assert rs.flood_q10_cfs_sir2014(None, 30) is None
+    assert rs.flood_q10_cfs_sir2014(0, 30) is None
+    # more impervious → larger flood; more area → larger flood
+    assert rs.flood_q10_cfs_sir2014(40, 50) > rs.flood_q10_cfs_sir2014(40, 10)
+    assert rs.flood_q10_cfs_sir2014(80, 20) > rs.flood_q10_cfs_sir2014(10, 20)
+
+
+# ── channel width — Bieger 2015 Table 3 (AHI division, metric) ──
+
+def test_bieger_width_curve():
+    # W(m) = 3.12·DA(km²)^0.415
+    assert rs.bankfull_width_m_bieger(1.0) == pytest.approx(3.12, rel=1e-9)
+    assert rs.bankfull_width_m_bieger(100.0) == pytest.approx(3.12 * 100 ** 0.415, rel=1e-9)
+    # physically sensible for the Ellerbe catchment range (2–116 km² → ~4–22 m)
+    assert 3.5 < rs.bankfull_width_m_bieger(2.0) < 5.0
+    assert 18 < rs.bankfull_width_m_bieger(116.0) < 25
+    assert rs.bankfull_width_m_bieger(None) is None
+
+
+# ── EROM parsers: qe_ma is ALREADY cfs (regression against a cms bug) ──
+
+_EROM_PROPS = {  # recorded shape for COMID 8778141 (Ellerbe Creek)
+    "comid": 8778141, "gnis_name": "Ellerbe Creek", "totdasqkm": 15.5502,
+    "qe_ma": 7.881, "va_ma": 0.83,
+    "qe_01": 10.9, "qe_02": 11.8, "qe_03": 12.1, "qe_04": 8.2, "qe_05": 5.9,
+    "qe_06": 4.4, "qe_07": 4.0, "qe_08": 3.7, "qe_09": 4.6, "qe_10": 5.2,
+    "qe_11": 8.4, "qe_12": 9.6,
+}
+
+
+def test_erom_mean_q_is_cfs_not_cms():
+    # 7.881 cfs, NOT 7.881×35.31 — a 15.5 km² creek is a single-digit-to-tens cfs stream
+    q = rs.erom_mean_q_cfs(_EROM_PROPS)
+    assert q == pytest.approx(7.881, rel=1e-9)
+    assert q < 60  # would be ~278 under the cms bug
+
+
+def test_erom_seasonal_cv_from_monthly():
+    cv = rs.erom_seasonal_cv(_EROM_PROPS)
+    assert 0.2 < cv < 0.6           # monthly-mean CV, not daily
+    assert rs.erom_seasonal_cv({"qe_01": 5.0}) is None  # incomplete → None
+
+
+def test_erom_drainage_km2():
+    assert rs.erom_drainage_km2(_EROM_PROPS) == pytest.approx(15.5502)
+    assert rs.erom_drainage_km2({}) is None
+
+
+# ── TRI: the longitude-sign + null fix (the actual shipped bug) ──
+
+def test_tri_sign_fix_and_null_handling(monkeypatch):
+    # Envirofacts returns bare-positive longitudes and some null rows
+    fixture = [
+        {"pref_latitude": 36.0, "pref_longitude": 78.891667},      # sign-flip to -78.89
+        {"pref_latitude": 35.995556, "pref_longitude": 78.899444},
+        {"pref_latitude": None, "pref_longitude": None},           # null → dropped
+        {"pref_latitude": 36.0, "pref_longitude": -78.9},          # already negative
+        {"pref_latitude": 41.0, "pref_longitude": 74.0},           # NY-ish → outside window, dropped
+    ]
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: fixture)
+    pts = rs.tri_points_durham()
+    assert len(pts) == 3                       # 2 sign-flipped + 1 already-negative; nulls/out-of-window gone
+    for lat, lon in pts:
+        assert 35.0 <= lat <= 37.0 and -80.0 <= lon <= -78.0   # all land in Durham region
+
+
+def test_tri_zero_when_endpoint_dead(monkeypatch):
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: None)
+    assert rs.tri_points_durham() == []
+
+
+# ── land ownership classifier ──
+
+@pytest.mark.parametrize("owner,expected", [
+    ("CITY OF DURHAM", 1.0),
+    ("DURHAM COUNTY", 1.0),
+    ("NC DEPT OF TRANSPORTATION", 1.0),
+    ("Duke University", 1.0),
+    ("SMITH, JOHN & JANE", 0.5),
+    ("ACME PROPERTIES LLC", 0.5),
+    (None, 0.5),
+    ("", 0.5),
+])
+def test_land_ownership_classifier(owner, expected):
+    assert rs.land_ownership_from_owner(owner) == expected
+
+
+# ── NBI DMS→DD guard ──
+
+def test_dms_to_dd():
+    # NBI raw format DDMMSSSS (seconds ×100): 36°01'23.40" → 36012340
+    assert rs._dms_to_dd(36012340) == pytest.approx(36 + 1 / 60 + 23.40 / 3600, rel=1e-6)
+
+
+def test_nbi_parses_decimal_degrees(monkeypatch):
+    fixture = {"features": [
+        {"attributes": {"LAT_016": 36.02, "LONG_017": -78.90}},
+        {"attributes": {"LAT_016": 35.99, "LONG_017": 78.91}},   # positive lon → flipped
+        {"attributes": {"LAT_016": None, "LONG_017": None}},       # dropped
+    ]}
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: fixture)
+    pts = rs.nbi_bridge_points((-79.05, 35.90, -78.75, 36.05))
+    assert len(pts) == 2
+    assert all(lon < 0 for _, lon in pts)
+
+
+# ── CSO: distinguishes truthful-zero from download failure ──
+
+def test_cso_download_failure_is_none_not_zero(monkeypatch):
+    monkeypatch.setattr(rs, "cached_download", lambda *a, **k: None)
+    assert rs.cso_points_nc((-79.05, 35.90, -78.75, 36.05)) is None  # unknown, not confirmed 0
