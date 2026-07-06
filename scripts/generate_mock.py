@@ -1,15 +1,32 @@
 """
 GRIME — Global Places Database Generator
-Generates 100K+ city/town database from geonamescache + procedural expansion.
+Generates 100K+ city/town database from geonamescache + procedural expansion
+(~30% real geonamescache cities, ~70% procedurally generated towns).
 
-Run: python scripts/generate_mock.py
+Safety-net semantics: if mock_data/places.json already exists, this script
+leaves it alone (the committed dataset is what the explorer/landing pages and
+their hardcoded coverage numbers were built against, and geonamescache drift
+makes regeneration non-byte-reproducible). Pass --force to regenerate anyway.
+
+Run: python scripts/generate_mock.py [--force]
 Requires: pip install geonamescache
 """
 
+import argparse
 import json, random, math
 from pathlib import Path
 
-def generate_places(output_dir="mock_data", seed=42):
+def generate_places(output_dir="mock_data", seed=42, force=False):
+    existing = Path(output_dir) / "places.json"
+    if existing.exists() and not force:
+        try:
+            n = len(json.load(open(existing)))
+        except Exception:
+            n = "?"
+        print(f"places.json already exists ({n} places) — keeping it. "
+              "Pass --force to regenerate (geonamescache drift makes output "
+              "differ from the committed dataset).")
+        return
     try:
         import geonamescache
         gc = geonamescache.GeonamesCache()
@@ -78,4 +95,8 @@ def generate_places(output_dir="mock_data", seed=42):
     print(f"{'='*50}")
 
 if __name__ == "__main__":
-    generate_places()
+    ap = argparse.ArgumentParser(description="Generate mock_data/places.json (skips if present)")
+    ap.add_argument("--force", action="store_true",
+                    help="regenerate even if places.json already exists")
+    args = ap.parse_args()
+    generate_places(force=args.force)

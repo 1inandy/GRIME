@@ -21,7 +21,7 @@ GRIME is a multi-parameter optimization system that identifies optimal locations
 
 ## Visualizations
 
-*All surfaces generated in the Wolfram Language from real USGS elevation data and GRIME's scoring functions. See [full documentation](dashboard/docs/documentation.md) for derivations and code.*
+*Conceptual visualizations generated in the Wolfram Language. The terrain base uses Wolfram's `GeoElevationData` for the Durham area (the pipeline itself uses USGS 3DEP); the parameter/score surfaces are **illustrative reconstructions of GRIME's scoring functions over synthetic grids**, not plots of pipeline output. See [full documentation](dashboard/docs/documentation.md) for the exact code behind each figure.*
 
 ### DEM Terrain — Durham, NC
 
@@ -29,7 +29,7 @@ GRIME is a multi-parameter optimization system that identifies optimal locations
 <img src="dashboard/docs/images/terrain_surface.png" width="700">
 </p>
 
-> 3D elevation surface from USGS 3DEP at 10m resolution. Stream valleys visible as low-elevation grooves define where GRIME extracts candidate net sites.
+> 3D elevation surface of the Durham area (Wolfram `GeoElevationData`; the scoring pipeline uses USGS 3DEP at 10 m). Stream valleys visible as low-elevation grooves are where GRIME extracts candidate net sites.
 
 ### Composite Score Surface
 
@@ -138,7 +138,9 @@ graph TD
 | Feasibility Params | `core/feasibility.py` | Compute deployment constraint parameters (road access, channel width, slope) |
 | Scoring Engine | `core/scoring.py` | Normalize, weight, composite, sensitivity analysis |
 | API Server | `api/main.py` | REST + WebSocket endpoints serving scored GeoJSON |
-| Dashboard | `dashboard/index.html` | Interactive map with on-demand OSM waterway fetching and client-side scoring |
+| Landing page | `dashboard/index.html` | Marketing/overview page (hero globe, dataset globe, illustrative UI mock) |
+| Map explorer | `dashboard/explore/index.html` | Interactive map: on-demand OSM waterway fetching, client-side demo scoring, real-pipeline overlay for the Durham pilot |
+| Scored dataset | `mock_data/candidates.geojson` | Frozen live-pipeline output (147 Durham sites) served by the API |
 | Places Database | `mock_data/places.json` | 89,518 place records across 239 countries (~6MB compact JSON) |
 
 > **About the places database.** The 89,518 records come from `geonamescache` (real
@@ -172,7 +174,7 @@ The 27 raw parameters are not directly comparable (population density in persons
 
 2. **Sub-score level:** The four sub-scores are combined via a second set of weights into the composite score in [0, 100].
 
-This two-level structure has a specific advantage: it makes the model **interpretable at the sub-score level**. A judge or engineer can look at a candidate and immediately see "high generation, low feasibility" without needing to parse 28 individual numbers.
+This two-level structure has a specific advantage: it makes the model **interpretable at the sub-score level**. A judge or engineer can look at a candidate and immediately see "high generation, low feasibility" without needing to parse 27 individual numbers.
 
 ### 4.2 Hard gates vs soft scoring
 
@@ -474,11 +476,15 @@ FUNCTION sensitivity_analysis(candidates, n_perturbations=50):
 ```
 
 **Real results (reproducible).** `python3 scripts/robustness_report.py` runs this at
-**n = 500** on the scored candidates and writes an actual rank-stability histogram to
-`dashboard/docs/exports/robustness_hist.png` (not a synthetic mock). On the shipped
-Ellerbe candidate set, the top 4 sites retain a top-5 position in **81–99 %** of
-perturbed-weight runs, so the leading recommendations are robust to reasonable weight
-changes while lower-ranked sites are weight-sensitive (as expected).
+**n = 500** on the **offline demo candidate set** (26 synthetic-parameter sites — not
+the shipped live dataset) and writes an actual rank-stability histogram to
+`dashboard/docs/exports/robustness_hist.png` (not a synthetic mock). On that demo
+set, the top 4 sites retain a top-5 position in **81–99 %** of perturbed-weight
+runs. The shipped live 147-site dataset stores its own per-site `robustness_pct`
+from the n = 200 run that produced it: the leading site retains top-5 in **82 %**
+of draws, only 23 of 147 sites ever enter the top 5 (the rest report 0 %), so
+top-5 membership is confined to a small stable pool while the exact order within
+it is weight-sensitive at the margin.
 
 **Field-validation candidates (roadmap).** The top sites the model flags — South
 Ellerbe (composite 68, 99 % robust) and the upper Sandy Creek reaches — are the
@@ -512,7 +518,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 **Decision:** Aggregate 27 parameters into 4 sub-scores, then combine sub-scores into a composite.
 
-**Context:** A flat 28-weight sum is opaque — changing one weight has a non-obvious effect.
+**Context:** A flat 27-weight sum is opaque — changing one weight has a non-obvious effect.
 
 **Alternatives considered:** (1) Flat weighted sum. (2) PCA dimensionality reduction. (3) Random forest classifier.
 
@@ -594,7 +600,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 Fields: **n**=name, **c**=ISO country code, **p**=population, **la**=latitude, **lo**=longitude.
 
-### Parameter taxonomy (all 28)
+### Parameter taxonomy (all 27)
 
 | # | Parameter | Unit | Family | Default Weight | Data Source |
 |---|-----------|------|--------|---------------|-------------|
@@ -626,6 +632,25 @@ Fields: **n**=name, **c**=ISO country code, **p**=population, **la**=latitude, *
 | 26 | Bank slope stability | degrees | Feasibility | 0.10 | DEM gradient |
 | 27 | Bridge/structure proximity | bonus | Feasibility | 0.10 | FHWA NBI |
 
+### Live vs fallback: what actually varied in the shipped dataset
+
+The table above lists each parameter's **designed** source. In the committed
+`mock_data/candidates.geojson` (the frozen June 2026 live run served by the API),
+**11 of the 27 parameters varied per-candidate** — population density, road
+density, flow velocity, stream order, catchment area, EJ index, estuary/beach
+distance, tourism density, road access, velocity feasibility — and **16 were
+constant fallbacks**: all EPA-sourced parameters (TRI, NPDES, CSO, water intake,
+Superfund = 0.0; ECHO/StreamStats endpoints were dead), single-gauge discharge
+stats broadcast to every site (`usgs_mean_q_cfs`, `flood_q10_cfs`,
+`seasonal_cv`), `impervious_pct` (whole-bbox NLCD mean, fallback 35.0) and its
+derived `runoff_coeff_C`, `litter_complaint_density` (dead 311 endpoint),
+`land_ownership` (PAD-US not wired), `bridge_proximity_bonus` (NBI not wired),
+and `channel_width_score`/`bank_slope_score` (real inputs, uniform in this
+area). Because `compute_subscore` drops constant columns and renormalizes, the
+shipped ranking is driven by the 11 varying parameters — `/api/weights` reports
+both the nominal and the **effective** weights, and the geojson's top-level
+`note` + `provenance` block record the split for any regenerated output.
+
 ---
 
 ## 9. Codebase Structure
@@ -643,11 +668,18 @@ grime/
 ├── api/
 │   └── main.py                 # FastAPI: REST + WebSocket + static serving
 ├── dashboard/
-│   └── index.html              # Mapbox map, Overpass integration, client-side scoring
+│   ├── index.html              # Landing page (globes + illustrative UI mock)
+│   ├── explore/index.html      # Map explorer: Overpass fetch, client-side demo scoring
+│   └── docs/                   # Rendered documentation + figures
 ├── mock_data/
+│   ├── candidates.geojson      # Frozen live-pipeline output (147 sites) — API serves this
 │   └── places.json             # 89,518 places, 239 countries (6MB)
 ├── scripts/
-│   └── generate_mock.py        # Builds places.json from geonamescache
+│   ├── score_candidates.py     # Offline/live scoring entry point (+ overwrite guard)
+│   ├── check_model.py          # model.json ↔ code drift guard
+│   ├── robustness_report.py    # Dirichlet sensitivity histogram
+│   ├── healthcheck.py          # External endpoint status
+│   └── generate_mock.py        # Builds places.json (skips if present)
 ├── notebooks/
 │   └── validate_pipeline.ipynb # Pipeline validation notebook
 ├── requirements.txt
@@ -663,8 +695,8 @@ grime/
 | Manning's velocity | `core/flow.py` | `compute_flow_velocity()` |
 | Hard gate filtering | `core/scoring.py` | `apply_hard_gates()` |
 | Sensitivity analysis | `core/scoring.py` | `sensitivity_analysis()` |
-| Client-side placement | `dashboard/index.html` | `generateCandidates()` |
-| Overpass waterway fetch | `dashboard/index.html` | `fetchRealStreams()` |
+| Client-side placement | `dashboard/explore/index.html` | `generateCandidates()` |
+| Overpass waterway fetch | `dashboard/explore/index.html` | `fetchRealStreams()` |
 | Sub-score normalization | `core/scoring.py` | `compute_subscore()` |
 
 ---
@@ -683,15 +715,15 @@ grime/
 
 ### Dashboard (demo mode)
 
-1. Browser opens `dashboard/index.html`
+1. Browser opens `/explore` (`dashboard/explore/index.html`, served by the API; the landing page at `/` is a separate marketing surface)
 2. Fetches `places.json` (6MB) → parses 89,518 places
 3. Mapbox GL JS renders clustered city markers
 4. User clicks city → `openCity(idx)` fires
 5. POST to Overpass API → returns waterway geometry as JSON
 6. `fetchRealStreams()` filters: tidal=no, width≤30m, top 15–25 by length
 7. `generateCandidates()` runs 3-phase placement + scoring
-8. Mapbox renders: stream lines (cyan) + candidate dots (color-coded by score)
-9. User clicks candidate → sidebar shows score breakdown + parameters
+8. Mapbox renders: stream lines (cyan) + candidate dots (color-coded by score); where the city overlaps the frozen live run's coverage (Durham NC), the real pipeline sites are drawn as dark-ringed dots alongside the demo estimates
+9. User clicks candidate → detail panel shows score breakdown + per-value provenance tags (EST / OSM / LIVE)
 
 ---
 
@@ -701,12 +733,12 @@ grime/
 
 | Method | Path | Parameters | Response |
 |--------|------|-----------|----------|
-| GET | `/api/candidates` | `?min_score=N` `?top_n=N` `?subscore=field` | GeoJSON FeatureCollection |
-| GET | `/api/candidates/{id}` | — | Score breakdown with 4 sub-score parameter trees |
-| GET | `/api/weights` | — | All parameter and sub-score weights |
+| GET | `/api/candidates` | `?min_score=N` `?top_n=N` `?subscore=field` | GeoJSON FeatureCollection (each feature carries its stable `rank`) |
+| GET | `/api/candidates/{id}` | `{id}` = the candidate's `rank` (1-based; 1 = top composite) | Score breakdown with 4 sub-score parameter trees + rank/segment_id |
+| GET | `/api/weights` | — | Nominal design weights **and** effective weights for the served dataset (constant-fallback params show effective 0.0) |
 | GET | `/api/stats` | — | Count, score range, mean, top 5 |
 | GET | `/map` | — | Serves dashboard HTML |
-| WS | `/ws` | — | Real-time candidate updates |
+| WS | `/ws` | — | Scored-snapshot channel: sends the candidates GeoJSON on connect, answers ping, re-reads on refresh. No live pipeline producer pushes updates. |
 
 ### External APIs consumed
 
@@ -735,10 +767,11 @@ Every external API call is wrapped in `safe_call()` with a default fallback valu
 | Accumulation threshold | `core/pipeline.py` | 500 cells | Stream extraction sensitivity |
 | Candidate spacing | `core/pipeline.py` | 200m | Along-stream distance |
 | Composite weights | `core/scoring.py` | [0.30, 0.25, 0.30, 0.15] | Gen, Flow, Impact, Feas |
-| Min spacing (dashboard) | `dashboard/index.html` | 120m | Haversine between nets |
-| Max width (dashboard) | `dashboard/index.html` | 30m | Skip channels wider |
-| Risk percentile | `dashboard/index.html` | 20–35% | Population-scaled |
-| Min deploy floor | `dashboard/index.html` | 5 | Always at least this many |
+| Same-stream spacing (explorer) | `dashboard/explore/index.html` | 500m | Along one waterway (occlusion makes closer nets redundant) |
+| Cross-stream spacing (explorer) | `dashboard/explore/index.html` | 300m | Haversine between nets on different waterways |
+| Max width (explorer) | `dashboard/explore/index.html` | 30m | Skip channels wider |
+| Risk percentile | `dashboard/explore/index.html` | 20–35% | Population-scaled |
+| Min deploy floor | `dashboard/explore/index.html` | 5 | Always at least this many |
 
 ---
 
@@ -843,7 +876,8 @@ pip install -r requirements-full.txt
 | NumPy install fails on Python 3.13+ | Full stack pins `numpy<2.0` | Create the full-pipeline venv with Python 3.9–3.12 |
 | `Mapbox token not configured` (500 from `/api/config`) | `.env` missing or `MAPBOX_TOKEN=` empty | `cp .env.example .env` and fill in the token |
 | Port 8000 in use | Old uvicorn still running | `lsof -i :8000` to find PID, or pass `--port 8001` |
-| Empty candidates / blank map | Mock data not generated | `python scripts/generate_mock.py` |
+| Empty city list in `/explore` | `mock_data/places.json` missing | `python scripts/generate_mock.py` (skips when the committed file is present) |
+| `/api/candidates` returns 0 features | `mock_data/candidates.geojson` missing | Restore it from git — it is the frozen live-run dataset (regenerating needs the network-bound `--live` pipeline) |
 
 ---
 
@@ -869,8 +903,8 @@ python -m core.pipeline --bbox "-79.05,35.90,-78.75,36.05" --resolution 10 --thr
 
 ```bash
 curl http://localhost:8000/api/candidates?top_n=10
-curl http://localhost:8000/api/candidates/3
-curl http://localhost:8000/api/weights
+curl http://localhost:8000/api/candidates/1     # {id} = the candidate's rank (1 = top site)
+curl http://localhost:8000/api/weights          # nominal + effective weights
 ```
 
 ---
@@ -893,7 +927,7 @@ No formal benchmarks have been run. Times above are observed during development.
 
 | Failure | Impact | Mitigation |
 |---------|--------|-----------|
-| Overpass API down/slow | No real waterway data | Explorer shows an explicit "no waterway data" state (no procedural rivers) |
+| Overpass API down/slow | No real waterway data | Explorer distinguishes fetch failure (rate-limit/network → error panel with Retry + one automatic backoff retry) from a genuinely empty result ("no mapped rivers" panel); no procedural rivers |
 | EPA/USGS API timeout | Missing parameter values | `safe_call()` returns fallback defaults; `summarize_provenance` flags the resulting constant columns each run |
 | Census ACS needs a key | Population/EJ fall back | `CENSUS_API_KEY` (free) enables live values; otherwise neutral defaults |
 | EPA EJSCREEN endpoint dead | EJ would be constant | EJ reconstructed from live Census ACS instead (C4, §5.9) |
@@ -915,23 +949,32 @@ No formal benchmarks have been run. Times above are observed during development.
 
 ## 18. Testing Strategy
 
-**Automated tests:** `pytest tests/` — 19 property and integration tests over the real scoring code:
+**Automated tests:** `pytest tests/` — 25 property and integration tests over the real scoring code:
 composite ∈ [0, 100]; family weights sum to 1; `compute_subscore` drops a constant
 column + renormalizes (and an all-constant family → neutral 50); hard gates remove
 the right rows; Manning velocity is monotonic in slope; the velocity favorability
 curve is peaked; occlusion `(1−η)^k` is non-increasing; estuary/beach distances are
 decorrelated; the width-order fallback never trips the gate; the EJ area-weighting
 varies across catchments; road density clips the cached OSM network to each
-catchment; computed velocity reaches feasibility scoring; API sorting does not
-change positional candidate IDs; `optimize_weights` returns a valid simplex point.
+catchment; computed velocity reaches feasibility scoring; candidate detail lookups
+are keyed on the stable `rank` (a re-sorted list can never remap them, verified on
+the shipped dataset); `/api/weights` zeroes constant-fallback parameters and
+renormalizes survivors; the offline scorer refuses to overwrite the live-provenance
+dataset and writes to a separate path; the output `provenance` block reports the
+actual varying/constant split; `optimize_weights` returns a valid simplex point.
 
 **Model drift guard:** `python3 scripts/check_model.py` asserts the Python constants
-match `model.json` (the single source of truth for weights, gates, and curves).
+match `model.json`: parameter + sub-score weights, the runoff formula, both velocity
+curves (feasibility step **and** the Flow-side transport Gaussian), the channel-width
+curve, hard-gate boundary semantics, pipeline/explorer spacing + occlusion constants,
+and the width-order fallback.
+
+**CI:** `.github/workflows/ci.yml` runs `pytest` + `check_model.py` on every push/PR.
 
 **Other validation:**
 1. `notebooks/validate_pipeline.ipynb` — pipeline verification + endpoint health
 2. `scripts/healthcheck.py` — external endpoint connectivity (incl. the EJ source)
-3. `scripts/score_candidates.py` — reproducibly regenerates the scored GeoJSON
+3. `scripts/score_candidates.py` — offline (default) writes a deterministic synthetic-parameter dataset to `mock_data/candidates_offline.geojson`; `--live` re-runs the full network pipeline; overwriting the frozen live dataset requires `--force`
 4. Dashboard visual QA — verify rivers align with satellite imagery
 
 ---
@@ -945,7 +988,8 @@ match `model.json` (the single source of truth for weights, gates, and curves).
 5. **Channel width is estimated.** <5% of OSM waterways have width tags. Estimated from type heuristic.
 6. **No temporal modeling.** Scores are static snapshots, not seasonal.
 7. **US-centric data sources** for the Python pipeline. Dashboard bypasses this with population-scaled heuristics globally.
-8. **120m spacing threshold is arbitrary** — tuned by inspection, not engineering spec.
+8. **Spacing thresholds (500m same-stream / 300m cross-stream explorer, 200m pipeline) are heuristics** — tuned by inspection, not engineering spec (no published interceptor-spacing guidance exists).
+9. **The shipped live dataset is a frozen artifact.** Regenerating it requires live federal APIs, a Census key, and DEM downloads; several endpoints it used are dead or rate-limited (see §8 live-vs-fallback), so 16/27 parameters were constant fallbacks in that run.
 
 ---
 
@@ -969,6 +1013,8 @@ match `model.json` (the single source of truth for weights, gates, and curves).
 1. Chow, V.T. (1959). *Open-Channel Hydraulics.* McGraw-Hill.
 2. Leopold, L.B. (1964). *Fluvial Processes in Geomorphology.*
 3. Manning, R. (1891). *On the flow of water in open channels and pipes.*
+
+Project story and build narrative: [dashboard/docs/Overview.md](dashboard/docs/Overview.md). Full technical documentation with figures: [dashboard/docs/documentation.md](dashboard/docs/documentation.md). Scientific validation of the model against the interception literature: [RESEARCH_VALIDATION.md](RESEARCH_VALIDATION.md).
 
 ### B. Glossary
 

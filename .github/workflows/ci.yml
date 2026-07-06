@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install test dependencies
+        # The scoring core + API + tests, without the heavy hydrology stack
+        # (pysheds/py3dep/rasterio are lazy-imported and not exercised in CI).
+        run: |
+          python -m pip install --upgrade pip
+          pip install "numpy>=1.26,<2.0" pandas geopandas shapely pyproj \
+            scikit-learn scikit-optimize fastapi python-dotenv requests pytest
+
+      - name: Run test suite
+        run: pytest tests/ -q
+
+      - name: Model drift guard
+        run: python scripts/check_model.py

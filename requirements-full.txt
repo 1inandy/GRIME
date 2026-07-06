@@ -25,9 +25,11 @@ pandas>=2.1
 scipy>=1.12
 
 # Image / raster processing
-scikit-image>=0.22
 matplotlib>=3.8
-earthpy>=0.9
+# scikit-image and earthpy are not imported anywhere in the codebase — kept
+# here commented for reference; uncomment if a notebook workflow needs them.
+# scikit-image>=0.22
+# earthpy>=0.9
 
 # Graph / network analysis
 networkx>=3.2
