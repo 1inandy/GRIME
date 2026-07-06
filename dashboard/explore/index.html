@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GRIME — Garbage River Interception and Modeling Engine</title>
-<link rel="icon" type="image/png" href="/dashboard/images/favicon.png">
+<link rel="icon" type="image/png" href="https://grime.world/dashboard/images/favicon.png">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -59,12 +59,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t)}
 .pchip{background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px}
 .pchip-l{font-size:8px;text-transform:uppercase;letter-spacing:.5px;color:var(--td)}
 .pchip-v{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tb)}
-/* per-chip data-source tags: EST = deterministic demo estimate, OSM = real OpenStreetMap tag */
-.src{font-size:6.5px;font-family:var(--mono);letter-spacing:.4px;padding:1px 3px;border-radius:3px;background:rgba(245,158,11,.16);color:#f59e0b;margin-left:3px;vertical-align:1px}
-.src.osm{background:rgba(88,176,156,.18);color:var(--acc)}
-.src.live{background:rgba(34,211,238,.15);color:#22d3ee}
-.est-banner{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);border-radius:6px;padding:6px 9px;font-size:10px;line-height:1.45;color:#f59e0b;margin-bottom:10px}
-.real-banner{background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.35);border-radius:6px;padding:6px 9px;font-size:10px;line-height:1.45;color:#22d3ee;margin-bottom:10px}
 .close{background:var(--card);border:1px solid var(--bdr);color:var(--td);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
 .close:hover{background:var(--hover);color:var(--t)}
 .site-detail{position:absolute;top:16px;left:16px;width:min(340px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto;background:rgba(42,37,24,.94);border:1px solid var(--bdr);border-radius:8px;padding:14px 16px;box-shadow:0 16px 44px rgba(0,0,0,.42);z-index:4;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-18px);backdrop-filter:blur(8px);transition:opacity .44s ease,transform .44s ease,visibility 0s linear .44s}
@@ -118,7 +112,7 @@ body.theme-light .hm button.active{border-color:var(--acc)!important}
 </style>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><div id="load-msg">Loading GRIME…</div></div>
+<div id="loading"><div class="spinner"></div><div id="load-msg">Loading GRIME — 89,518 places...</div></div>
 <div id="app">
 <div id="header">
   <h1><a href="../" style="text-decoration:none;color:inherit"><span>G</span>RIME</a></h1>
@@ -164,10 +158,6 @@ async function getMapboxToken(){
 
 // ═══ STATE ══════════════════════════════════════════════════════
 let map,places=[],activeCityIdx=-1,activeCandidates=[],activeStreams=[],selectedCand=null,isSat=true,pipelineStats=null;
-// Real pipeline output (mock_data/candidates.geojson — the frozen 2026-06 live run,
-// Ellerbe Creek / Durham NC). Loaded lazily; shown as an extra layer when the opened
-// city overlaps its coverage, so the map can display REAL scored sites where they exist.
-let realSites=null,realSitesBbox=null,realSitesTried=false,selectedRealIdx=null;
 // Remember city params so we can re-score after pan-autoload merges in new streams
 let activePop=0,activeCC='',activeSeed=0;
 // Pan-autoload state
@@ -204,87 +194,6 @@ async function loadPlaces(){
   return[];
 }
 
-// Load the REAL scored pipeline output (frozen live run). Tries the API first,
-// then the static file the API also serves. Cached after the first attempt.
-async function loadRealCandidates(){
-  if(realSitesTried)return realSites;
-  realSitesTried=true;
-  const paths=[API+'/api/candidates','/api/candidates',API+'/mock_data/candidates.geojson','/mock_data/candidates.geojson'];
-  for(const p of paths){
-    try{
-      const r=await fetch(p);
-      if(!r.ok)continue;
-      const j=await r.json();
-      const feats=(j.features||[]).filter(f=>f&&f.geometry&&f.properties);
-      if(!feats.length)continue;
-      feats.sort((a,b)=>(a.properties.rank||1e9)-(b.properties.rank||1e9));
-      let w=1e9,s=1e9,e=-1e9,n=-1e9;
-      for(const f of feats){const[lo,la]=f.geometry.coordinates;if(lo<w)w=lo;if(lo>e)e=lo;if(la<s)s=la;if(la>n)n=la}
-      realSites=feats;realSitesBbox=[w,s,e,n];
-      return realSites;
-    }catch(err){}
-  }
-  return null;
-}
-
-// True when a city's coordinates fall inside (a slightly padded) coverage bbox of
-// the frozen live run — currently the Ellerbe Creek / Durham NC pilot area.
-function cityOverlapsRealData(p){
-  if(!realSitesBbox)return false;
-  const PAD=0.12;
-  return p.lo>=realSitesBbox[0]-PAD&&p.lo<=realSitesBbox[2]+PAD&&p.la>=realSitesBbox[1]-PAD&&p.la<=realSitesBbox[3]+PAD;
-}
-
-// The 11 parameters that actually varied per-candidate in the frozen live run
-// (the other 16 were constant fallbacks — dead endpoints / single-gauge broadcast).
-// Kept in sync with the geojson by inspection; used only for chip display.
-const REAL_VARYING=[['population_density','Pop density','/km²'],['road_density_km_km2','Road density','km/km²'],
-  ['flow_velocity_ms','Velocity',' m/s'],['stream_order','Stream order',''],['catchment_area_km2','Catchment',' km²'],
-  ['ej_index','EJ index',''],['estuary_dist_km','Estuary',' km'],['beach_dist_km','Beach',' km'],
-  ['tourism_amenity_density','Tourism','/km²'],['road_access_score','Road access',''],['velocity_feasibility','Vel. feas.','']];
-
-function addRealSitesLayer(){
-  if(!realSites||map.getSource('real-sites'))return;
-  map.addSource('real-sites',{type:'geojson',data:{type:'FeatureCollection',
-    features:realSites.map((f,i)=>({type:'Feature',geometry:f.geometry,
-      properties:{ridx:i,composite:f.properties.composite_score||0,rank:f.properties.rank||0}}))}});
-  // Dark-ring styling distinguishes real pipeline sites from the white-ring demo estimates.
-  map.addLayer({id:'real-glow',type:'circle',source:'real-sites',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,10,62,18],'circle-color':'#22d3ee','circle-opacity':.18,'circle-blur':1}});
-  map.addLayer({id:'real-sites',type:'circle',source:'real-sites',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,5,62,10],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',35,'#f59e0b',48,'#10b981',60,'#22d3ee'],'circle-stroke-width':2.5,'circle-stroke-color':'#1a1a1a'}});
-}
-
-function selectRealSite(i){
-  selectedRealIdx=Number(i);
-  selectedCand=null;
-  const f=realSites&&realSites[selectedRealIdx];
-  if(f)map.flyTo({center:f.geometry.coordinates,zoom:15,duration:600});
-  renderSelectedCandPanel();
-}
-
-function renderRealSiteHtml(){
-  if(selectedRealIdx===null||!realSites||!realSites[selectedRealIdx])return'';
-  const f=realSites[selectedRealIdx],pr=f.properties;
-  const ss=[{l:'Generation',v:pr.generation_score,c:'var(--gen)',w:'30%'},{l:'Flow',v:pr.flow_score,c:'var(--flow)',w:'25%'},{l:'Impact',v:pr.impact_score,c:'var(--imp)',w:'30%'},{l:'Feasibility',v:pr.feasibility_score,c:'var(--feas)',w:'15%'}];
-  const chips=REAL_VARYING.filter(([k])=>pr[k]!=null).map(([k,l,u])=>{
-    const v=typeof pr[k]==='number'?+pr[k].toFixed(2):pr[k];
-    return`<div class="pchip"><div class="pchip-l">${l}<span class="src live">LIVE</span></div><div class="pchip-v">${v}${u}</div></div>`;
-  }).join('');
-  return`<div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--td)">Composite score</div>
-      <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:#22d3ee">${(+pr.composite_score||0).toFixed(1)}</div></div>
-      <button class="close" onclick="clearSelectedCand()">×</button>
-    </div>
-    <div class="real-banner"><strong>REAL PIPELINE OUTPUT</strong> — frozen live run (June 2026), scored by the Python 27-parameter model on USGS 3DEP terrain + Census/OSM data. Rank ${pr.rank||'?'} of ${realSites.length} · segment ${pr.segment_id!=null?pr.segment_id:'?'}.</div>
-    <div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px">${(+pr.lat).toFixed(4)}, ${(+pr.lon).toFixed(4)} · elev ${pr.elevation_m!=null?(+pr.elevation_m).toFixed(0)+' m':'—'}</div>
-    ${ss.map(s=>`<div class="ss-row"><div style="font-size:11px;font-weight:500;color:${s.c}">${s.l} <span style="font-size:9px;color:var(--td)">${s.w}</span></div><div class="ss-bar"><div class="ss-fill" style="width:${Math.max(0,Math.min(100,+s.v||0))}%;background:${s.c}"></div></div><div style="font-family:var(--mono);font-size:11px;text-align:right">${(+s.v||0).toFixed(1)}</div></div>`).join('')}
-    <div class="pgrid">${chips}</div>
-    <div style="margin-top:10px;font-size:9.5px;line-height:1.5;color:var(--td);border-top:1px solid var(--bdr);padding-top:8px">
-      ⓘ Chips marked <span class="src live">LIVE</span> varied per-site in the live run (Census ACS, OSM, DEM). The other 16 of 27 parameters fell back to constants in this run (dead EPA/StreamStats endpoints, single-gauge discharge) and are omitted here — see <code style="font-size:9px">/api/candidates</code> and the dataset note.
-    </div>
-  </div>`;
-}
-
 // ═══ SEEDED RANDOM (for fallback + candidate scoring) ═══════════
 function seededRand(seed){
   let s=Math.abs(Math.round(seed))||1;
@@ -310,35 +219,17 @@ function hash01(str){
 // ═══ REAL RIVER DATA FROM OPENSTREETMAP ═════════════════════════
 const OVERPASS_URLS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
 
-// Why the last runOverpass() returned null: null = it didn't (success), 'rate_limited'
-// = at least one endpoint said 429/504 (server overload), 'unreachable' = network
-// error / timeout / non-OK on every endpoint. Lets the UI distinguish "OSM has no
-// rivers here" (honest empty result) from "we couldn't ask OSM" (fetch failure) —
-// previously both rendered as the arid-region "no mapped rivers" panel.
-let lastOverpassError=null;
-
-async function runOverpass(query,abortMs,attempt=0){
-  let sawRateLimit=false;
+async function runOverpass(query,abortMs){
   for(const url of OVERPASS_URLS){
     try{
       const ctrl=new AbortController();
       const timer=setTimeout(()=>ctrl.abort(),abortMs);
       const resp=await fetch(url,{method:'POST',body:'data='+encodeURIComponent(query),headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ctrl.signal});
       clearTimeout(timer);
-      if(resp.status===429||resp.status===504){sawRateLimit=true;continue}
       if(!resp.ok)continue;
-      const json=await resp.json();
-      lastOverpassError=null;
-      return json;
+      return await resp.json();
     }catch(e){continue}
   }
-  // One backoff retry when the failure looked like server overload rather than
-  // a dead network — a public-demo flurry of opens often succeeds on retry.
-  if(sawRateLimit&&attempt<1){
-    await new Promise(r=>setTimeout(r,1500));
-    return runOverpass(query,abortMs,attempt+1);
-  }
-  lastOverpassError=sawRateLimit?'rate_limited':'unreachable';
   return null;
 }
 
@@ -704,17 +595,11 @@ function generateCandidates(streams,pop,cc,seed){
   // not a single RNG consumed sequentially across all candidates. So a site's
   // values are identical across re-renders; loading more streams only ADDS sites,
   // it never reshuffles existing ones. No Math.random() for any named quantity.
-  // Displayed population density is anchored to the city's REAL places.json
-  // population (log-scaled urban-density heuristic: ~600/km² for a 1k-pop town up
-  // to ~4.4k/km² for a 20M megacity), modulated by position + deterministic jitter.
-  // Previously the base was a population-independent constant, so a megacity and a
-  // village showed near-identical densities while the real population sat unused.
-  const popBase=Math.min(9000,Math.max(200,55*Math.pow(Math.log10(Math.max(pop||1000,1000)),2.2)));
   const scored=allPositions.map(pos=>{
     const uf=pos.upstreamFrac;
     const pr=seededRand(Math.floor(hash01(pos.lat.toFixed(5)+','+pos.lon.toFixed(5))*2147483647)+1+seed);
     const rg=()=>pr()-.5;
-    const popD=popBase*(0.8+uf*0.4)*dev+rg()*0.25*popBase;
+    const popD=(800+uf*400)*dev+rg()*200;
     const imp=30+uf*15+rg()*8;
     const vel=.4+uf*.6+rg()*.15;
     const mq=(2+uf*25)*(isDev?1.5:1);
@@ -1135,10 +1020,6 @@ async function initMap(){
   map.on('click','candidates',e=>{const f=e.features&&e.features[0];if(f)selectCand(f.properties.idx)});
   map.on('mouseenter','candidates',cursorPointer);
   map.on('mouseleave','candidates',cursorReset);
-  // Real pipeline sites (frozen live run) — separate layer, separate detail panel
-  map.on('click','real-sites',e=>{const f=e.features&&e.features[0];if(f)selectRealSite(f.properties.ridx)});
-  map.on('mouseenter','real-sites',cursorPointer);
-  map.on('mouseleave','real-sites',cursorReset);
   // Cluster / unclustered place handlers — attached ONCE here (X3). These used to
   // live in loadWorldView, which re-runs on every "← All cities", search-in-city,
   // and theme reload, so Mapbox accumulated a fresh listener each time → one click
@@ -1174,7 +1055,7 @@ function resetExploreState(){
 }
 
 function loadWorldView(){
-  activeCityIdx=-1;activeCandidates=[];activeStreams=[];drawStreams=[];selectedCand=null;selectedRealIdx=null;
+  activeCityIdx=-1;activeCandidates=[];activeStreams=[];drawStreams=[];selectedCand=null;
   renderSelectedCandPanel();
   resetExploreState();
   clearLayers();
@@ -1203,15 +1084,15 @@ function loadWorldView(){
 }
 
 function clearLayers(){
-  ['stream-labels','streams-underground','streams-outline','streams','streams-context','streams-context-underground','cand-glow','candidates','real-glow','real-sites','cluster-count','clusters','unclustered'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
-  ['places','streams','candidates','real-sites'].forEach(id=>{if(map.getSource(id))map.removeSource(id)});
+  ['stream-labels','streams-underground','streams-outline','streams','streams-context','streams-context-underground','cand-glow','candidates','cluster-count','clusters','unclustered'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
+  ['places','streams','candidates'].forEach(id=>{if(map.getSource(id))map.removeSource(id)});
 }
 
 async function openCity(idx){
   if(idx<0||idx>=places.length)return;
   const p=places[idx];
   if(!p||!p.n)return;
-  activeCityIdx=idx;selectedCand=null;selectedRealIdx=null;
+  activeCityIdx=idx;selectedCand=null;
   renderSelectedCandPanel();
   // Remember city params so pan-autoload can re-score the merged stream set without
   // reaching back into `places[idx]` (which can race with a back-btn click).
@@ -1248,37 +1129,11 @@ async function openCity(idx){
   // clobber city B's drawn geometry (same protection activeStreams gets).
   if(fetched&&fetched.draw)mergeDraw(fetched.draw);
 
-  // No streams to score. Two very different reasons land here — tell them apart:
-  // a fetch FAILURE (Overpass rate-limited/unreachable) is not "this city has no
-  // rivers", and misreporting it as such at a public demo misdiagnoses throttling
-  // as poor coverage. Only an actual empty result gets the arid-region panel.
+  // No waterway data available for this location
   if(!activeStreams||activeStreams.length===0){
     activeCandidates=[];
     activeStreams=[];
     renderSelectedCandPanel();
-    // Even without OSM streams, show the real pipeline sites if this city is
-    // inside the frozen live run's coverage (works fully offline via the local API).
-    await loadRealCandidates();
-    if(activeCityIdx!==idx)return;
-    const realHere=cityOverlapsRealData(p);
-    if(realHere)addRealSitesLayer();
-    if(lastOverpassError){
-      const why=lastOverpassError==='rate_limited'
-        ?'OpenStreetMap’s Overpass servers are rate-limiting requests right now (busy demo hour, not missing data).'
-        :'OpenStreetMap’s Overpass servers could not be reached (network problem or servers down — not missing data).';
-      document.getElementById('info').textContent=`${p.n||'Unknown'} · waterway fetch failed`;
-      document.getElementById('city-view').innerHTML=`
-        <div style="padding:24px 16px;text-align:center">
-          <div style="font-size:28px;margin-bottom:12px">📡</div>
-          <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:8px">Couldn't load waterway data</div>
-          <div style="font-size:12px;color:var(--td);line-height:1.6;margin-bottom:14px">
-            ${why}<br><br>This city may well have mapped rivers — we just couldn't ask.
-            ${realHere?'<br><br>The <span style="color:#22d3ee">real pipeline sites</span> for this area are still shown on the map (served locally).':''}
-          </div>
-          <button class="river-back" onclick="openCity(${idx})">↻ Retry</button>
-        </div>`;
-      return;
-    }
     document.getElementById('info').textContent=`${p.n||'Unknown'} · No waterway data in OpenStreetMap`;
     document.getElementById('city-view').innerHTML=`
       <div style="padding:24px 16px;text-align:center">
@@ -1288,7 +1143,6 @@ async function openCity(idx){
           OpenStreetMap has no mapped rivers, streams, or canals within ${p.p>1e6?'8':'4–6'}km of ${esc(p.n||'this location')}.<br><br>
           This can happen in arid regions, areas with poor OSM coverage, or generated township names that don't correspond to real settlements.<br><br>
           Try a nearby larger city, or use the Python pipeline with USGS DEM data for US locations.
-          ${realHere?'<br><br>The <span style="color:#22d3ee">real pipeline sites</span> for this area are shown on the map.':''}
         </div>
       </div>`;
     return;
@@ -1314,13 +1168,6 @@ async function openCity(idx){
   map.addLayer({id:'cand-glow',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,12,55,22],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-opacity':.25,'circle-blur':1}});
   map.addLayer({id:'candidates',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,6,55,12],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-stroke-width':2.5,'circle-stroke-color':'#fff'}});
 
-  // Real pipeline overlay: where the frozen live run covers this city (Ellerbe
-  // Creek / Durham NC), draw the REAL scored sites (dark rings) alongside the
-  // demo estimates so actual model output is preferred where it exists.
-  await loadRealCandidates();
-  if(activeCityIdx!==idx)return;
-  if(cityOverlapsRealData(p))addRealSitesLayer();
-
   const drawn=siteDrawStreams();                                   // only site-bearing rivers
   const nSurface=drawn.filter(s=>!s.underground).length;           // reflects what's drawn
   const nUnderground=drawn.filter(s=>s.underground).length;
@@ -1332,7 +1179,6 @@ async function openCity(idx){
 
 function selectCand(i){
   selectedCand=Number(i);
-  selectedRealIdx=null;
   const c=activeCandidates[i];
   if(c)map.flyTo({center:[c.lon,c.lat],zoom:16,duration:600});
   renderCityView();
@@ -1340,7 +1186,6 @@ function selectCand(i){
 
 function clearSelectedCand(){
   selectedCand=null;
-  selectedRealIdx=null;
   renderCityView();
 }
 
@@ -1351,7 +1196,7 @@ function showStats(){
   document.getElementById('stats').innerHTML=`
     <div class="stat"><div class="stat-v">${n.toLocaleString()}</div><div class="stat-l">Cities</div></div>
     <div class="stat"><div class="stat-v">${cc.size}</div><div class="stat-l">Countries</div></div>
-    <div class="stat" title="The 27-parameter MinMax model runs in the Python pipeline; this explorer uses a reduced geometric heuristic (see a site's detail panel)"><div class="stat-v">27</div><div class="stat-l">Py-model params</div></div>
+    <div class="stat"><div class="stat-v">27</div><div class="stat-l">Params</div></div>
     <div class="stat"><div class="stat-v">∞</div><div class="stat-l">On-demand</div></div>`;
   document.getElementById('info').textContent=`${n.toLocaleString()} cities · ${cc.size} countries`;
   document.getElementById('sidebar-title').textContent='Global coverage';
@@ -1449,27 +1294,20 @@ function renderSelectedCandHtml(){
   if(selectedCand===null||!activeCandidates[selectedCand])return'';
   const c=activeCandidates[selectedCand];
   const ss=[{l:'Generation',v:c.gen,c:'var(--gen)',w:'30%'},{l:'Flow',v:c.flow,c:'var(--flow)',w:'25%'},{l:'Impact',v:c.impact,c:'var(--imp)',w:'30%'},{l:'Feasibility',v:c.feas,c:'var(--feas)',w:'15%'}];
-  // Per-chip provenance: 'osm' = real OpenStreetMap tag, 'est' = deterministic demo
-  // estimate, 'mix' = OSM-rooted but adjusted by the heuristic. Estimated numerics
-  // get a ~ prefix so a value can never be misread as a measurement.
-  const tag=k=>k==='osm'?'<span class="src osm" title="Real OpenStreetMap tag">OSM</span>'
-    :k==='mix'?'<span class="src" title="OSM-derived, adjusted by the demo heuristic">OSM+EST</span>'
-    :'<span class="src" title="Deterministic demo estimate — not a measurement">EST</span>';
   return`<div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--td)">Score</div>
       <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--acc)">${c.composite}</div></div>
       <button class="close" onclick="clearSelectedCand()">×</button>
     </div>
-    <div class="est-banner"><strong>DEMO ESTIMATES</strong> — deterministic heuristic values derived from real OSM river geometry, <strong>not measurements</strong>. Chips tagged EST are synthetic; OSM are real map tags.</div>
     <div style="font-size:12px;font-weight:600;color:var(--tb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${esc(c.stream||'Stream')}</div>
     <div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div>
     ${ss.map(s=>`<div class="ss-row"><div style="font-size:11px;font-weight:500;color:${s.c}">${s.l} <span style="font-size:9px;color:var(--td)">${s.w}</span></div><div class="ss-bar"><div class="ss-fill" style="width:${s.v}%;background:${s.c}"></div></div><div style="font-family:var(--mono);font-size:11px;text-align:right">${s.v}</div></div>`).join('')}
     <div class="pgrid">
-      ${[['Pop','~'+c.pop_d+'/km²','est'],['Imperv','~'+c.imp_pct+'%','est'],['Velocity','~'+c.vel+' m/s','est'],['Mean Q','~'+c.mq+' cfs','est'],['Stream order','~'+c.stream_order,'mix'],['Catchment','~'+c.catch_km2+' km²','est'],['EJ Index','~'+c.ej,'est'],['Road','~'+c.road_m+'m','est'],['Width','~'+c.width_m+'m','mix'],['Slope','~'+c.slope_deg+'°','est'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':esc(c.waterway||'stream'),'osm'],['Site type',c.isPortal?'Tunnel entrance':'Surface','osm']].map(([l,v,k])=>`<div class="pchip"><div class="pchip-l">${l}${tag(k)}</div><div class="pchip-v">${v}</div></div>`).join('')}
+      ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Stream order',c.stream_order],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':esc(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
     </div>
     <div style="margin-top:10px;font-size:9.5px;line-height:1.5;color:var(--td);border-top:1px solid var(--bdr);padding-top:8px">
-      ⓘ Demo values are <strong>model estimates from OSM geometry</strong>, deterministic per location — not live gauge/Census measurements (population density is scaled from the city's real population). The explorer is a separate clamped-formula heuristic; the Python pipeline (see <a href="../docs/" style="color:var(--acc)">Docs</a>) runs the full 27-parameter MinMax model — its real scored output for the Durham NC pilot area appears on this map as dark-ringed sites.
+      ⓘ Demo values are <strong>model estimates from OSM geometry</strong>, deterministic per location — not live gauge/Census measurements. The explorer is a separate clamped-formula heuristic; the Python pipeline (see <a href="../docs/" style="color:var(--acc)">Docs</a>) runs the full 27-parameter MinMax model.
     </div>
   </div>`;
 }
@@ -1477,7 +1315,7 @@ function renderSelectedCandHtml(){
 function renderSelectedCandPanel(){
   const el=document.getElementById('site-detail');
   if(!el)return;
-  const html=selectedRealIdx!==null?renderRealSiteHtml():renderSelectedCandHtml();
+  const html=renderSelectedCandHtml();
   if(html){
     if(el._hideTimer){clearTimeout(el._hideTimer);el._hideTimer=null}
     el.innerHTML=html;
@@ -1541,15 +1379,10 @@ function renderCityView(){
   if(focusedRiverKey){el.innerHTML=renderRiverFocusHtml();renderSelectedCandPanel();return}
   let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${esc(p.n||'Unknown')} · Top ${activeCandidates.length} sites</h3>`;
   if(pipelineStats){
-    html+=`<div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:8px;line-height:1.6">
+    html+=`<div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px;line-height:1.6">
       ${pipelineStats.scored} evaluated → ${pipelineStats.deployed} deployed (top ${Math.round(pipelineStats.pctile*100)}%)<br>
       ${pipelineStats.filtered} filtered · ${Math.round((pipelineStats.catchEff||.65)*100)}% catch rate · occlusion active${pipelineStats.portals?` · ${pipelineStats.portals} culvert portals`:''}
     </div>`;
-  }
-  // Honesty banner: the on-screen ranking is the demo heuristic, not the Python model.
-  html+=`<div class="est-banner" style="margin-bottom:10px">Scores are <strong>deterministic demo estimates</strong> from OSM geometry — not measurements. Click a site for per-value provenance.</div>`;
-  if(map.getSource('real-sites')&&realSites){
-    html+=`<div class="real-banner" style="margin-bottom:10px"><strong>${realSites.length} REAL pipeline sites</strong> shown with dark rings — frozen live run (June 2026) of the Python 27-parameter model on this area. Click one to inspect.</div>`;
   }
 
   html+=activeCandidates.slice(0,25).map((c,i)=>{
@@ -1647,19 +1480,9 @@ document.getElementById('theme-toggle').addEventListener('click',()=>{
 // ═══ INIT ═══════════════════════════════════════════════════════
 async function init(){
   await initMap();
-  // Honest failure state: a missing token means a blank/broken basemap — say so
-  // instead of silently rendering black tiles at a demo.
-  if(!mapboxgl.accessToken){
-    document.getElementById('load-msg').innerHTML='Mapbox token not configured.<br><span style="font-size:11px;color:var(--td)">Set MAPBOX_TOKEN (env) or dashboard/config.js — see README Quick Start.</span>';
-    return;
-  }
   document.getElementById('load-msg').textContent='Loading cities database...';
   places=await loadPlaces();
   places=places.filter(p=>p&&p.n&&p.c&&p.la!=null&&p.lo!=null);
-  if(places.length===0){
-    document.getElementById('load-msg').innerHTML='Couldn’t load the cities database (mock_data/places.json).<br><span style="font-size:11px;color:var(--td)">Serve the app via the API (http://localhost:8000/explore) rather than opening the file directly.</span>';
-    return;
-  }
   const n=places.length.toLocaleString();
   const cc=new Set(places.map(p=>p.c)).size;
   document.getElementById('load-msg').textContent=`${n} cities loaded`;

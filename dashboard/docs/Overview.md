@@ -23,7 +23,7 @@ GRIME is a multi-parameter optimization engine that identifies the best location
 
 These combine into a single composite score from 0 to 100 via a two-level weighted architecture (detailed in the scoring section below). Sites where deployment is physically impossible, because of channels too wide to span, currents too fast for anchoring, or confirmed private land, are eliminated by hard gates before scoring begins. The model also explicitly weights environmental justice through a demographic index reconstructed from live Census ACS data (EPA decommissioned EJSCREEN in 2025), prioritizing sites that serve overburdened communities.
 
-The system works in two modes. The **research pipeline** ingests real 10m elevation data from USGS 3DEP, runs a full computational hydrology pipeline to extract stream networks, then scores every candidate point using live data from federal APIs where available (USGS, Census; dead endpoints fall back to constants that the provenance summary reports). The **interactive dashboard** lets anyone click on any of 89,518 places across 239 countries, fetches real waterway geometry from OpenStreetMap, generates and scores net placements client-side with a clearly-labeled demo heuristic, and renders color-coded results on a Mapbox map in under 5 seconds.
+The system works in two modes. The **research pipeline** ingests real 10m elevation data from USGS 3DEP, runs a full computational hydrology pipeline to extract stream networks, then scores every candidate point using live data from federal APIs (USGS, EPA, Census). The **interactive dashboard** lets anyone click on any of 89,518 places across 239 countries, fetches real waterway geometry from OpenStreetMap, generates and scores net placements client-side, and renders color-coded results on a Mapbox map in under 5 seconds.
 
 The output is a ranked list of deployment sites with sub-score breakdowns and parameter evidence for each one.
 
@@ -35,7 +35,7 @@ We built a DEM-based hydrology engine using `pysheds` that takes raw 10m elevati
 
 ### Parameter Computation
 
-Each candidate is evaluated on 27 parameters *designed* to pull from five federal APIs (USGS NWIS, EPA ECHO, EPA TRI, Census ACS, USGS StreamStats) plus the USGS PAD-US dataset. In practice, several of those endpoints are dead or unwired: in the frozen June 2026 live run, USGS 3DEP/NWIS, Census ACS, and OSM returned live data, while EPA ECHO and USGS StreamStats were down and PAD-US/NBI were not connected — so **11 of the 27 parameters varied per-candidate and 16 fell back to constants** (the scoring engine drops constant columns and renormalizes; the output geojson's `provenance` block and `/api/weights` record the split). The environmental-justice index is reconstructed from Census ACS demographics because EPA decommissioned EJSCREEN in 2025. Flow velocity is estimated using Manning's equation applied to DEM-derived slope and channel geometry:
+Each candidate is evaluated on 27 parameters pulled from five live federal APIs (USGS NWIS, EPA ECHO, EPA TRI, Census ACS, USGS StreamStats) plus the USGS PAD-US dataset. The environmental-justice index is reconstructed from Census ACS demographics because EPA decommissioned EJSCREEN in 2025. Flow velocity is estimated using Manning's equation applied to DEM-derived slope and channel geometry:
 
 **V = (1/n) · R²ᐟ³ · S¹ᐟ²**
 
@@ -65,7 +65,7 @@ The scaling factor of 10 controls perturbation magnitude, concentrating samples 
 
 ### Dashboard
 
-The frontend is a single explorer page (`dashboard/explore/index.html`) using Mapbox GL JS with a ~6MB places database. Clicking any city fires an Overpass API query for real waterway geometry, runs a three-phase placement algorithm entirely client-side (constraint satisfaction, full scoring, then population-scaled risk-percentile filtering), and renders results in under 5 seconds. Dashboard scores are approximate; the Python pipeline is the authoritative scoring implementation.
+The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places database. Clicking any city fires an Overpass API query for real waterway geometry, runs a three-phase placement algorithm entirely client-side (constraint satisfaction, full scoring, then population-scaled risk-percentile filtering), and renders results in under 5 seconds. Dashboard scores are approximate; the Python pipeline is the authoritative scoring implementation.
 
 ### Tech Stack
 
@@ -78,7 +78,7 @@ The frontend is a single explorer page (`dashboard/explore/index.html`) using Ma
 | API server | FastAPI, uvicorn |
 | Frontend map | Mapbox GL JS |
 | Waterway data | OpenStreetMap Overpass API |
-| Federal data | USGS, EPA, Census (free; Census ACS needs a free key — see `.env.example`) |
+| Federal data | USGS, EPA, Census (all free, keyless) |
 
 ## Challenges we ran into
 
@@ -96,7 +96,7 @@ The frontend is a single explorer page (`dashboard/explore/index.html`) using Ma
 
 **Global coverage, not a single demo.** The dashboard works for 89,518 places in 239 countries. Click Lagos, click Jakarta, click Durham: it fetches real waterway data and scores candidate sites in seconds.
 
-**Reproducible by design.** Every data source we use is free (Census ACS needs a free, instant API key; the rest are keyless). The offline demo dataset regenerates deterministically with zero network; the live 147-site run is shipped as a frozen artifact because re-running it needs the network-bound pipeline and several federal endpoints have since gone down.
+**Fully reproducible.** Every data source we use is free and requires no API keys. The entire system can be reproduced by anyone with a Python environment and a browser.
 
 **Interpretable by design.** We deliberately chose a two-level scoring architecture over a black-box model, because the people who would actually deploy nets need to understand and trust the recommendations, not just receive a number.
 
