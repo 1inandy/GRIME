@@ -236,18 +236,23 @@ def test_build_features_passes_computed_velocity_to_feasibility(monkeypatch):
     assert seen == [2.4]
 
 
-def test_candidate_sort_does_not_mutate_cached_ids(monkeypatch):
+def test_candidate_detail_keyed_on_rank_survives_resort(monkeypatch):
+    """H4 regression: detail lookup is keyed on the stable `rank` property, so a
+    sorted/filtered list request can never remap which site a detail id means
+    (the old positional-index lookup did exactly that)."""
     import asyncio
     import api.main as api
 
     features = [
         {
             "type": "Feature", "geometry": {"type": "Point", "coordinates": [0, 0]},
-            "properties": {"composite_score": 90, "generation_score": 10},
+            "properties": {"composite_score": 90, "generation_score": 10,
+                           "rank": 1, "segment_id": 11},
         },
         {
             "type": "Feature", "geometry": {"type": "Point", "coordinates": [1, 1]},
-            "properties": {"composite_score": 80, "generation_score": 99},
+            "properties": {"composite_score": 80, "generation_score": 99,
+                           "rank": 2, "segment_id": 48},
         },
     ]
     monkeypatch.setattr(
@@ -255,7 +260,61 @@ def test_candidate_sort_does_not_mutate_cached_ids(monkeypatch):
         lambda force_mock=False: {"type": "FeatureCollection", "features": features},
     )
 
-    before = asyncio.run(api.get_candidate_detail(0))["location"]
+    before = asyncio.run(api.get_candidate_detail(1))
+    # a re-sorted list must not change what detail id 1 refers to
     asyncio.run(api.get_candidates(min_score=None, top_n=None, subscore="generation_score"))
-    after = asyncio.run(api.get_candidate_detail(0))["location"]
-    assert before == after == [0, 0]
+    after = asyncio.run(api.get_candidate_detail(1))
+    assert before["location"] == after["location"] == [0, 0]
+    assert before["segment_id"] == after["segment_id"] == 11
+
+    # unknown rank → 404, not a positional hit
+    resp = asyncio.run(api.get_candidate_detail(0))
+    assert getattr(resp, "status_code", 200) == 404
+
+
+def test_candidate_detail_round_trip_on_shipped_data():
+    """Every shipped feature must be retrievable by its rank and return its own
+    segment_id — the exact round-trip the positional bug broke."""
+    import asyncio
+    import api.main as api
+
+    feats = api.load_candidates().get("features", [])
+    if not feats:
+        pytest.skip("no shipped dataset present")
+    for f in (feats[0], feats[len(feats) // 2], feats[-1]):
+        rank = f["properties"]["rank"]
+        detail = asyncio.run(api.get_candidate_detail(rank))
+        assert detail["rank"] == rank
+        assert detail["segment_id"] == f["properties"].get("segment_id")
+        assert detail["location"] == f["geometry"]["coordinates"]
+
+
+def test_effective_weights_drop_constant_params(monkeypatch):
+    """/api/weights must report effective weight 0.0 for constant-fallback
+    parameters and renormalize the survivors (mirrors core.scoring)."""
+    import asyncio
+    import api.main as api
+
+    features = []
+    for i in range(4):
+        props = {k: 0.0 for fam in api.NOMINAL_PARAMETER_WEIGHTS.values() for k in fam}
+        props["population_density"] = 100.0 + i     # varies
+        props["road_density_km_km2"] = 2.0 + i      # varies
+        features.append({"type": "Feature",
+                         "geometry": {"type": "Point", "coordinates": [i, i]},
+                         "properties": props})
+    monkeypatch.setattr(
+        api, "load_candidates",
+        lambda force_mock=False: {"type": "FeatureCollection", "features": features},
+    )
+
+    out = asyncio.run(api.get_weights())
+    eff = out["parameter_weights_effective"]["generation"]
+    # constant params carry zero effective weight
+    assert eff["impervious_pct"] == 0.0 and eff["cso_density"] == 0.0
+    # survivors renormalized: 0.18 and 0.10 -> 0.18/0.28 and 0.10/0.28
+    assert abs(eff["population_density"] - 0.18 / 0.28) < 1e-6
+    assert abs(eff["road_density_km_km2"] - 0.10 / 0.28) < 1e-6
+    assert "impervious_pct" in out["inert_parameters"]["generation"]
+    # nominal weights still present and unchanged
+    assert out["parameter_weights"]["generation"]["impervious_pct"] == 0.20
