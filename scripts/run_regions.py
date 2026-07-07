@@ -146,7 +146,12 @@ def wire_region_parameters(cands, region):
         da = float(row["catchment_area_km2"])
         disc = catchment_disc(pt, da)
         props = erom.get(comids[i], {})
-        imp = imperv.get(comids[i])
+        # StreamCat's watershed metric belongs to the snapped COMID — apply the
+        # same snap guard below before trusting it (a Hudson-mainstem snap would
+        # otherwise assign whole-basin imperviousness to a Bronx street stream).
+        _erom_da_pre = rs.erom_drainage_km2(props)
+        _snap_pre = (_erom_da_pre is None) or (da <= 0) or (0.4 <= _erom_da_pre / da <= 10.0)
+        imp = imperv.get(comids[i]) if _snap_pre else None
 
         # generation
         if bg is not None:
@@ -174,14 +179,18 @@ def wire_region_parameters(cands, region):
             counts["cso_density"] += 1
         # litter_complaint_density: no machine-readable source → NaN fallback
 
-        # flow
+        # flow — SYMMETRIC snap guard: reject the COMID when its drainage is far
+        # smaller (minor tributary) OR far larger (site snapped to a tidal/major
+        # mainstem — NYC sites next to the Hudson inherited basin-scale flows and
+        # basin-wide imperviousness before this upper bound). 0.4x–10x keeps
+        # legitimate confluence mismatches, drops orders-of-magnitude wrong snaps.
         q = rs.erom_mean_q_cfs(props)
         erom_da = rs.erom_drainage_km2(props)
-        snap_ok = (erom_da is None) or (da <= 0) or (erom_da / da >= 0.4)
+        snap_ok = (erom_da is None) or (da <= 0) or (0.4 <= erom_da / da <= 10.0)
         if q is not None and snap_ok:
             cols["usgs_mean_q_cfs"][i] = round(q, 4); counts["usgs_mean_q_cfs"] += 1
         cv = rs.erom_seasonal_cv(props)
-        if cv is not None:
+        if cv is not None and snap_ok:
             cols["seasonal_cv"][i] = round(cv, 4); counts["seasonal_cv"] += 1
         cols["stream_order"][i] = int(row.get("stream_order", 2)); counts["stream_order"] += 1
         cols["catchment_area_km2"][i] = round(da, 4); counts["catchment_area_km2"] += 1
@@ -240,6 +249,21 @@ def wire_region_parameters(cands, region):
             if owner is not None:
                 cols["land_ownership"][i] = rs.land_ownership_from_owner(owner)
                 counts["land_ownership"] += 1
+
+    # Missing-data values must not trip hard gates (NaN > 0 is False, so a site
+    # with an unfetchable parcel owner or no EROM flow would be silently GATED
+    # OUT for missing data). Apply the model's own documented fallback constants
+    # instead, so gates only ever fire on real values — matching shipped behavior.
+    n_vel_fb = 0
+    for i in range(n):
+        if np.isnan(cols["flow_velocity_ms"][i]):
+            cols["flow_velocity_ms"][i] = 0.5            # shipped compute_flow_features default
+            cols["velocity_feasibility"][i] = velocity_feasibility(0.5)
+            n_vel_fb += 1
+        if parcels_on and np.isnan(cols["land_ownership"][i]):
+            cols["land_ownership"][i] = 0.5              # shipped "unknown" ownership
+    if n_vel_fb:
+        log(slug, f"  velocity fallback (0.5 m/s, shipped default) for {n_vel_fb} sites lacking EROM/snap")
 
     # fallback constants where a whole column stayed NaN-by-design
     fallback_notes = {
