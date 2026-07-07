@@ -70,6 +70,42 @@ def test_flood_regression_gated_to_nc_piedmont(config):
         assert region["flood_method"] == "none"
 
 
+def test_town_science_consistent_with_province(config):
+    """Statewide NC towns: Coastal Plain must use the APL width curve and NOT the
+    HR1 flood regression (SIR HR1 is Piedmont-only); Piedmont/Blue Ridge use AHI.
+    Flood may only be 'on' for Piedmont towns."""
+    towns = [r for r in config["regions"] if r.get("tier") == "town"]
+    if not towns:
+        pytest.skip("no town regions in config")
+    for t in towns:
+        note = t["notes"].lower()
+        code = t["width_curve"]["code"]
+        if "coastal plain" in note:
+            assert code == "APL", f"{t['slug']}: coastal plain must use APL curve"
+            assert t["flood_method"] == "none", f"{t['slug']}: HR1 flood on a coastal-plain town"
+        elif "blue ridge" in note:
+            assert code == "AHI" and t["flood_method"] == "none", t["slug"]
+        elif "piedmont" in note:
+            assert code == "AHI", t["slug"]
+        if t["flood_method"] == "sir2014_hr1":
+            assert "piedmont" in note, f"{t['slug']}: HR1 flood but not classified Piedmont"
+
+
+def test_town_bboxes_bounded_and_in_nc(config):
+    towns = [r for r in config["regions"] if r.get("tier") == "town"]
+    if not towns:
+        pytest.skip("no town regions")
+    import math
+    for t in towns:
+        w, s, e, n = t["bbox"]
+        lat_mid = (s + n) / 2
+        h_km = (n - s) * 111.0
+        w_km = (e - w) * 111.0 * math.cos(math.radians(lat_mid))
+        assert h_km <= 30 and w_km <= 30, f"{t['slug']} bbox too big ({w_km:.1f}x{h_km:.1f} km)"
+        # NC's rough envelope
+        assert 33.7 <= lat_mid <= 36.7 and -84.5 <= (w + e) / 2 <= -75.3, f"{t['slug']} outside NC"
+
+
 def test_durham_region_uses_the_shipped_bbox(config):
     durham = next(r for r in config["regions"] if r["slug"] == "durham")
     assert durham["bbox"] == [-79.05, 35.90, -78.75, 36.05]
