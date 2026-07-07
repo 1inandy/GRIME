@@ -1,0 +1,34 @@
+{
+ "generated": "2026-07-07 02:21 UTC",
+ "regions": [
+  {
+   "bbox": [
+    -79.1808,
+    35.8382,
+    -78.9308,
+    35.9882
+   ],
+   "candidates_pre_gate": 119,
+   "center": [
+    -79.0558,
+    35.9132
+   ],
+   "gate_removed": 0,
+   "name": "Chapel Hill, NC",
+   "params_varying": 18,
+   "runtime_min": 2.5,
+   "scored_date": "2026-07-07",
+   "site_count": 119,
+   "slug": "chapel-hill",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 66.9793,
+    "lat": 35.9568,
+    "lon": -78.9681,
+    "rank": 1,
+    "segment_id": 9
+   }
+  }
+ ]
+}

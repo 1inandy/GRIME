@@ -49,13 +49,15 @@ def safe_call(fn, *args, default=0.0, **kwargs):
 _DRIVE_GRAPH_CACHE = {}
 
 
-def osm_drive_graph(bbox):
+def osm_drive_graph(bbox, utm_crs=UTM_CRS):
     """Fetch + cache the OSM drive network for ``bbox`` once.
 
     Returns ``{"nodes_utm": GeoDataFrame, "length_km": float}`` (nodes reprojected
-    to UTM for metre-based nearest-road distance), or ``None`` on any failure.
+    to ``utm_crs`` for metre-based nearest-road distance), or ``None`` on any
+    failure. ``utm_crs`` must match the region's zone — zone-17 metres are badly
+    distorted outside the Carolinas, so multi-region callers pass their own.
     """
-    key = tuple(round(float(x), 6) for x in bbox)
+    key = (tuple(round(float(x), 6) for x in bbox), str(utm_crs))
     if key in _DRIVE_GRAPH_CACHE:
         return _DRIVE_GRAPH_CACHE[key]
     try:
@@ -69,9 +71,9 @@ def osm_drive_graph(bbox):
         except AttributeError:  # osmnx 1.x compatibility
             road_graph = ox.utils_graph.get_undirected(G)
         nodes, edges = ox.graph_to_gdfs(road_graph)
-        edges_utm = edges.to_crs(UTM_CRS)
+        edges_utm = edges.to_crs(utm_crs)
         out = {
-            "nodes_utm": nodes.to_crs(UTM_CRS),
+            "nodes_utm": nodes.to_crs(utm_crs),
             "edges_utm": edges_utm,
             "length_km": float(edges_utm.geometry.length.sum()) / 1000.0,
         }

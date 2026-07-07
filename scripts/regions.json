@@ -1,0 +1,817 @@
+{
+ "_comment": "GRIME multi-region config. Width curves are region-appropriate Bieger 2015 provincial relationships (input sourcing, not scoring changes); flood regression only where its calibration domain applies (NC Piedmont, SIR 2014-5030 HR1). West Raleigh (geonamescache CDP inside Raleigh) intentionally omitted.",
+ "defaults": {
+  "resolution_m": 10,
+  "threshold_cells": 20000,
+  "spacing_m": 1500,
+  "sensitivity_n": 200,
+  "seed": 42
+ },
+ "regions": [
+  {
+   "slug": "charlotte",
+   "name": "Charlotte, NC",
+   "state": "NC",
+   "center": [
+    -80.8431,
+    35.2271
+   ],
+   "bbox": [
+    -80.9681,
+    35.1521,
+    -80.7181,
+    35.3021
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "raleigh",
+   "name": "Raleigh, NC",
+   "state": "NC",
+   "center": [
+    -78.6386,
+    35.7721
+   ],
+   "bbox": [
+    -78.7636,
+    35.6971,
+    -78.5136,
+    35.8471
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "greensboro",
+   "name": "Greensboro, NC",
+   "state": "NC",
+   "center": [
+    -79.792,
+    36.0726
+   ],
+   "bbox": [
+    -79.917,
+    35.9976,
+    -79.667,
+    36.1476
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "durham",
+   "name": "Durham, NC",
+   "state": "NC",
+   "center": [
+    -78.8986,
+    35.994
+   ],
+   "bbox": [
+    -79.05,
+    35.9,
+    -78.75,
+    36.05
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": "durham",
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "winston-salem",
+   "name": "Winston-Salem, NC",
+   "state": "NC",
+   "center": [
+    -80.2442,
+    36.0999
+   ],
+   "bbox": [
+    -80.3692,
+    36.0249,
+    -80.1192,
+    36.1749
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "fayetteville",
+   "name": "Fayetteville, NC",
+   "state": "NC",
+   "center": [
+    -78.8784,
+    35.0527
+   ],
+   "bbox": [
+    -79.0034,
+    34.9777,
+    -78.7534,
+    35.1277
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "APL",
+    "a": 2.22,
+    "b": 0.363,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood_q10 is a documented fallback)"
+  },
+  {
+   "slug": "cary",
+   "name": "Cary, NC",
+   "state": "NC",
+   "center": [
+    -78.7811,
+    35.7915
+   ],
+   "bbox": [
+    -78.9061,
+    35.7165,
+    -78.6561,
+    35.8665
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "wilmington",
+   "name": "Wilmington, NC",
+   "state": "NC",
+   "center": [
+    -77.946,
+    34.2356
+   ],
+   "bbox": [
+    -78.071,
+    34.1606,
+    -77.821,
+    34.3106
+   ],
+   "utm_epsg": 32618,
+   "width_curve": {
+    "code": "APL",
+    "a": 2.22,
+    "b": 0.363,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood_q10 is a documented fallback)"
+  },
+  {
+   "slug": "high-point",
+   "name": "High Point, NC",
+   "state": "NC",
+   "center": [
+    -80.0053,
+    35.9557
+   ],
+   "bbox": [
+    -80.1303,
+    35.8807,
+    -79.8803,
+    36.0307
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "asheville",
+   "name": "Asheville, NC",
+   "state": "NC",
+   "center": [
+    -82.554,
+    35.6009
+   ],
+   "bbox": [
+    -82.679,
+    35.5259,
+    -82.429,
+    35.6759
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "Blue Ridge (outside SIR 2014-5030 urban coverage)"
+  },
+  {
+   "slug": "greenville",
+   "name": "Greenville, NC",
+   "state": "NC",
+   "center": [
+    -77.3663,
+    35.6127
+   ],
+   "bbox": [
+    -77.4913,
+    35.5377,
+    -77.2413,
+    35.6877
+   ],
+   "utm_epsg": 32618,
+   "width_curve": {
+    "code": "APL",
+    "a": 2.22,
+    "b": 0.363,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood_q10 is a documented fallback)"
+  },
+  {
+   "slug": "concord",
+   "name": "Concord, NC",
+   "state": "NC",
+   "center": [
+    -80.5816,
+    35.4089
+   ],
+   "bbox": [
+    -80.7066,
+    35.3339,
+    -80.4566,
+    35.4839
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "gastonia",
+   "name": "Gastonia, NC",
+   "state": "NC",
+   "center": [
+    -81.1873,
+    35.2621
+   ],
+   "bbox": [
+    -81.3123,
+    35.1871,
+    -81.0623,
+    35.3371
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "jacksonville",
+   "name": "Jacksonville, NC",
+   "state": "NC",
+   "center": [
+    -77.4302,
+    34.754
+   ],
+   "bbox": [
+    -77.5552,
+    34.679,
+    -77.3052,
+    34.829
+   ],
+   "utm_epsg": 32618,
+   "width_curve": {
+    "code": "APL",
+    "a": 2.22,
+    "b": 0.363,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood_q10 is a documented fallback)"
+  },
+  {
+   "slug": "chapel-hill",
+   "name": "Chapel Hill, NC",
+   "state": "NC",
+   "center": [
+    -79.0558,
+    35.9132
+   ],
+   "bbox": [
+    -79.1808,
+    35.8382,
+    -78.9308,
+    35.9882
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "rocky-mount",
+   "name": "Rocky Mount, NC",
+   "state": "NC",
+   "center": [
+    -77.7905,
+    35.9382
+   ],
+   "bbox": [
+    -77.9155,
+    35.8632,
+    -77.6655,
+    36.0132
+   ],
+   "utm_epsg": 32618,
+   "width_curve": {
+    "code": "APL",
+    "a": 2.22,
+    "b": 0.363,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood_q10 is a documented fallback)"
+  },
+  {
+   "slug": "huntersville",
+   "name": "Huntersville, NC",
+   "state": "NC",
+   "center": [
+    -80.8428,
+    35.4107
+   ],
+   "bbox": [
+    -80.9678,
+    35.3357,
+    -80.7178,
+    35.4857
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "burlington",
+   "name": "Burlington, NC",
+   "state": "NC",
+   "center": [
+    -79.4378,
+    36.0957
+   ],
+   "bbox": [
+    -79.5628,
+    36.0207,
+    -79.3128,
+    36.1707
+   ],
+   "utm_epsg": 32617,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "sir2014_hr1",
+   "estuary_ref": {
+    "lat": 35.05,
+    "lon": -76.05,
+    "label": "Pamlico Sound (shipped NC reference)"
+   },
+   "beach_ref": {
+    "lat": 34.21,
+    "lon": -77.79,
+    "label": "Wrightsville Beach (shipped NC reference)"
+   },
+   "parcels": null,
+   "notes": "NC Piedmont"
+  },
+  {
+   "slug": "new-york-city",
+   "name": "New York City",
+   "state": "NY",
+   "center": [
+    -74.006,
+    40.7143
+   ],
+   "bbox": [
+    -74.131,
+    40.6393,
+    -73.881,
+    40.7893
+   ],
+   "utm_epsg": 32618,
+   "width_curve": {
+    "code": "AHI",
+    "a": 3.12,
+    "b": 0.415,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 40.67,
+    "lon": -74.05,
+    "label": "Upper New York Bay"
+   },
+   "beach_ref": {
+    "lat": 40.573,
+    "lon": -73.855,
+    "label": "Rockaway Beach"
+   },
+   "parcels": null,
+   "notes": "Manhattan Prong / New England crystalline province for mainland streams; heavily tidal \u2014 hard gates expected to exclude most navigable water"
+  },
+  {
+   "slug": "chicago",
+   "name": "Chicago",
+   "state": "IL",
+   "center": [
+    -87.65,
+    41.85
+   ],
+   "bbox": [
+    -87.775,
+    41.775,
+    -87.525,
+    41.925
+   ],
+   "utm_epsg": 32616,
+   "width_curve": {
+    "code": "IPL",
+    "a": 2.56,
+    "b": 0.351,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Interior Plains"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 41.89,
+    "lon": -87.6,
+    "label": "Lake Michigan shoreline (receiving water; Great Lakes basin, not an ocean estuary)"
+   },
+   "beach_ref": {
+    "lat": 41.967,
+    "lon": -87.64,
+    "label": "Montrose Beach"
+   },
+   "parcels": null,
+   "notes": "Great Lakes basin: receiving water is Lake Michigan, not an ocean estuary \u2014 estuary_dist repurposed as distance-to-receiving-water, documented"
+  },
+  {
+   "slug": "san-francisco",
+   "name": "San Francisco",
+   "state": "CA",
+   "center": [
+    -122.4194,
+    37.7749
+   ],
+   "bbox": [
+    -122.5444,
+    37.6999,
+    -122.2944,
+    37.8499
+   ],
+   "utm_epsg": 32610,
+   "width_curve": {
+    "code": "PMS",
+    "a": 2.76,
+    "b": 0.399,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Pacific Mountain System"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 37.8,
+    "lon": -122.37,
+    "label": "San Francisco Bay"
+   },
+   "beach_ref": {
+    "lat": 37.76,
+    "lon": -122.51,
+    "label": "Ocean Beach"
+   },
+   "parcels": null,
+   "notes": "Peninsula streams largely culverted; tidal bay margins \u2014 low valid-site count expected"
+  },
+  {
+   "slug": "los-angeles",
+   "name": "Los Angeles",
+   "state": "CA",
+   "center": [
+    -118.2437,
+    34.0522
+   ],
+   "bbox": [
+    -118.3687,
+    33.9772,
+    -118.1187,
+    34.1272
+   ],
+   "utm_epsg": 32611,
+   "width_curve": {
+    "code": "PMS",
+    "a": 2.76,
+    "b": 0.399,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Pacific Mountain System"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 33.755,
+    "lon": -118.19,
+    "label": "LA River mouth / San Pedro Bay"
+   },
+   "beach_ref": {
+    "lat": 34.008,
+    "lon": -118.5,
+    "label": "Santa Monica Beach"
+   },
+   "parcels": null,
+   "notes": "Concrete flood-control channels; velocities may trip the 3 m/s gate in steep reaches"
+  },
+  {
+   "slug": "houston",
+   "name": "Houston",
+   "state": "TX",
+   "center": [
+    -95.3633,
+    29.7633
+   ],
+   "bbox": [
+    -95.4883,
+    29.6883,
+    -95.2383,
+    29.8383
+   ],
+   "utm_epsg": 32615,
+   "width_curve": {
+    "code": "APL",
+    "a": 2.22,
+    "b": 0.363,
+    "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+   },
+   "flood_method": "none",
+   "estuary_ref": {
+    "lat": 29.61,
+    "lon": -95.01,
+    "label": "Upper Galveston Bay"
+   },
+   "beach_ref": {
+    "lat": 29.27,
+    "lon": -94.83,
+    "label": "Galveston Island beach"
+   },
+   "parcels": null,
+   "notes": "Low-gradient bayous; tidal lower reaches"
+  }
+ ]
+}

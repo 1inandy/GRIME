@@ -157,7 +157,7 @@ def test_road_density_clips_cached_network_to_catchment(monkeypatch):
     )
     monkeypatch.setattr(
         generation, "osm_drive_graph",
-        lambda bbox: {"edges_utm": edges, "length_km": 2.0},
+        lambda bbox, utm_crs=None: {"edges_utm": edges, "length_km": 2.0},
     )
     catchment = box(0, 0, 1000, 1000)  # 1 km² containing exactly 1 km of road
     density = generation.get_road_density(catchment, 1.0, (0, 0, 1, 1))

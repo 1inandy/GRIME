@@ -15,7 +15,7 @@ from pathlib import Path
 from core import ELLERBE_BBOX, UTM_CRS, WGS84
 
 
-def fetch_dem(bbox, resolution=10, retries=4, backoff=5.0):
+def fetch_dem(bbox, resolution=10, retries=4, backoff=5.0, utm_crs=UTM_CRS):
     """
     Fetch DEM from USGS 3DEP via py3dep, then **reproject to UTM** (C1).
 
@@ -47,11 +47,13 @@ def fetch_dem(bbox, resolution=10, retries=4, backoff=5.0):
         raise RuntimeError(
             f"3DEP DEM fetch failed after {retries} attempts"
         ) from last_err
-    # Reproject to UTM so downstream pixel maths are in metres.
-    dem = dem.rio.reproject(UTM_CRS)
+    # Reproject to UTM so downstream pixel maths are in metres. The zone must match
+    # the region (zone-17 metres are badly distorted on the west coast), so callers
+    # outside the Durham default pass their own utm_crs.
+    dem = dem.rio.reproject(utm_crs)
     px = abs(dem.rio.transform()[0])
     print(f"  DEM shape: {dem.shape}, range: [{float(dem.min()):.1f}, {float(dem.max()):.1f}]m, "
-          f"pixel≈{px:.1f} m ({UTM_CRS})")
+          f"pixel≈{px:.1f} m ({utm_crs})")
     return dem
 
 
@@ -140,7 +142,7 @@ def streams_to_geodataframe(streams_geojson, source_crs=WGS84):
     return gdf
 
 
-def generate_candidates(stream_gdf, spacing_m=200, buffer_m=20):
+def generate_candidates(stream_gdf, spacing_m=200, buffer_m=20, utm_crs=UTM_CRS):
     """
     Generate candidate trap sites by sampling points along the stream network.
     spacing_m: distance between candidates along each stream segment.
@@ -148,7 +150,7 @@ def generate_candidates(stream_gdf, spacing_m=200, buffer_m=20):
 
     Returns GeoDataFrame of candidate points with stream metadata.
     """
-    stream_utm = stream_gdf.to_crs(UTM_CRS) if str(stream_gdf.crs) != UTM_CRS else stream_gdf
+    stream_utm = stream_gdf.to_crs(utm_crs) if str(stream_gdf.crs) != utm_crs else stream_gdf
 
     candidates = []
     for idx, row in stream_utm.iterrows():
@@ -177,12 +179,12 @@ def generate_candidates(stream_gdf, spacing_m=200, buffer_m=20):
                     "stream_order": order,
                 })
 
-    cand_gdf = gpd.GeoDataFrame(candidates, crs=UTM_CRS)
+    cand_gdf = gpd.GeoDataFrame(candidates, crs=utm_crs)
     print(f"Generated {len(cand_gdf)} candidate sites (spacing={spacing_m}m)")
     return cand_gdf
 
 
-def compute_stream_order(stream_gdf, snap_m=5.0):
+def compute_stream_order(stream_gdf, snap_m=5.0, utm_crs=UTM_CRS):
     """
     Compute a **stream order** = confluence node-degree heuristic (H3).
 
@@ -194,7 +196,7 @@ def compute_stream_order(stream_gdf, snap_m=5.0):
     """
     import networkx as nx
 
-    stream_utm = stream_gdf.to_crs(UTM_CRS) if str(stream_gdf.crs) != UTM_CRS else stream_gdf.copy()
+    stream_utm = stream_gdf.to_crs(utm_crs) if str(stream_gdf.crs) != utm_crs else stream_gdf.copy()
 
     def snap(pt):
         return (round(pt[0] / snap_m) * snap_m, round(pt[1] / snap_m) * snap_m)
@@ -252,7 +254,7 @@ def snap_to_channel(acc, r, c, radius=2):
 
 def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
                  spacing_m=200, output_dir="mock_data",
-                 hydrology=None, return_hydrology=False):
+                 hydrology=None, return_hydrology=False, utm_crs=UTM_CRS):
     """
     Full pipeline: DEM → streams → candidates → GeoJSON output.
     This is what you run before the hackathon to validate everything.
@@ -267,7 +269,7 @@ def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
 
     # Steps 1-2: Fetch DEM + hydrological processing (reuse if provided).
     if hydrology is None:
-        dem = fetch_dem(bbox, resolution=resolution)
+        dem = fetch_dem(bbox, resolution=resolution, utm_crs=utm_crs)
         hydrology = process_hydrology(dem, bbox)
     grid, fdir, acc, elevation, transform = hydrology
 
@@ -285,15 +287,15 @@ def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
 
     # Step 4: Convert to GeoDataFrame and compute stream order (H3 heuristic).
     # The pysheds grid is UTM, so the extracted stream coords are UTM metres.
-    stream_gdf = streams_to_geodataframe(streams, source_crs=UTM_CRS)
+    stream_gdf = streams_to_geodataframe(streams, source_crs=utm_crs)
     if stream_gdf.empty:
         print("ERROR: No streams extracted. Try lowering the threshold.")
         return (None, None, hydrology) if return_hydrology else (None, None)
 
-    stream_gdf = compute_stream_order(stream_gdf)
+    stream_gdf = compute_stream_order(stream_gdf, utm_crs=utm_crs)
 
     # Step 5: Generate candidate sites (carrying stream_order onto each candidate)
-    candidates = generate_candidates(stream_gdf, spacing_m=spacing_m)
+    candidates = generate_candidates(stream_gdf, spacing_m=spacing_m, utm_crs=utm_crs)
 
     # Add pixel coordinates for DEM lookups. C1: the DEM grid is now UTM (metres),
     # and generate_candidates already works in UTM — so map candidates straight onto
@@ -311,7 +313,7 @@ def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
 
         # Lat/lon for API lookups (StreamStats etc.) computed once per candidate.
         pt_wgs = gpd.GeoDataFrame(
-            {"geometry": [pt]}, crs=UTM_CRS
+            {"geometry": [pt]}, crs=utm_crs
         ).to_crs(WGS84).geometry.iloc[0]
 
         candidates.at[idx, "pixel_row"] = int(r)
