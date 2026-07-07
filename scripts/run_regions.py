@@ -42,12 +42,21 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(_ROOT, ".env"))
 sys.path.insert(0, _ROOT)
 
-# osmnx: hard rate-limit + big-city-safe settings BEFORE any graph call.
-import osmnx as ox
-ox.settings.use_cache = True
-ox.settings.cache_folder = os.path.join(_ROOT, "cache", "osmnx")
-ox.settings.overpass_rate_limit = True
-ox.settings.requests_timeout = 300
+def _configure_osmnx():
+    """Import + configure osmnx (hard rate-limit + big-city-safe cache) lazily,
+    once, right before the first graph call. Deferred so that merely IMPORTING
+    this module — as the lightweight zero-region / supervisor tests do, and as
+    the slim CI environment does (no heavy geo stack installed) — never requires
+    osmnx. Only actually running a region's pipeline needs it."""
+    import osmnx as ox
+    if getattr(_configure_osmnx, "_done", False):
+        return
+    ox.settings.use_cache = True
+    ox.settings.cache_folder = os.path.join(_ROOT, "cache", "osmnx")
+    ox.settings.overpass_rate_limit = True
+    ox.settings.requests_timeout = 300
+    _configure_osmnx._done = True
+
 
 from core import WGS84, osm_drive_graph, inverse_distance_score, safe_call
 from core.flow import (
@@ -356,6 +365,7 @@ def write_zero_region(region, pre_gate, reason):
 
 
 def run_region(region, defaults):
+    _configure_osmnx()          # real pipeline run → configure osmnx now (lazy)
     slug = region["slug"]
     utm = f"EPSG:{region['utm_epsg']}"
     work = WORK_DIR / slug

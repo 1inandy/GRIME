@@ -32,3 +32,8 @@ mock_data/candidates_offline.geojson
 
 # Before/after comparison artifacts (contain the Mapbox token via token.js)
 comparison/
+
+# Internal reports — kept locally, never tracked/pushed (audit + validation deliverables)
+FIX_REPORT.md
+RESEARCH_VALIDATION.md
+COMPARISON.md
