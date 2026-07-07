@@ -322,6 +322,39 @@ def wire_region_parameters(cands, region):
     return gdf, prov
 
 
+def write_zero_region(region, pre_gate, reason):
+    """Write a valid, empty region file + return an index entry for a town that
+    yielded no deployable site. This is a CORRECT outcome (recorded, not retried),
+    never a reason to loosen a gate or fabricate a site."""
+    slug = region["slug"]
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    doc = {
+        "type": "FeatureCollection",
+        "note": (f"GRIME region '{region['name']}' — real-data pipeline produced "
+                 f"0 deployable candidate sites. {reason}. This is an honest zero "
+                 f"(the model targets small urban waterways and does not force "
+                 f"sites where none qualify), not a failure."),
+        "region": {k: region.get(k) for k in
+                   ("slug", "name", "state", "bbox", "center", "utm_epsg",
+                    "width_curve", "flood_method", "notes")},
+        "provenance": {"n_parameters": len(ALL_PARAMS), "varying": [], "constant": [],
+                       "parameters": {}, "hard_gate_removed": pre_gate,
+                       "candidates_pre_gate": pre_gate, "zero_reason": reason},
+        "features": [],
+    }
+    (OUT_DIR / f"{slug}.geojson").write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n")
+    log(slug, f"ZERO candidates — {reason}")
+    return {
+        "slug": slug, "name": region["name"], "state": region.get("state"),
+        "bbox": region["bbox"], "center": region["center"],
+        "tier": region.get("tier", "metro"),
+        "site_count": 0, "candidates_pre_gate": pre_gate, "gate_removed": pre_gate,
+        "params_varying": 0,
+        "scored_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "status": "ok", "zero_reason": reason, "top_site": None,
+    }
+
+
 def run_region(region, defaults):
     slug = region["slug"]
     utm = f"EPSG:{region['utm_epsg']}"
@@ -343,7 +376,10 @@ def run_region(region, defaults):
         utm_crs=utm,
     )
     if cands is None or len(cands) == 0:
-        raise RuntimeError("pipeline produced no candidates (no streams above threshold)")
+        # A small/rural town with no waterway above the ~2 km² channel threshold
+        # is a CORRECT zero result — record it, don't retry, don't loosen the gate.
+        return write_zero_region(region, 0,
+            "no waterway above the 2 km² channel threshold in this bbox")
     log(slug, f"candidates: {len(cands)}")
 
     region = dict(region)
@@ -358,6 +394,12 @@ def run_region(region, defaults):
     scored = scored.reset_index(drop=True)
     scored["rank"] = scored.index + 1
     gated_out = n_before - len(scored)
+    if len(scored) == 0:
+        # Every candidate failed the shipped hard gates (too fast / too wide /
+        # confirmed private). Also a correct zero — never loosen a gate.
+        return write_zero_region(region, n_before,
+            f"all {n_before} candidate sites removed by the hard gates "
+            "(velocity/width/ownership) — no deployable site in this bbox")
     log(slug, f"scored {len(scored)}/{n_before} sites (hard gates removed {gated_out}); "
               f"composite {scored['composite_score'].min():.1f}-{scored['composite_score'].max():.1f}")
 
@@ -406,6 +448,7 @@ def run_region(region, defaults):
     return {
         "slug": slug, "name": region["name"], "state": region["state"],
         "bbox": region["bbox"], "center": region["center"],
+        "tier": region.get("tier", "metro"),
         "site_count": len(feats), "candidates_pre_gate": n_before,
         "gate_removed": gated_out, "params_varying": len(varying),
         "scored_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
@@ -440,39 +483,121 @@ def upsert(idx, entry):
     save_index(idx)
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--only", default=None, help="run a single slug")
-    ap.add_argument("--force", action="store_true", help="re-run even if output exists")
-    args = ap.parse_args()
+def run_worker(args):
+    """Worker mode: run one region in-process and upsert its index entry.
+    A per-region timeout is enforced by the SUPERVISOR (separate process), so a
+    hang here can be killed without taking down the batch."""
+    cfg = json.loads(CONFIG.read_text())
+    region = next((r for r in cfg["regions"] if r["slug"] == args.only), None)
+    if region is None:
+        sys.exit(f"unknown slug {args.only}")
+    out_path = OUT_DIR / f"{region['slug']}.geojson"
+    if out_path.exists() and not args.force:
+        log(region["slug"], "exists — skipping (resumable)")
+        return
+    try:
+        entry = run_region(region, cfg["defaults"])
+    except Exception as e:
+        traceback.print_exc()
+        entry = {"slug": region["slug"], "name": region["name"], "state": region.get("state"),
+                 "bbox": region["bbox"], "center": region["center"],
+                 "tier": region.get("tier", "metro"), "site_count": 0, "params_varying": 0,
+                 "scored_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                 "status": f"failed: {type(e).__name__}: {str(e)[:140]}"}
+    upsert(load_index(), entry)
+
+
+def supervise(args):
+    """Supervisor mode: iterate the config, run each region as a SUBPROCESS with a
+    hard wall-clock timeout, gentle inter-region pacing + jitter (Overpass is the
+    scaling bottleneck), skip already-done regions (resume), and collect failures
+    for a clean retry pass instead of aborting the batch."""
+    import random
+    import subprocess
 
     cfg = json.loads(CONFIG.read_text())
     regions = cfg["regions"]
-    if args.only:
-        regions = [r for r in regions if r["slug"] == args.only]
-        if not regions:
-            sys.exit(f"unknown slug {args.only}")
-    idx = load_index()
+    if args.tier:
+        regions = [r for r in regions if r.get("tier", "metro") == args.tier]
+    if args.limit:
+        regions = regions[:args.limit]
+    timeout = args.timeout
+    pace_lo, pace_hi = args.pace, args.pace + args.jitter
 
-    for region in regions:
-        slug = region["slug"]
-        out_path = OUT_DIR / f"{slug}.geojson"
-        if out_path.exists() and not args.force:
-            log(slug, "exists — skipping (resumable)")
-            continue
+    def already_done(slug):
+        return (OUT_DIR / f"{slug}.geojson").exists()
+
+    def run_one(slug):
+        cmd = [sys.executable, os.path.abspath(__file__), "--only", slug]
         try:
-            entry = run_region(region, cfg["defaults"])
-        except Exception as e:
-            traceback.print_exc()
-            entry = {"slug": slug, "name": region["name"], "state": region["state"],
-                     "bbox": region["bbox"], "center": region["center"],
-                     "site_count": 0, "params_varying": 0,
-                     "scored_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-                     "status": f"failed: {type(e).__name__}: {str(e)[:140]}"}
-        upsert(idx, entry)
-    print("\n=== batch done ===")
-    for r in load_index()["regions"]:
-        print(f"  {r['slug']:16s} {r['status'][:60]:60s} sites={r.get('site_count',0)}")
+            r = subprocess.run(cmd, timeout=timeout)
+            return r.returncode == 0
+        except subprocess.TimeoutExpired:
+            log(slug, f"TIMEOUT after {timeout}s — killed, will retry")
+            upsert(load_index(), {
+                "slug": slug, "name": next(x["name"] for x in cfg["regions"] if x["slug"] == slug),
+                "state": "NC", "bbox": next(x["bbox"] for x in cfg["regions"] if x["slug"] == slug),
+                "center": next(x["center"] for x in cfg["regions"] if x["slug"] == slug),
+                "tier": "town", "site_count": 0, "params_varying": 0,
+                "scored_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "status": f"failed: timeout>{timeout}s"})
+            return False
+
+    pending = [r for r in regions if not already_done(r["slug"])]
+    print(f"[supervisor] {len(regions)} in scope · {len(regions)-len(pending)} already done · "
+          f"{len(pending)} to run · timeout={timeout}s pace={pace_lo}-{pace_hi}s", flush=True)
+
+    for i, region in enumerate(pending):
+        slug = region["slug"]
+        print(f"[supervisor] {i+1}/{len(pending)} → {slug}", flush=True)
+        run_one(slug)
+        if i < len(pending) - 1:
+            time.sleep(random.uniform(pace_lo, pace_hi))   # gentle on Overpass
+
+    # one retry pass over anything still failed/absent
+    idx = load_index()
+    failed = [r["slug"] for r in idx["regions"]
+              if not str(r["status"]).startswith("ok") and r["slug"] in {x["slug"] for x in regions}]
+    failed += [r["slug"] for r in regions if not already_done(r["slug"])
+               and r["slug"] not in {e["slug"] for e in idx["regions"]}]
+    failed = sorted(set(failed))
+    if failed and not args.no_retry:
+        print(f"[supervisor] retry pass over {len(failed)} failed/absent: {failed[:10]}...", flush=True)
+        for slug in failed:
+            if already_done(slug):
+                continue
+            run_one(slug)
+            time.sleep(random.uniform(pace_lo, pace_hi))
+
+    idx = load_index()
+    ok = sum(1 for r in idx["regions"] if str(r["status"]).startswith("ok"))
+    zero = sum(1 for r in idx["regions"] if r.get("site_count") == 0 and str(r["status"]).startswith("ok"))
+    fail = [r["slug"] for r in idx["regions"] if not str(r["status"]).startswith("ok")]
+    print(f"\n[supervisor] done: {ok} ok ({zero} zero-candidate) · {len(fail)} failed: {fail}", flush=True)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", default=None, help="worker: run a single slug")
+    ap.add_argument("--force", action="store_true", help="re-run even if output exists")
+    ap.add_argument("--supervise", action="store_true",
+                    help="supervisor: subprocess-per-region with timeout + retry + pacing")
+    ap.add_argument("--tier", default=None, help="supervise only this tier (e.g. town)")
+    ap.add_argument("--limit", type=int, default=None, help="supervise only the first N regions")
+    ap.add_argument("--timeout", type=int, default=1200, help="per-region wall-clock seconds")
+    ap.add_argument("--pace", type=float, default=4.0, help="min inter-region sleep seconds")
+    ap.add_argument("--jitter", type=float, default=6.0, help="added random pacing seconds")
+    ap.add_argument("--no-retry", action="store_true")
+    args = ap.parse_args()
+
+    if args.supervise:
+        supervise(args)
+    elif args.only:
+        run_worker(args)
+    else:
+        # default: supervise the whole config
+        args.supervise = True
+        supervise(args)
 
 
 if __name__ == "__main__":
