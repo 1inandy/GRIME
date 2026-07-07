@@ -196,17 +196,18 @@ PROTECTION_WEIGHTS = {
 _OSM_FEATURES_CACHE = {}
 
 
-def _bbox_osm_features(bbox, tags, label):
-    """All OSM features matching ``tags`` in ``bbox`` (UTM), cached. None on failure."""
+def _bbox_osm_features(bbox, tags, label, utm_crs=UTM_CRS):
+    """All OSM features matching ``tags`` in ``bbox`` (reprojected to ``utm_crs``),
+    cached. None on failure. ``utm_crs`` must match the region's zone."""
     if bbox is None:
         return None
-    key = (tuple(round(float(x), 6) for x in bbox), label)
+    key = (tuple(round(float(x), 6) for x in bbox), label, str(utm_crs))
     if key in _OSM_FEATURES_CACHE:
         return _OSM_FEATURES_CACHE[key]
     try:
         import osmnx as ox
         west, south, east, north = bbox
-        gdf = ox.features_from_bbox(north, south, east, west, tags=tags).to_crs(UTM_CRS)
+        gdf = ox.features_from_bbox(north, south, east, west, tags=tags).to_crs(utm_crs)
         result = gdf
     except Exception as e:
         print(f"  [warn] osm features {label}: {e}")
@@ -354,9 +355,10 @@ def estimate_beach_distance_km(lat, lon):
 
 # ── 6.6 Tourism / Recreation Value ──────────────────────────────────
 
-def get_tourism_amenity_density(candidate_point_utm, radius_km=2, bbox=None):
+def get_tourism_amenity_density(candidate_point_utm, radius_km=2, bbox=None, utm_crs=UTM_CRS):
     """Count parks, trails, and recreation amenities from OSM (bbox-cached)."""
-    feats = _bbox_osm_features(bbox, {"leisure": True, "tourism": True}, "tourism")
+    feats = _bbox_osm_features(bbox, {"leisure": True, "tourism": True}, "tourism",
+                               utm_crs=utm_crs)
     if feats is not None:
         if feats.empty:
             return 0.0

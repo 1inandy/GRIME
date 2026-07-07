@@ -359,6 +359,47 @@ async def get_stats():
     }
 
 
+# ── Multi-region scored datasets (mock_data/regions/) ───────────────
+
+import re as _re
+
+REGIONS_DIR = MOCK_DIR / "regions"
+_regions_index_cache = None
+_region_candidates_cache = {}
+
+_SLUG_RE = _re.compile(r"^[a-z0-9-]{1,64}$")
+
+
+@app.get("/api/regions")
+async def get_regions():
+    """Index of precomputed real-pipeline regions (slug, name, bbox, site count,
+    scored date, params-varying count). Empty list when no regions are built."""
+    global _regions_index_cache
+    if _regions_index_cache is None:
+        index_path = REGIONS_DIR / "index.json"
+        if index_path.exists():
+            with open(index_path) as f:
+                _regions_index_cache = json.load(f)
+        else:
+            _regions_index_cache = {"generated": None, "regions": []}
+    return _regions_index_cache
+
+
+@app.get("/api/regions/{slug}/candidates")
+async def get_region_candidates(slug: str):
+    """Full scored GeoJSON for one region (same schema as candidates_v2:
+    per-parameter provenance block + ranked features)."""
+    if not _SLUG_RE.match(slug):
+        return JSONResponse(status_code=404, content={"error": "Region not found"})
+    if slug not in _region_candidates_cache:
+        path = REGIONS_DIR / f"{slug}.geojson"
+        if not path.exists():
+            return JSONResponse(status_code=404, content={"error": "Region not found"})
+        with open(path) as f:
+            _region_candidates_cache[slug] = json.load(f)
+    return _region_candidates_cache[slug]
+
+
 # ── WebSocket for real-time updates ──────────────────────────────────
 
 connected_clients = set()

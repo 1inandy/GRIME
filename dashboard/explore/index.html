@@ -158,6 +158,11 @@ async function getMapboxToken(){
 
 // ═══ STATE ══════════════════════════════════════════════════════
 let map,places=[],activeCityIdx=-1,activeCandidates=[],activeStreams=[],selectedCand=null,isSat=true,pipelineStats=null;
+// Precomputed real-pipeline regions (mock_data/regions/): when the opened city
+// falls inside a scored region's bbox, its REAL scored sites are shown instead
+// of client-side generation. Cities outside every region keep the exact
+// existing behavior. activeRegionSlug is non-null only while such a city is open.
+let regionsIndex=null,regionsIndexTried=false,regionCandCache={},activeRegionSlug=null;
 // Remember city params so we can re-score after pan-autoload merges in new streams
 let activePop=0,activeCC='',activeSeed=0;
 // Pan-autoload state
@@ -192,6 +197,63 @@ async function loadPlaces(){
   const paths=[API+'/mock_data/places.json','/mock_data/places.json','../../mock_data/places.json','../mock_data/places.json','mock_data/places.json'];
   for(const p of paths){try{const r=await fetch(p);if(r.ok)return await r.json()}catch(e){}}
   return[];
+}
+
+// ═══ PRECOMPUTED REGIONS (real pipeline output) ═════════════════
+async function loadRegionsIndex(){
+  if(regionsIndexTried)return regionsIndex;
+  regionsIndexTried=true;
+  for(const p of [API+'/api/regions','/api/regions',API+'/mock_data/regions/index.json','/mock_data/regions/index.json']){
+    try{
+      const r=await fetch(p);
+      if(!r.ok)continue;
+      const j=await r.json();
+      if(j&&Array.isArray(j.regions)){regionsIndex=j.regions.filter(x=>x&&typeof x.status==='string'&&x.status.startsWith('ok'));return regionsIndex}
+    }catch(e){}
+  }
+  regionsIndex=[];
+  return regionsIndex;
+}
+
+function regionForPoint(lon,lat){
+  if(!regionsIndex)return null;
+  for(const r of regionsIndex){
+    const b=r.bbox;
+    if(lon>=b[0]&&lon<=b[2]&&lat>=b[1]&&lat<=b[3])return r;
+  }
+  return null;
+}
+
+async function fetchRegionCandidates(slug){
+  if(regionCandCache[slug])return regionCandCache[slug];
+  for(const p of [API+'/api/regions/'+slug+'/candidates','/api/regions/'+slug+'/candidates',
+                  API+'/mock_data/regions/'+slug+'.geojson','/mock_data/regions/'+slug+'.geojson']){
+    try{
+      const r=await fetch(p);
+      if(!r.ok)continue;
+      const j=await r.json();
+      if(j&&j.features&&j.features.length){regionCandCache[slug]=j.features;return j.features}
+    }catch(e){}
+  }
+  return null;
+}
+
+// Map a real scored feature onto the exact shape the existing rendering reads.
+function regionFeatureToCandidate(f,i){
+  const p=f.properties||{};
+  const fmt=(v,d)=>(v==null||isNaN(+v))?'—':(+v).toFixed(d);
+  return{id:i,lon:f.geometry.coordinates[0],lat:f.geometry.coordinates[1],
+    stream:'Segment '+(p.segment_id!=null?p.segment_id:i),streamWidth:+p.channel_width_m||5,
+    waterway:'stream',riverKey:'__region_'+i,upstreamFrac:0,order:p.stream_order||2,
+    streamIdx:-1,coordIdx:0,wayOrder:-1,isPortal:false,
+    composite:+(+p.composite_score||0).toFixed(1),gen:+(+p.generation_score||0).toFixed(1),
+    flow:+(+p.flow_score||0).toFixed(1),impact:+(+p.impact_score||0).toFixed(1),
+    feas:+(+p.feasibility_score||0).toFixed(1),
+    pop_d:fmt(p.population_density,0),imp_pct:fmt(p.impervious_pct,1),
+    vel:fmt(p.flow_velocity_ms,2),mq:fmt(p.usgs_mean_q_cfs,1),
+    stream_order:p.stream_order!=null?p.stream_order:'—',catch_km2:fmt(p.catchment_area_km2,1),
+    ej:fmt(p.ej_index,2),road_m:fmt(p.road_access_m,0),width_m:fmt(p.channel_width_m,1),
+    slope_deg:fmt(p.bank_slope_deg,1)};
 }
 
 // ═══ SEEDED RANDOM (for fallback + candidate scoring) ═══════════
@@ -865,6 +927,9 @@ function scheduleRescore(){
   rescoreTimer=setTimeout(()=>{
     rescoreTimer=null;
     if(activeCityIdx<0)return;
+    // Region cities show precomputed real sites — panning must never replace
+    // them with regenerated client-side estimates; only the streams redraw.
+    if(activeRegionSlug){refreshStreamsSource();return}
     activeCandidates=generateCandidates(activeStreams,activePop,activeCC,activeSeed);
     refreshMapSources();
     renderCityView();
@@ -959,10 +1024,10 @@ async function enterRiverFocus(key,name,lngLat){
     if(newStreams){
       const drawAdded=mergeDraw(newStreams._full);  // full river geometry → continuous trace
       const added=mergeStreams(newStreams);
-      if(added>0){
+      if(added>0&&!activeRegionSlug){   // region cities keep their real sites fixed
         activeCandidates=generateCandidates(activeStreams,activePop,activeCC,activeSeed);
         refreshMapSources();
-      }else if(drawAdded>0){
+      }else if(drawAdded>0||added>0){
         refreshStreamsSource();  // wide/short reaches drawn even if not candidate-eligible
       }
     }
@@ -1055,7 +1120,7 @@ function resetExploreState(){
 }
 
 function loadWorldView(){
-  activeCityIdx=-1;activeCandidates=[];activeStreams=[];drawStreams=[];selectedCand=null;
+  activeCityIdx=-1;activeCandidates=[];activeStreams=[];drawStreams=[];selectedCand=null;activeRegionSlug=null;
   renderSelectedCandPanel();
   resetExploreState();
   clearLayers();
@@ -1148,7 +1213,24 @@ async function openCity(idx){
     return;
   }
 
-  activeCandidates=generateCandidates(activeStreams,p.p,p.c,seed);
+  // Prefer the REAL precomputed pipeline output when this city sits inside a
+  // scored region; everything else about the page (rivers, layers, panels)
+  // renders exactly as before. Unscored cities take the original path untouched.
+  activeRegionSlug=null;
+  await loadRegionsIndex();
+  if(activeCityIdx!==idx)return;
+  const cityRegion=regionForPoint(p.lo,p.la);
+  if(cityRegion){
+    const feats=await fetchRegionCandidates(cityRegion.slug);
+    if(activeCityIdx!==idx)return;
+    if(feats&&feats.length){
+      activeRegionSlug=cityRegion.slug;
+      activeCandidates=feats.map(regionFeatureToCandidate);
+      pipelineStats={total:feats.length,scored:feats.length,deployed:feats.length,
+        pctile:1,streams:activeStreams.length,filtered:0,catchEff:0.65,portals:0};
+    }
+  }
+  if(!activeRegionSlug)activeCandidates=generateCandidates(activeStreams,p.p,p.c,seed);
 
   // Draw streams from the full network. Rivers with a candidate site (hasSite=1) render
   // full-opacity on the styled layers below; every other waterway (hasSite=0) renders on

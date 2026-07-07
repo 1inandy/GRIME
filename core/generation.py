@@ -335,15 +335,15 @@ def get_impervious_pct(catchment_polygon, bbox):
 
 # ── 2.6 Road Density (Census TIGER) ─────────────────────────────────
 
-def get_road_density(catchment_polygon, catchment_area_km2, bbox):
+def get_road_density(catchment_polygon, catchment_area_km2, bbox, utm_crs=UTM_CRS):
     """
     Compute road density (km/km²) from OSM drive-network edges clipped to the
     candidate's catchment polygon.
     The (large) bbox drive network is fetched once and shared via
     ``core.osm_drive_graph`` — re-pulling it per candidate was the single slowest
-    call in build_all_features.
+    call in build_all_features. ``utm_crs`` must match the catchment polygon's CRS.
     """
-    info = osm_drive_graph(bbox)
+    info = osm_drive_graph(bbox, utm_crs=utm_crs)
     if info is None:
         return 5.0  # Durham average fallback
     edges = info.get("edges_utm")

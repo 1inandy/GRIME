@@ -74,6 +74,13 @@ def cached_get_json(url, params=None, kind="get", retries=4, timeout=45,
             if r.status_code != 200:
                 return None
             data = r.json()
+            # ArcGIS/EPA services wrap failures in an HTTP-200 {"error": ...}
+            # body — treat those as retryable and NEVER cache them, or one
+            # transient error poisons the key for every later run.
+            if isinstance(data, dict) and set(data.keys()) == {"error"}:
+                last = f"200-wrapped error: {str(data['error'])[:80]}"
+                time.sleep(backoff * (2 ** attempt))
+                continue
             cp.write_text(json.dumps(data))
             return data
         except Exception as e:  # network / JSON error
