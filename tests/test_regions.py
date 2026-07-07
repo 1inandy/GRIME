@@ -188,6 +188,51 @@ def test_api_region_candidates_and_404(fixture_region_api):
         assert getattr(resp, "status_code", 200) == 404
 
 
+def test_write_zero_region_is_honest_not_a_failure(tmp_path, monkeypatch):
+    """A town with no deployable site writes a valid empty geojson + an ok index
+    entry carrying a reason — never a gate loosened or a site fabricated."""
+    import scripts.run_regions as rr
+    monkeypatch.setattr(rr, "OUT_DIR", tmp_path)
+    region = {"slug": "emptyville", "name": "Emptyville, NC", "state": "NC",
+              "bbox": [-79.0, 35.9, -78.98, 35.92], "center": [-78.99, 35.91],
+              "utm_epsg": 32617, "tier": "town",
+              "width_curve": {"code": "APL"}, "flood_method": "none",
+              "notes": "coastal plain"}
+    entry = rr.write_zero_region(region, 3, "all 3 candidate sites removed by the hard gates")
+    assert entry["status"] == "ok" and entry["site_count"] == 0
+    assert "hard gates" in entry["zero_reason"]
+    doc = json.load(open(tmp_path / "emptyville.geojson"))
+    assert doc["features"] == []                       # no fabricated sites
+    assert doc["provenance"]["zero_reason"] == entry["zero_reason"]
+    assert doc["provenance"]["candidates_pre_gate"] == 3
+
+
+def test_supervisor_resume_skips_built_regions(tmp_path, monkeypatch):
+    """The supervisor must not re-run a region whose output already exists."""
+    import types
+    import scripts.run_regions as rr
+    monkeypatch.setattr(rr, "OUT_DIR", tmp_path)
+    (tmp_path / "done.geojson").write_text("{}")
+    cfg = {"defaults": {}, "regions": [
+        {"slug": "done", "name": "Done, NC", "state": "NC", "bbox": [0, 0, 1, 1],
+         "center": [0.5, 0.5], "tier": "town"},
+        {"slug": "todo", "name": "Todo, NC", "state": "NC", "bbox": [0, 0, 1, 1],
+         "center": [0.5, 0.5], "tier": "town"}]}
+    monkeypatch.setattr(rr, "CONFIG", tmp_path / "cfg.json")
+    (tmp_path / "cfg.json").write_text(json.dumps(cfg))
+    ran = []
+    monkeypatch.setattr(rr.subprocess if hasattr(rr, "subprocess") else __import__("subprocess"),
+                        "run", lambda *a, **k: types.SimpleNamespace(returncode=0))
+    # supervise with a stub run_one by intercepting subprocess.run
+    import subprocess as _sp
+    monkeypatch.setattr(_sp, "run", lambda cmd, **k: (ran.append(cmd[-1]), types.SimpleNamespace(returncode=0))[1])
+    monkeypatch.setattr(rr, "load_index", lambda: {"generated": None, "regions": []})
+    monkeypatch.setattr(rr, "upsert", lambda idx, e: None)
+    args = types.SimpleNamespace(tier="town", limit=None, timeout=60, pace=0, jitter=0, no_retry=True)
+    rr.supervise(args)
+    assert "todo" in ran and "done" not in ran      # resume skipped the built region
+
+
 def test_api_regions_empty_when_unbuilt(tmp_path, monkeypatch):
     import asyncio
     import api.main as api
