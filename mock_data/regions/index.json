@@ -1,6 +1,412 @@
 {
- "generated": "2026-07-07 02:21 UTC",
+ "generated": "2026-07-07 03:29 UTC",
  "regions": [
+  {
+   "bbox": [
+    -80.9681,
+    35.1521,
+    -80.7181,
+    35.3021
+   ],
+   "candidates_pre_gate": 104,
+   "center": [
+    -80.8431,
+    35.2271
+   ],
+   "gate_removed": 0,
+   "name": "Charlotte, NC",
+   "params_varying": 20,
+   "runtime_min": 0.5,
+   "scored_date": "2026-07-07",
+   "site_count": 104,
+   "slug": "charlotte",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 58.9647,
+    "lat": 35.2442,
+    "lon": -80.8153,
+    "rank": 1,
+    "segment_id": 22
+   }
+  },
+  {
+   "bbox": [
+    -78.7636,
+    35.6971,
+    -78.5136,
+    35.8471
+   ],
+   "candidates_pre_gate": 117,
+   "center": [
+    -78.6386,
+    35.7721
+   ],
+   "gate_removed": 0,
+   "name": "Raleigh, NC",
+   "params_varying": 21,
+   "runtime_min": 0.4,
+   "scored_date": "2026-07-07",
+   "site_count": 117,
+   "slug": "raleigh",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 59.6744,
+    "lat": 35.7635,
+    "lon": -78.6423,
+    "rank": 1,
+    "segment_id": 39
+   }
+  },
+  {
+   "bbox": [
+    -79.917,
+    35.9976,
+    -79.667,
+    36.1476
+   ],
+   "candidates_pre_gate": 110,
+   "center": [
+    -79.792,
+    36.0726
+   ],
+   "gate_removed": 0,
+   "name": "Greensboro, NC",
+   "params_varying": 20,
+   "runtime_min": 0.4,
+   "scored_date": "2026-07-07",
+   "site_count": 110,
+   "slug": "greensboro",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 56.1314,
+    "lat": 36.0503,
+    "lon": -79.7947,
+    "rank": 1,
+    "segment_id": 57
+   }
+  },
+  {
+   "bbox": [
+    -79.05,
+    35.9,
+    -78.75,
+    36.05
+   ],
+   "candidates_pre_gate": 147,
+   "center": [
+    -78.8986,
+    35.994
+   ],
+   "gate_removed": 0,
+   "name": "Durham, NC",
+   "params_varying": 21,
+   "runtime_min": 0.4,
+   "scored_date": "2026-07-07",
+   "site_count": 147,
+   "slug": "durham",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 57.5994,
+    "lat": 36.0153,
+    "lon": -78.8865,
+    "rank": 1,
+    "segment_id": 23
+   }
+  },
+  {
+   "bbox": [
+    -80.3692,
+    36.0249,
+    -80.1192,
+    36.1749
+   ],
+   "candidates_pre_gate": 114,
+   "center": [
+    -80.2442,
+    36.0999
+   ],
+   "gate_removed": 0,
+   "name": "Winston-Salem, NC",
+   "params_varying": 20,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 114,
+   "slug": "winston-salem",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 57.4648,
+    "lat": 36.0659,
+    "lon": -80.2392,
+    "rank": 1,
+    "segment_id": 55
+   }
+  },
+  {
+   "bbox": [
+    -79.0034,
+    34.9777,
+    -78.7534,
+    35.1277
+   ],
+   "candidates_pre_gate": 118,
+   "center": [
+    -78.8784,
+    35.0527
+   ],
+   "gate_removed": 0,
+   "name": "Fayetteville, NC",
+   "params_varying": 19,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 118,
+   "slug": "fayetteville",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 53.471,
+    "lat": 35.0594,
+    "lon": -78.8864,
+    "rank": 1,
+    "segment_id": 28
+   }
+  },
+  {
+   "bbox": [
+    -78.9061,
+    35.7165,
+    -78.6561,
+    35.8665
+   ],
+   "candidates_pre_gate": 119,
+   "center": [
+    -78.7811,
+    35.7915
+   ],
+   "gate_removed": 0,
+   "name": "Cary, NC",
+   "params_varying": 20,
+   "runtime_min": 0.4,
+   "scored_date": "2026-07-07",
+   "site_count": 119,
+   "slug": "cary",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 57.8446,
+    "lat": 35.7764,
+    "lon": -78.6952,
+    "rank": 1,
+    "segment_id": 57
+   }
+  },
+  {
+   "bbox": [
+    -78.071,
+    34.1606,
+    -77.821,
+    34.3106
+   ],
+   "candidates_pre_gate": 66,
+   "center": [
+    -77.946,
+    34.2356
+   ],
+   "gate_removed": 0,
+   "name": "Wilmington, NC",
+   "params_varying": 18,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 66,
+   "slug": "wilmington",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 55.2848,
+    "lat": 34.2548,
+    "lon": -77.8732,
+    "rank": 1,
+    "segment_id": 18
+   }
+  },
+  {
+   "bbox": [
+    -80.1303,
+    35.8807,
+    -79.8803,
+    36.0307
+   ],
+   "candidates_pre_gate": 139,
+   "center": [
+    -80.0053,
+    35.9557
+   ],
+   "gate_removed": 0,
+   "name": "High Point, NC",
+   "params_varying": 21,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 139,
+   "slug": "high-point",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 56.6023,
+    "lat": 35.9748,
+    "lon": -79.9926,
+    "rank": 1,
+    "segment_id": 34
+   }
+  },
+  {
+   "bbox": [
+    -82.679,
+    35.5259,
+    -82.429,
+    35.6759
+   ],
+   "candidates_pre_gate": 130,
+   "center": [
+    -82.554,
+    35.6009
+   ],
+   "gate_removed": 0,
+   "name": "Asheville, NC",
+   "params_varying": 20,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 130,
+   "slug": "asheville",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 54.9047,
+    "lat": 35.5612,
+    "lon": -82.5285,
+    "rank": 1,
+    "segment_id": 58
+   }
+  },
+  {
+   "bbox": [
+    -77.4913,
+    35.5377,
+    -77.2413,
+    35.6877
+   ],
+   "candidates_pre_gate": 86,
+   "center": [
+    -77.3663,
+    35.6127
+   ],
+   "gate_removed": 0,
+   "name": "Greenville, NC",
+   "params_varying": 17,
+   "runtime_min": 0.2,
+   "scored_date": "2026-07-07",
+   "site_count": 86,
+   "slug": "greenville",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 67.7363,
+    "lat": 35.5949,
+    "lon": -77.3759,
+    "rank": 1,
+    "segment_id": 38
+   }
+  },
+  {
+   "bbox": [
+    -80.7066,
+    35.3339,
+    -80.4566,
+    35.4839
+   ],
+   "candidates_pre_gate": 119,
+   "center": [
+    -80.5816,
+    35.4089
+   ],
+   "gate_removed": 0,
+   "name": "Concord, NC",
+   "params_varying": 20,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 119,
+   "slug": "concord",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 54.6334,
+    "lat": 35.4162,
+    "lon": -80.6055,
+    "rank": 1,
+    "segment_id": 33
+   }
+  },
+  {
+   "bbox": [
+    -81.3123,
+    35.1871,
+    -81.0623,
+    35.3371
+   ],
+   "candidates_pre_gate": 125,
+   "center": [
+    -81.1873,
+    35.2621
+   ],
+   "gate_removed": 0,
+   "name": "Gastonia, NC",
+   "params_varying": 20,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 125,
+   "slug": "gastonia",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 60.8778,
+    "lat": 35.2489,
+    "lon": -81.1889,
+    "rank": 1,
+    "segment_id": 56
+   }
+  },
+  {
+   "bbox": [
+    -77.5552,
+    34.679,
+    -77.3052,
+    34.829
+   ],
+   "candidates_pre_gate": 79,
+   "center": [
+    -77.4302,
+    34.754
+   ],
+   "gate_removed": 0,
+   "name": "Jacksonville, NC",
+   "params_varying": 17,
+   "runtime_min": 0.5,
+   "scored_date": "2026-07-07",
+   "site_count": 79,
+   "slug": "jacksonville",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 51.1155,
+    "lat": 34.7561,
+    "lon": -77.4169,
+    "rank": 1,
+    "segment_id": 31
+   }
+  },
   {
    "bbox": [
     -79.1808,
@@ -15,19 +421,251 @@
    ],
    "gate_removed": 0,
    "name": "Chapel Hill, NC",
-   "params_varying": 18,
-   "runtime_min": 2.5,
+   "params_varying": 19,
+   "runtime_min": 0.3,
    "scored_date": "2026-07-07",
    "site_count": 119,
    "slug": "chapel-hill",
    "state": "NC",
    "status": "ok",
    "top_site": {
-    "composite": 66.9793,
+    "composite": 61.4466,
     "lat": 35.9568,
     "lon": -78.9681,
     "rank": 1,
     "segment_id": 9
+   }
+  },
+  {
+   "bbox": [
+    -77.9155,
+    35.8632,
+    -77.6655,
+    36.0132
+   ],
+   "candidates_pre_gate": 114,
+   "center": [
+    -77.7905,
+    35.9382
+   ],
+   "gate_removed": 0,
+   "name": "Rocky Mount, NC",
+   "params_varying": 18,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 114,
+   "slug": "rocky-mount",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 56.5225,
+    "lat": 35.9598,
+    "lon": -77.8066,
+    "rank": 1,
+    "segment_id": 27
+   }
+  },
+  {
+   "bbox": [
+    -80.9678,
+    35.3357,
+    -80.7178,
+    35.4857
+   ],
+   "candidates_pre_gate": 104,
+   "center": [
+    -80.8428,
+    35.4107
+   ],
+   "gate_removed": 0,
+   "name": "Huntersville, NC",
+   "params_varying": 20,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 104,
+   "slug": "huntersville",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 57.2792,
+    "lat": 35.3839,
+    "lon": -80.7244,
+    "rank": 1,
+    "segment_id": 58
+   }
+  },
+  {
+   "bbox": [
+    -79.5628,
+    36.0207,
+    -79.3128,
+    36.1707
+   ],
+   "candidates_pre_gate": 128,
+   "center": [
+    -79.4378,
+    36.0957
+   ],
+   "gate_removed": 0,
+   "name": "Burlington, NC",
+   "params_varying": 20,
+   "runtime_min": 0.3,
+   "scored_date": "2026-07-07",
+   "site_count": 128,
+   "slug": "burlington",
+   "state": "NC",
+   "status": "ok",
+   "top_site": {
+    "composite": 60.7448,
+    "lat": 36.0826,
+    "lon": -79.4433,
+    "rank": 1,
+    "segment_id": 55
+   }
+  },
+  {
+   "bbox": [
+    -74.131,
+    40.6393,
+    -73.881,
+    40.7893
+   ],
+   "candidates_pre_gate": 60,
+   "center": [
+    -74.006,
+    40.7143
+   ],
+   "gate_removed": 0,
+   "name": "New York City",
+   "params_varying": 19,
+   "runtime_min": 0.4,
+   "scored_date": "2026-07-07",
+   "site_count": 60,
+   "slug": "new-york-city",
+   "state": "NY",
+   "status": "ok",
+   "top_site": {
+    "composite": 55.1942,
+    "lat": 40.7007,
+    "lon": -73.963,
+    "rank": 1,
+    "segment_id": 37
+   }
+  },
+  {
+   "bbox": [
+    -87.775,
+    41.775,
+    -87.525,
+    41.925
+   ],
+   "candidates_pre_gate": 49,
+   "center": [
+    -87.65,
+    41.85
+   ],
+   "gate_removed": 0,
+   "name": "Chicago",
+   "params_varying": 20,
+   "runtime_min": 0.5,
+   "scored_date": "2026-07-07",
+   "site_count": 49,
+   "slug": "chicago",
+   "state": "IL",
+   "status": "ok",
+   "top_site": {
+    "composite": 53.2238,
+    "lat": 41.8741,
+    "lon": -87.6668,
+    "rank": 1,
+    "segment_id": 13
+   }
+  },
+  {
+   "bbox": [
+    -122.5444,
+    37.6999,
+    -122.2944,
+    37.8499
+   ],
+   "candidates_pre_gate": 76,
+   "center": [
+    -122.4194,
+    37.7749
+   ],
+   "gate_removed": 0,
+   "name": "San Francisco",
+   "params_varying": 20,
+   "runtime_min": 0.7,
+   "scored_date": "2026-07-07",
+   "site_count": 76,
+   "slug": "san-francisco",
+   "state": "CA",
+   "status": "ok",
+   "top_site": {
+    "composite": 59.5938,
+    "lat": 37.7697,
+    "lon": -122.405,
+    "rank": 1,
+    "segment_id": 30
+   }
+  },
+  {
+   "bbox": [
+    -118.3687,
+    33.9772,
+    -118.1187,
+    34.1272
+   ],
+   "candidates_pre_gate": 161,
+   "center": [
+    -118.2437,
+    34.0522
+   ],
+   "gate_removed": 0,
+   "name": "Los Angeles",
+   "params_varying": 19,
+   "runtime_min": 0.6,
+   "scored_date": "2026-07-07",
+   "site_count": 161,
+   "slug": "los-angeles",
+   "state": "CA",
+   "status": "ok",
+   "top_site": {
+    "composite": 56.0403,
+    "lat": 34.0105,
+    "lon": -118.2194,
+    "rank": 1,
+    "segment_id": 63
+   }
+  },
+  {
+   "bbox": [
+    -95.4883,
+    29.6883,
+    -95.2383,
+    29.8383
+   ],
+   "candidates_pre_gate": 105,
+   "center": [
+    -95.3633,
+    29.7633
+   ],
+   "gate_removed": 0,
+   "name": "Houston",
+   "params_varying": 18,
+   "runtime_min": 0.5,
+   "scored_date": "2026-07-07",
+   "site_count": 105,
+   "slug": "houston",
+   "state": "TX",
+   "status": "ok",
+   "top_site": {
+    "composite": 58.3332,
+    "lat": 29.7713,
+    "lon": -95.3642,
+    "rank": 1,
+    "segment_id": 35
    }
   }
  ]
