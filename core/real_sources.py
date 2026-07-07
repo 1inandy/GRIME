@@ -347,9 +347,9 @@ def cso_points_nc(bbox):
     w, s, e, n = bbox
     out = []
     for r in rows:
-        st = (r.get("STATE") or r.get("FAC_STATE") or "").strip().upper()
-        lat = r.get("LATITUDE") or r.get("FAC_LAT")
-        lon = r.get("LONGITUDE") or r.get("FAC_LONG")
+        # ECHO's ALL_CSO_DOWNLOADS.csv names the coordinates FACILITY_LAT/LON
+        lat = r.get("FACILITY_LAT") or r.get("LATITUDE") or r.get("FAC_LAT")
+        lon = r.get("FACILITY_LON") or r.get("LONGITUDE") or r.get("FAC_LONG")
         try:
             lat = float(lat)
             lon = float(lon)
