@@ -162,7 +162,7 @@ let map,places=[],activeCityIdx=-1,activeCandidates=[],activeStreams=[],selected
 // falls inside a scored region's bbox, its REAL scored sites are shown instead
 // of client-side generation. Cities outside every region keep the exact
 // existing behavior. activeRegionSlug is non-null only while such a city is open.
-let regionsIndex=null,regionsIndexTried=false,regionCandCache={},activeRegionSlug=null;
+let regionsIndex=null,regionsIndexTried=false,regionCandCache={},activeRegionSlug=null,regionLatBuckets=null;
 // Remember city params so we can re-score after pan-autoload merges in new streams
 let activePop=0,activeCC='',activeSeed=0;
 // Pan-autoload state
@@ -200,6 +200,9 @@ async function loadPlaces(){
 }
 
 // ═══ PRECOMPUTED REGIONS (real pipeline output) ═════════════════
+// A 1°-latitude bucket index (regionLatBuckets, declared with the region state
+// above) keeps region lookup ~O(1) with hundreds of regions: openCity only tests
+// the handful of regions in the point's lat band.
 async function loadRegionsIndex(){
   if(regionsIndexTried)return regionsIndex;
   regionsIndexTried=true;
@@ -208,16 +211,29 @@ async function loadRegionsIndex(){
       const r=await fetch(p);
       if(!r.ok)continue;
       const j=await r.json();
-      if(j&&Array.isArray(j.regions)){regionsIndex=j.regions.filter(x=>x&&typeof x.status==='string'&&x.status.startsWith('ok'));return regionsIndex}
+      if(j&&Array.isArray(j.regions)){
+        // Only regions that were scored AND have at least one site are lookup
+        // targets. Zero-candidate towns (a correct result — no deployable urban
+        // waterway) are treated exactly like unscored cities.
+        regionsIndex=j.regions.filter(x=>x&&typeof x.status==='string'&&x.status.startsWith('ok')&&(x.site_count>0));
+        regionLatBuckets={};
+        for(const r of regionsIndex){
+          const b=r.bbox;
+          for(let lb=Math.floor(b[1]);lb<=Math.floor(b[3]);lb++)(regionLatBuckets[lb]=regionLatBuckets[lb]||[]).push(r);
+        }
+        return regionsIndex;
+      }
     }catch(e){}
   }
-  regionsIndex=[];
+  regionsIndex=[];regionLatBuckets={};
   return regionsIndex;
 }
 
 function regionForPoint(lon,lat){
-  if(!regionsIndex)return null;
-  for(const r of regionsIndex){
+  if(!regionLatBuckets)return null;
+  const bucket=regionLatBuckets[Math.floor(lat)];
+  if(!bucket)return null;
+  for(const r of bucket){
     const b=r.bbox;
     if(lon>=b[0]&&lon<=b[2]&&lat>=b[1]&&lat<=b[3])return r;
   }
