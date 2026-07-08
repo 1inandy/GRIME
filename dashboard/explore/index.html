@@ -860,11 +860,16 @@ function clampBbox(s,w,n,e){
   return{s,w,n,e};
 }
 
+let _pillWatchdog=null;
 function setLoadingPill(on,text){
   const el=document.getElementById('load-pill');
   if(!el)return;
   if(text)document.getElementById('load-pill-text').textContent=text;
   el.classList.toggle('vis',on);
+  // Watchdog: a hung or rate-limited Overpass fetch must never leave the pill
+  // spinning forever. Force-hide after 18s; cleared whenever the pill is toggled.
+  if(_pillWatchdog){clearTimeout(_pillWatchdog);_pillWatchdog=null;}
+  if(on)_pillWatchdog=setTimeout(()=>{el.classList.remove('vis');_pillWatchdog=null;},18000);
 }
 
 function schedulePanFetch(){
@@ -1272,11 +1277,22 @@ function addMapLayers(){
 // Header info line — reflects however many site-bearing rivers are currently drawn.
 function updateCityInfo(name){
   const drawn=siteDrawStreams();
-  const nSurface=drawn.filter(s=>!s.underground).length;
+  let nSurface=drawn.filter(s=>!s.underground).length;
   const nUnderground=drawn.filter(s=>s.underground).length;
   const nPortals=((activeStreams&&activeStreams._portals)||[]).length;
+  // Region fast path draws the OSM river lines in the background, so `drawn` can be
+  // empty for a while (or if Overpass is slow/rate-limited). Fall back to the count of
+  // distinct NAMED waterways among the scored sites so the header never shows a
+  // misleading "0 surface rivers"; drop the clause entirely if there genuinely isn't
+  // a named surface waterway yet.
+  if(nSurface===0){
+    const names=new Set();
+    for(const c of activeCandidates){const s=(c.stream||'');if(s&&!/^Segment /.test(s))names.add(s);}
+    nSurface=names.size;
+  }
+  const surfaceInfo=nSurface>0?` · ${nSurface} surface rivers`:'';
   const portalInfo=nUnderground>0?` · ${nUnderground} culverts · ${nPortals} portals`:'';
-  document.getElementById('info').textContent=`${name||'Unknown'} · ${activeCandidates.length} nets · ${nSurface} surface rivers${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%`;
+  document.getElementById('info').textContent=`${name||'Unknown'} · ${activeCandidates.length} nets${surfaceInfo}${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%`;
 }
 
 // Frame the map to the current candidate set (used by the region fast path so
@@ -1388,7 +1404,11 @@ async function openCity(idx){
         refreshMapSources();                  // redraw streams (now site-bearing) + candidates
         updateCityInfo(p.n);
         renderCityView();
-      }).catch(()=>{});
+      }).catch(()=>{}).finally(()=>{
+        // Whether the background river fetch succeeded, failed, or timed out, stop the
+        // "Loading more streams…" pill — the real scored sites are already on the map.
+        if(myToken===openCityToken)setLoadingPill(false);
+      });
       return;
     }
     activeRegionSlug=null;                     // region unavailable → unscored path below
