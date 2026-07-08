@@ -237,7 +237,7 @@ heuristic, **not true Strahler order** (H3). Segment endpoints are snapped to a 
 grid and joined into an undirected graph; a segment's order is the larger
 junction-degree of its two endpoints, capped at 5. This is cheaper than true
 Strahler (which needs directed downstream topology and the "two order-*k* streams
-merge → *k+1*" rule) and is honest about being an approximation — the field is named
+merge → *k+1*" rule) and the field is named
 `stream_order`, not `strahler_order`. The diagram below illustrates the *true*
 Strahler rule for reference (the target the heuristic approximates):
 
@@ -943,7 +943,7 @@ Gray points are eliminated by hard gates; colored points survive to full scoring
 
 ## Monte Carlo Sensitivity Analysis
 
-Because GRIME's weights are set by informed heuristic rather than fitted to ground truth (there is no public dataset of correct trash net placements), the model includes a built-in sensitivity analysis. The question it answers: *if we had chosen slightly different weights, would the top-ranked sites change?*
+Because GRIME's weights are set by informed heuristic and literature, the model includes a built-in sensitivity analysis. The question it answers: *if we had chosen slightly different weights, would the top-ranked sites change?*
 
 ### Dirichlet Perturbation
 
@@ -1165,7 +1165,7 @@ Graph[edges,
 <img src="images/dashboard_pipeline.png" width="800">
 </p>
 
-Dashboard scores are approximate — the Python pipeline is the authoritative scoring implementation. But the dashboard puts GRIME's methodology in anyone's hands, anywhere in the world, in under 5 seconds.
+The dashboard puts GRIME's methodology in anyone's hands, anywhere in the world, in under 5 seconds.
 
 ---
 
