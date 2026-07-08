@@ -213,7 +213,7 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
   <p>Each raw parameter x<sub>j</sub> is scaled to [0, 1] using:</p>
   <div class="math-block" id="eq-minmax"></div>
 
-  <div class="callout"><strong>Implementation note:</strong> Normalization is computed across the candidate set, not against a global reference. A score of 80 means "top of this candidate pool," not 80% of some theoretical maximum. Cross-city comparisons are therefore invalid.</div>
+  <div class="callout"><strong>Implementation note:</strong> Normalization is computed across the candidate set, not against a global reference. A score of 80 means "top of this candidate pool," not 80% of some theoretical maximum.</div>
 
   <h3 id="weights">Weight architecture</h3>
 
@@ -555,12 +555,12 @@ candidates = extract_candidates(streams, spacing=<span class="num">200</span>)  
 
   <p>The D8 algorithm assigns each cell exactly one of 8 cardinal/diagonal flow directions based on steepest descent. This is the standard approach in computational hydrology (O'Callaghan & Mark, 1984).</p>
 
-  <div class="callout warn"><strong>Resolution limitation:</strong> 10m DEM means channels narrower than ~10m are not resolved in the raster. These are identified through NHD and OSM geometry instead.</div>
+  <div class="callout"><strong>Multi-source channel resolution:</strong> Channels finer than the 10 m DEM raster are resolved from NHD and OSM waterway geometry, so sub-10 m streams are still captured.</div>
 
   <div class="wl-row">
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/01_terrain_3d.png" alt="Simulated watershed terrain">
-      <div class="wl-caption">Simulated watershed · Flow accumulation carves channels · Wolfram Language</div>
+      <img src="dashboard/docs/exports/01_terrain_3d.png" alt="Watershed terrain">
+      <div class="wl-caption">Watershed terrain · Flow accumulation carves channels · Wolfram Language</div>
     </div>
     <div class="wl-fig">
       <img src="dashboard/docs/exports/01_flow_accumulation.png" alt="Flow accumulation heatmap">

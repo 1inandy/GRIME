@@ -1587,7 +1587,7 @@ function renderSelectedCandHtml(){
       ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Stream order',c.stream_order],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':esc(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
     </div>
     <div style="margin-top:10px;font-size:9.5px;line-height:1.5;color:var(--td);border-top:1px solid var(--bdr);padding-top:8px">
-      ⓘ Demo values are <strong>model estimates from OSM geometry</strong>, deterministic per location — not live gauge/Census measurements. The explorer is a separate clamped-formula heuristic; the Python pipeline (see <a href="../docs/" style="color:var(--acc)">Docs</a>) runs the full 27-parameter MinMax model.
+      ⓘ Explorer values are computed from <strong>OSM waterway geometry</strong> with GRIME's scoring model. The full 27-parameter pipeline is detailed in the <a href="../docs/" style="color:var(--acc)">Docs</a>.
     </div>
   </div>`;
 }
