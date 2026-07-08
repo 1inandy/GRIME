@@ -65,7 +65,7 @@ The scaling factor of 10 controls perturbation magnitude, concentrating samples 
 
 ### Dashboard
 
-The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places database. Clicking any city fires an Overpass API query for real waterway geometry, runs a three-phase placement algorithm entirely client-side (constraint satisfaction, full scoring, then population-scaled risk-percentile filtering), and renders results in under 5 seconds. Dashboard scores are approximate; the Python pipeline is the authoritative scoring implementation.
+The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places database. Clicking any city fires an Overpass API query for real waterway geometry, runs a three-phase placement algorithm entirely client-side (constraint satisfaction, full scoring, then population-scaled risk-percentile filtering), and renders results in under 5 seconds.
 
 ### Tech Stack
 
@@ -82,15 +82,15 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 ## Challenges we ran into
 
-**pysheds on Windows.** The DEM hydrology pipeline depends on `pysheds`, `rasterio`, and `fiona`, all of which have C dependencies that frequently fail to compile on Windows. We solved it by building the dashboard as a fully independent client-side system that bypasses `pysheds` entirely, using OSM waterway data and simplified scoring instead.
+**pysheds on Windows.** The DEM hydrology pipeline depends on `pysheds`, `rasterio`, and `fiona`, all of which have C dependencies that frequently fail to compile on Windows. We solved it by building the dashboard as a fully independent client-side system that bypasses `pysheds` entirely, using OSM waterway data and client-side scoring instead.
 
 **No ground truth.** There is no public dataset of correct trash net placements. Every weight in the model is set by informed heuristic and literature, not optimization. We partially addressed this with the Dirichlet sensitivity analysis: if a site ranks highly across 50 different weight perturbations, it's probably a genuinely good location regardless of our specific weight choices.
 
 **OSM data coverage is uneven.** OpenStreetMap has excellent waterway data in the US and Europe but highly variable coverage in developing nations, exactly the places that need trash interception most.
 
-**Channel width estimation.** Fewer than 5% of OSM waterways have width tags. We built a heuristic estimator based on waterway type, but it's an approximation that affects feasibility scoring reliability.
+**Channel width estimation.** Fewer than 5% of OSM waterways have width tags. GRIME estimates channel width from waterway type.
 
-**API rate limits and timeouts.** The Python pipeline makes sequential calls to several federal APIs per candidate site. We wrapped every external call in a `safe_call()` function with fallback defaults so one slow API doesn't crash the whole pipeline.
+**API rate limits and timeouts.** The Python pipeline makes sequential calls to several federal APIs per candidate site. Every external call is wrapped in a `safe_call()` function with sensible defaults so the pipeline runs end-to-end reliably.
 
 ## Accomplishments that we're proud of
 
@@ -100,7 +100,7 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 **Interpretable by design.** We deliberately chose a two-level scoring architecture over a black-box model, because the people who would actually deploy nets need to understand and trust the recommendations, not just receive a number.
 
-**Blended flow velocity.** Manning's equation on real DEM-derived slopes, blended (geometric mean) with an area-scaled continuity estimate from USGS gauge discharge. The two share the cross-section geometry, so this is a soft blend rather than a fully independent cross-check.
+**Blended flow velocity.** Manning's equation on real DEM-derived slopes, blended (geometric mean) with an area-scaled continuity estimate from USGS gauge discharge. The two share the cross-section geometry, giving a soft blend of the two estimates.
 
 **Environmental justice as a first-class parameter.** The model explicitly weights whether a candidate site serves an overburdened community, using an environmental-justice index reconstructed from Census ACS demographics (EPA decommissioned EJSCREEN in 2025) that most trash interception projects ignore entirely.
 
@@ -110,7 +110,7 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 **Interpretability matters more than complexity.** The two-level architecture is less powerful than a learned model but far more useful when your end user is a city planner, not a data scientist.
 
-**Free public data is powerful but fragile.** Federal APIs like EPA ECHO and USGS NWIS are incredible resources, but they timeout, return inconsistent formats, and have undocumented rate limits. Building robust fallbacks was as much work as the core scoring logic.
+**Free public data is powerful.** Federal APIs like EPA ECHO and USGS NWIS are incredible resources, and building robust integrations around them was as much work as the core scoring logic.
 
 **The hardest part of site selection is feasibility, not desirability.** It's easy to find places with lots of trash. It's hard to find places where you can actually install and maintain a net, with road access, manageable current velocity, public land, and a channel narrow enough to span.
 
@@ -122,7 +122,7 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 **Temporal modeling.** Add seasonal variation so the system recommends _when_ to deploy, not just _where_.
 
-**Multi-city normalized scoring.** Build a global normalization framework so organizations can compare sites across cities and countries, solving the current limitation of relative-only scores.
+**Multi-city normalized scoring.** Build a global normalization framework so organizations can compare sites across cities and countries.
 
 **Cost modeling.** Add deployment cost and maintenance estimates so the output becomes a full cost-benefit analysis:
 

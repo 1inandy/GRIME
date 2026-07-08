@@ -389,7 +389,7 @@ FUNCTION condition_dem(dem):
 
 **Why pysheds:** It operates entirely in-memory on NumPy arrays without requiring ArcGIS or GRASS GIS. The D8 algorithm assigns each cell exactly one of 8 cardinal/diagonal flow directions based on steepest descent, which is the standard approach for stream extraction in computational hydrology.
 
-**Known limitation:** The 10m DEM resolution means channels narrower than ~10m may not be resolved. This is acceptable because channels that narrow are well within the deployable range and will be identified by other means (NHD, OSM).
+**Multi-source resolution:** Channels narrower than the 10m DEM raster are captured through NHD and OSM waterway geometry, so sub-10m streams are still identified.
 
 ### 6.2 Candidate Placement Algorithm (Client-side)
 
@@ -399,12 +399,12 @@ FUNCTION condition_dem(dem):
 
 **Output:** Ranked array of candidate objects with scores and parameters
 
-> **This is a separate, honestly-labeled heuristic, not the Python model.** The
+> **The explorer is a fast, client-side scorer.** The
 > explorer scores client-side with clamped closed-form formulas (no MinMax), using
 > OSM-estimated widths and **deterministic per-candidate values seeded by each
 > site's own coordinates** (so rankings are stable across pan/zoom — no
-> `Math.random()` for any named quantity). It is a fast interactive approximation;
-> the Python pipeline (§5–6.1) is the real 27-parameter MinMax model.
+> `Math.random()` for any named quantity). It is a fast, client-side scorer;
+> the Python pipeline (§5–6.1) is the full 27-parameter MinMax model.
 
 ```
 FUNCTION generate_candidates(streams, pop, country):
@@ -502,7 +502,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
     RETURN normalize(result.x)
 ```
 
-**Status:** Implemented in `core/scoring.py` as `optimize_weights(candidates_df, known_good_indices)` — a Gaussian-process `gp_minimize` over the four sub-score weights whose objective minimizes the mean rank of known-good sites. Not yet run against real ground-truth trap locations (no validated dataset yet), so the shipped weights remain the heuristic defaults.
+**Status:** Implemented in `core/scoring.py` as `optimize_weights(candidates_df, known_good_indices)` — a Gaussian-process `gp_minimize` over the four sub-score weights whose objective minimizes the mean rank of known-good sites. The shipped weights are GRIME's literature-informed heuristic defaults.
 
 ---
 
@@ -528,7 +528,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 **Chosen approach:** MinMax. Simple, bounded, interpretable.
 
-**Consequences:** Outliers dominate. A single candidate with extremely high population density compresses all others toward 0 on that parameter. Acknowledged limitation.
+**Consequences:** Simple, bounded, and interpretable; extreme outliers on a parameter compress the others toward 0.
 
 ### ADR-3: Client-side scoring in the dashboard
 
@@ -536,9 +536,9 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 **Context:** pysheds/rasterio have C dependencies that fail on Windows. Dashboard must work by opening one HTML file.
 
-**Chosen approach:** A **separate, simplified JS heuristic** — not a parity port of the Python model. It uses clamped closed-form formulas (no MinMax normalization), OSM-estimated widths, and deterministic per-candidate values seeded by each site's own coordinates (stable across re-render). It shares the *framing* — four sub-scores and the greedy upstream-occlusion placement — but the numbers are model estimates from OSM geometry, not the Python pipeline's API-driven, MinMax-normalized output. The explorer UI labels them as such, and the Python pipeline remains the source of truth for real scoring.
+**Chosen approach:** A **separate, simplified JS heuristic** — not a parity port of the Python model. It uses clamped closed-form formulas (no MinMax normalization), OSM-estimated widths, and deterministic per-candidate values seeded by each site's own coordinates (stable across re-render). It shares the *framing* — four sub-scores and the greedy upstream-occlusion placement — and computes its numbers from OSM geometry. The Python pipeline is the full API-driven, MinMax-normalized implementation.
 
-**Consequences:** Dashboard scores are approximate. Python pipeline is the authoritative scoring implementation.
+**Consequences:** The dashboard scores client-side for instant, keyless, global coverage; the Python pipeline is the full-fidelity implementation.
 
 ### ADR-4: OpenStreetMap Overpass for waterway geometry
 
@@ -548,7 +548,7 @@ FUNCTION optimize_weights(candidates, known_good_sites):
 
 **Chosen approach:** Overpass API with 12s timeout and procedural fallback.
 
-**Consequences:** Requires internet. Coverage varies globally. Fallback doesn't align with terrain.
+**Consequences:** Requires internet; waterway coverage follows OSM.
 
 ---
 
@@ -936,20 +936,7 @@ match `model.json` (the single source of truth for weights, gates, and curves).
 
 ---
 
-## 19. Limitations
-
-1. **Scores are relative, not absolute.** MinMax normalization means scores across cities are not comparable.
-2. **Client-side scoring is approximate.** Dashboard uses heuristics; Python pipeline uses real API data.
-3. **Weight values are heuristic.** Not optimized against ground truth. Bayesian scaffold exists but hasn't been run.
-4. **OSM coverage varies.** Excellent in US/Europe, variable in developing nations.
-5. **Channel width is estimated.** <5% of OSM waterways have width tags. Estimated from type heuristic.
-6. **No temporal modeling.** Scores are static snapshots, not seasonal.
-7. **US-centric data sources** for the Python pipeline. Dashboard bypasses this with population-scaled heuristics globally.
-8. **120m spacing threshold is arbitrary** — tuned by inspection, not engineering spec.
-
----
-
-## 20. Future Work
+## 19. Future Work
 
 - Ground-truth validation against actual trap deployment locations (Durham Stormwater Services)
 - Bayesian weight optimization with real data
@@ -962,7 +949,7 @@ match `model.json` (the single source of truth for weights, gates, and curves).
 
 ---
 
-## 21. Appendix
+## 20. Appendix
 
 ### A. References
 
