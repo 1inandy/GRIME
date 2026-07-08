@@ -233,6 +233,56 @@ def test_supervisor_resume_skips_built_regions(tmp_path, monkeypatch):
     assert "todo" in ran and "done" not in ran      # resume skipped the built region
 
 
+def test_river_name_matching(tmp_path, monkeypatch):
+    """add_river_names assigns each site its nearest NAMED waterway within 300 m,
+    skips bare generics ('Creek'), and leaves far/unmatched sites null — never a
+    fabricated name."""
+    import scripts.add_river_names as arn
+
+    # a named creek running east-west at lat 36.00, plus a generic-named ditch
+    monkeypatch.setattr(arn, "named_waterways", lambda bbox: [
+        ("Ellerbe Creek", [(-78.905, 36.000), (-78.895, 36.000), (-78.885, 36.000)]),
+        ("Creek", [(-78.905, 36.050), (-78.895, 36.050)]),   # generic → must be skipped
+    ])
+    rdir = tmp_path
+    monkeypatch.setattr(arn, "REGIONS", rdir)
+    doc = {"type": "FeatureCollection",
+           "region": {"bbox": [-79.0, 35.9, -78.8, 36.1], "utm_epsg": 32617},
+           "features": [
+               # on the creek → Ellerbe Creek
+               {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-78.900, 36.0005]},
+                "properties": {"segment_id": 1}},
+               # ~2 km away from any named water → null
+               {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-78.900, 36.020]},
+                "properties": {"segment_id": 2}},
+               # near the generic 'Creek' → still null (generic skipped)
+               {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-78.900, 36.0502]},
+                "properties": {"segment_id": 3}},
+           ]}
+    (rdir / "testregion.geojson").write_text(json.dumps(doc))
+    slug, n, named, status = arn.add_names("testregion")
+    assert status == "ok" and n == 3 and named == 1
+    out = json.load(open(rdir / "testregion.geojson"))
+    props = [f["properties"]["river_name"] for f in out["features"]]
+    assert props[0] == "Ellerbe Creek"
+    assert props[1] is None            # too far → no fabricated name
+    assert props[2] is None            # generic 'Creek' skipped
+
+
+def test_river_name_fetch_failure_keeps_unnamed(tmp_path, monkeypatch):
+    import scripts.add_river_names as arn
+    monkeypatch.setattr(arn, "named_waterways", lambda bbox: None)   # Overpass failed
+    monkeypatch.setattr(arn, "REGIONS", tmp_path)
+    doc = {"type": "FeatureCollection", "region": {"bbox": [-79, 35.9, -78.8, 36.1], "utm_epsg": 32617},
+           "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-78.9, 36.0]},
+                         "properties": {"segment_id": 1}}]}
+    (tmp_path / "r.geojson").write_text(json.dumps(doc))
+    slug, n, named, status = arn.add_names("r")
+    assert named == 0 and "failed" in status
+    # file not corrupted; no river_name fabricated
+    assert "river_name" not in json.load(open(tmp_path / "r.geojson"))["features"][0]["properties"]
+
+
 def test_api_regions_empty_when_unbuilt(tmp_path, monkeypatch):
     import asyncio
     import api.main as api
