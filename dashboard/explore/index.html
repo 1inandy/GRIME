@@ -255,12 +255,18 @@ async function fetchRegionCandidates(slug){
 }
 
 // Map a real scored feature onto the exact shape the existing rendering reads.
+// `river_name` is baked into the region data (scripts/add_river_names.py: nearest
+// named OSM waterway ≤300 m), so real river names show instantly without depending
+// on the browser's Overpass fetch. The riverKey is derived from that name so sites
+// on the same river group together (river-focus) and light up when the OSM rivers
+// draw. Sites with no named waterway keep a "Segment N" label.
 function regionFeatureToCandidate(f,i){
   const p=f.properties||{};
   const fmt=(v,d)=>(v==null||isNaN(+v))?'—':(+v).toFixed(d);
+  const rn=(p.river_name||'').trim();
   return{id:i,lon:f.geometry.coordinates[0],lat:f.geometry.coordinates[1],
-    stream:'Segment '+(p.segment_id!=null?p.segment_id:i),streamWidth:+p.channel_width_m||5,
-    waterway:'stream',riverKey:'__region_'+i,upstreamFrac:0,order:p.stream_order||2,
+    stream:rn||('Segment '+(p.segment_id!=null?p.segment_id:i)),streamWidth:+p.channel_width_m||5,
+    waterway:'stream',riverKey:rn?rn.toLowerCase():'__region_'+i,upstreamFrac:0,order:p.stream_order||2,
     streamIdx:-1,coordIdx:0,wayOrder:-1,isPortal:false,
     composite:+(+p.composite_score||0).toFixed(1),gen:+(+p.generation_score||0).toFixed(1),
     flow:+(+p.flow_score||0).toFixed(1),impact:+(+p.impact_score||0).toFixed(1),
@@ -944,8 +950,10 @@ function scheduleRescore(){
     rescoreTimer=null;
     if(activeCityIdx<0)return;
     // Region cities show precomputed real sites — panning must never replace
-    // them with regenerated client-side estimates; only the streams redraw.
-    if(activeRegionSlug){refreshStreamsSource();return}
+    // them with regenerated client-side estimates. But newly-panned-in OSM rivers
+    // can name more of the real sites, so re-run the nearest-river match and
+    // redraw (sites stay fixed; only their names/river highlights update).
+    if(activeRegionSlug){nameRegionSitesByNearestRiver();refreshMapSources();renderCityView();return}
     activeCandidates=generateCandidates(activeStreams,activePop,activeCC,activeSeed);
     refreshMapSources();
     renderCityView();
@@ -1082,9 +1090,51 @@ function exitRiverFocus(){
 const cursorPointer=()=>map.getCanvas().style.cursor='pointer';
 const cursorReset=()=>map.getCanvas().style.cursor='';
 
+// Replace the loading spinner with a clear, terminal error state. Without this a
+// missing token left the "Loading GRIME…" spinner up forever (the Map constructor
+// throws on an empty token), and an invalid/rejected token left a silently blank
+// app (style 401/403 → map never fires 'load' → world view never renders).
+function showFatalError(title,detail){
+  const spin=document.getElementById('loading');
+  if(spin)spin.style.display='none';
+  let el=document.getElementById('fatal-error');
+  if(!el){
+    el=document.createElement('div');
+    el.id='fatal-error';
+    el.style.cssText='position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;text-align:center';
+    document.body.appendChild(el);
+  }
+  el.innerHTML=`<div style="max-width:400px;font-family:var(--mono)">
+    <div style="font-size:30px;margin-bottom:14px">🗺️</div>
+    <div style="font-size:16px;font-weight:600;color:var(--t);margin-bottom:10px">${esc(title)}</div>
+    <div style="font-size:12px;color:var(--td);line-height:1.7">${esc(detail)}</div></div>`;
+}
+
 async function initMap(){
-  mapboxgl.accessToken=await getMapboxToken();
-  map=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/satellite-streets-v12',center:[20,15],zoom:2,pitch:0,maxZoom:18});
+  const token=await getMapboxToken();
+  if(!token){
+    showFatalError('Map unavailable',
+      'No Mapbox token is configured. Set the MAPBOX_TOKEN environment variable (see .env.example) and reload the page.');
+    return false;
+  }
+  mapboxgl.accessToken=token;
+  try{
+    map=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/satellite-streets-v12',center:[20,15],zoom:2,pitch:0,maxZoom:18});
+  }catch(err){
+    showFatalError('Map failed to initialize',String((err&&err.message)||err));
+    return false;
+  }
+  // Surface an invalid / URL-restricted token (style 401/403) as a clear message
+  // instead of a silently blank map. Fires once; ignores transient tile errors.
+  let authFailed=false;
+  map.on('error',e=>{
+    const st=e&&e.error&&e.error.status;
+    if((st===401||st===403)&&!authFailed){
+      authFailed=true;
+      showFatalError('Map unavailable',
+        'The Mapbox token was rejected (HTTP '+st+'). Check that MAPBOX_TOKEN is valid and permitted for this origin.');
+    }
+  });
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
   map.addControl(new mapboxgl.ScaleControl(),'bottom-right');
   // Pan-autoload: any move while in city view triggers a debounced fetch of uncovered area
@@ -1118,6 +1168,7 @@ async function initMap(){
     const hits=map.queryRenderedFeatures(e.point,{layers:['streams','streams-underground','candidates'].filter(l=>map.getLayer(l))});
     if(hits.length===0)exitRiverFocus();
   });
+  return true;
 }
 
 function resetExploreState(){
@@ -1135,10 +1186,28 @@ function resetExploreState(){
   setLoadingPill(false);
 }
 
+// True only when the map style spec is fully loaded. A theme/satellite toggle calls
+// map.setStyle(), which rebuilds the style from scratch (satellite vs dark/light have
+// different sprites, so the diff bails) and briefly leaves it "not loaded". Calling
+// addSource/addLayer during that window throws "Style is not done loading". The map
+// builders below defer their layer work to 'style.load' when a reload is in flight;
+// they are all idempotent, so a double-run (this + reloadMap's own reload handler) is
+// harmless.
+function styleReady(){return map&&map.isStyleLoaded();}
+
 function loadWorldView(){
   activeCityIdx=-1;activeCandidates=[];activeStreams=[];drawStreams=[];selectedCand=null;activeRegionSlug=null;
   renderSelectedCandPanel();
   resetExploreState();
+  // Sidebar/world-view chrome is map-independent — update it now even if we have to
+  // defer the map layers below.
+  document.getElementById('back-btn').classList.remove('vis');
+  document.getElementById('city-view').classList.remove('vis');
+  document.getElementById('place-list').style.display='';
+  showStats();renderPlaceList();
+  // A style reload is mid-flight → adding the 'places' source now throws. Re-run once
+  // the style is ready (state is already reset, so this renders the world view).
+  if(!styleReady()){map.once('style.load',loadWorldView);return;}
   clearLayers();
   const geojson={type:'FeatureCollection',features:places.map((p,i)=>({
     type:'Feature',geometry:{type:'Point',coordinates:[p.lo,p.la]},
@@ -1158,10 +1227,6 @@ function loadWorldView(){
   }});
   // Cluster/unclustered click + hover handlers are attached ONCE in initMap (X3) —
   // re-registering them here leaked a listener per loadWorldView call.
-  document.getElementById('back-btn').classList.remove('vis');
-  document.getElementById('city-view').classList.remove('vis');
-  document.getElementById('place-list').style.display='';
-  showStats();renderPlaceList();
 }
 
 function clearLayers(){
@@ -1169,10 +1234,106 @@ function clearLayers(){
   ['places','streams','candidates'].forEach(id=>{if(map.getSource(id))map.removeSource(id)});
 }
 
+// Add the streams + candidates map layers from the current activeCandidates /
+// drawStreams state. Extracted so BOTH the unscored path and the scored-region
+// fast path add identical layers (and so the region path can add them before
+// the OSM river fetch has returned).
+function addMapLayers(){
+  // A theme/satellite toggle mid-openCity leaves the style reloading; adding sources
+  // now throws "Style is not done loading". Defer to style.load (reloadMap's handler
+  // re-opens the city too; both are safe because this function is idempotent).
+  if(!styleReady()){map.once('style.load',addMapLayers);return;}
+  // Idempotent: a rapid re-open of the same city can race two openCity flows into
+  // here; without this, the second map.addSource('streams') throws "There is already
+  // a source with ID streams" and wedges the map. Remove any prior stream/candidate
+  // layers+sources first (the openCity generation token normally prevents the double
+  // call; this is belt-and-suspenders since a duplicate-source throw is fatal).
+  ['stream-labels','streams-underground','streams-outline','streams','streams-context','streams-context-underground','cand-glow','candidates'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
+  ['streams','candidates'].forEach(id=>{if(map.getSource(id))map.removeSource(id)});
+  // Draw streams from the full network. Rivers with a candidate site (hasSite=1) render
+  // full-opacity on the styled layers below; every other waterway (hasSite=0) renders on
+  // the CONTEXT layers, faded by distance to the nearest site — a soft halo, not on/off.
+  map.addSource('streams',{type:'geojson',data:buildStreamLayerGeo()});
+  // Context layers first so they sit UNDER the bright site-bearing rivers.
+  map.addLayer({id:'streams-context',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],0]],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.2,4,3],'line-opacity':CONTEXT_FADE},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams-context-underground',type:'line',source:'streams',filter:['all',['==',['get','underground'],1],['==',['get','hasSite'],0]],paint:{'line-color':'#f59e0b','line-width':1.5,'line-opacity':CONTEXT_FADE,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
+  // Site-bearing rivers — full opacity, full styling (dark outline + labels).
+  map.addLayer({id:'streams-outline',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],1]],paint:{'line-color':'#000','line-width':['interpolate',['linear'],['get','order'],1,4,4,7],'line-opacity':.4},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],1]],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.5,4,4],'line-opacity':1.0},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams-underground',type:'line',source:'streams',filter:['all',['==',['get','underground'],1],['==',['get','hasSite'],1]],paint:{'line-color':'#f59e0b','line-width':2,'line-opacity':.6,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'stream-labels',type:'symbol',source:'streams',filter:['==',['get','hasSite'],1],layout:{'symbol-placement':'line','text-field':['get','name'],'text-size':12,'text-font':['DIN Pro Medium','Arial Unicode MS Regular'],'text-offset':[0,-1],'text-allow-overlap':false},paint:{'text-color':'#fff','text-halo-color':'#000','text-halo-width':1.5}});
+
+  // Draw candidates (click + hover handlers are attached once in initMap)
+  map.addSource('candidates',{type:'geojson',data:buildCandidateGeo(activeCandidates)});
+  map.addLayer({id:'cand-glow',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,12,55,22],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-opacity':.25,'circle-blur':1}});
+  map.addLayer({id:'candidates',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,6,55,12],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-stroke-width':2.5,'circle-stroke-color':'#fff'}});
+}
+
+// Header info line — reflects however many site-bearing rivers are currently drawn.
+function updateCityInfo(name){
+  const drawn=siteDrawStreams();
+  const nSurface=drawn.filter(s=>!s.underground).length;
+  const nUnderground=drawn.filter(s=>s.underground).length;
+  const nPortals=((activeStreams&&activeStreams._portals)||[]).length;
+  const portalInfo=nUnderground>0?` · ${nUnderground} culverts · ${nPortals} portals`:'';
+  document.getElementById('info').textContent=`${name||'Unknown'} · ${activeCandidates.length} nets · ${nSurface} surface rivers${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%`;
+}
+
+// Frame the map to the current candidate set (used by the region fast path so
+// all real sites are visible without waiting on the OSM fetch).
+function fitToCandidates(){
+  if(!activeCandidates.length)return;
+  const b=new mapboxgl.LngLatBounds();
+  for(const c of activeCandidates)b.extend([c.lon,c.lat]);
+  if(!b.isEmpty())map.fitBounds(b,{padding:70,maxZoom:14,duration:1200});
+}
+
+// Region (real-pipeline) sites come from the DEM stream network and carry only a
+// numeric segment id — no waterway name. Once the OSM rivers are loaded, snap each
+// site to its nearest named surface waterway (≤300 m) and adopt that river's name
+// AND riverKey, so the sidebar/panel show real names and the river highlights +
+// labels light up (siteDrawStreams matches on riverKey).
+function nameRegionSitesByNearestRiver(){
+  // Only NAMED surface waterways can lend a name; drop the generic ones up front.
+  const surf=drawStreams.filter(s=>{
+    if(s.underground||!s.coords||s.coords.length<2)return false;
+    const nm=(s.baseName||s.name||'').replace(/\s*\(culvert\)$/,'').trim();
+    return nm&&!/^(river|creek|stream|canal|drain|ditch)$/i.test(nm);
+  });
+  if(!surf.length)return;
+  const BOX=0.05;  // ~5 km cheap lat/lon pre-filter box
+  for(const c of activeCandidates){
+    if(!/^Segment /.test(c.stream))continue;   // already has a baked river name — leave it
+    let best=null,bestD=Infinity;
+    for(const s of surf){
+      const c0=s.coords[0];
+      if(Math.abs(c0[1]-c.lat)>BOX&&Math.abs(c0[0]-c.lon)>BOX)continue;  // far → skip
+      const step=Math.max(1,Math.floor(s.coords.length/40));            // subsample long ways
+      for(let i=0;i<s.coords.length;i+=step){
+        const pt=s.coords[i];
+        const d=hvM(c.lat,c.lon,pt[1],pt[0]);
+        if(d<bestD){bestD=d;best=s;if(d<25)break;}                      // close enough
+      }
+      if(bestD<25)break;
+    }
+    if(best&&bestD<=300){
+      c.stream=(best.baseName||best.name||'').replace(/\s*\(culvert\)$/,'').trim();
+      c.riverKey=riverKeyOf(best);
+    }
+  }
+}
+
+// Monotonic generation token. Every openCity() call bumps it and captures its own
+// value; after each await it bails if a newer openCity() has started. Unlike the
+// old `activeCityIdx!==idx` guard, this also aborts a stale flow when the SAME city
+// is reopened concurrently (double-click / repeated dot-click), which otherwise let
+// two flows both reach addMapLayers() → "already a source with ID streams" throw.
+let openCityToken=0;
 async function openCity(idx){
   if(idx<0||idx>=places.length)return;
   const p=places[idx];
   if(!p||!p.n)return;
+  const myToken=++openCityToken;
   activeCityIdx=idx;selectedCand=null;
   renderSelectedCandPanel();
   // Remember city params so pan-autoload can re-score the merged stream set without
@@ -1187,12 +1348,53 @@ async function openCity(idx){
   document.getElementById('place-list').style.display='none';
   document.getElementById('sidebar-title').textContent=`${p.n||'Unknown'}, ${p.c||''}`;
   document.getElementById('city-view').classList.add('vis');
-  document.getElementById('city-view').innerHTML='<div style="padding:20px;text-align:center;color:var(--td);font-family:var(--mono);font-size:12px"><div style="margin-bottom:8px">Fetching real rivers from OpenStreetMap...</div><div style="width:24px;height:24px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto"></div></div>';
+  const spin=msg=>document.getElementById('city-view').innerHTML=`<div style="padding:20px;text-align:center;color:var(--td);font-family:var(--mono);font-size:12px"><div style="margin-bottom:8px">${msg}</div><div style="width:24px;height:24px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto"></div></div>`;
+  spin('Fetching real rivers from OpenStreetMap...');
 
   map.flyTo({center:[p.lo,p.la],zoom:14,pitch:20,duration:1500});
-
-  // Fetch REAL waterway geometry from OSM
   const seed=activeSeed;
+
+  // ── SCORED-REGION FAST PATH ─────────────────────────────────────────────
+  // If this city sits in a precomputed real-pipeline region, show its REAL
+  // scored sites IMMEDIATELY from the API. Do NOT block on the Overpass river
+  // fetch — big metros (Charlotte, NYC) have heavy waterway queries that can
+  // hang or rate-limit, which previously left the page stuck on the spinner
+  // even though the real data was ready. OSM rivers then load in the background
+  // to draw the waterways and give each site its real river name.
+  activeRegionSlug=null;
+  await loadRegionsIndex();
+  if(myToken!==openCityToken)return;
+  const cityRegion=regionForPoint(p.lo,p.la);
+  if(cityRegion){
+    spin('Loading real scored sites…');
+    const feats=await fetchRegionCandidates(cityRegion.slug);
+    if(myToken!==openCityToken)return;
+    if(feats&&feats.length){
+      activeRegionSlug=cityRegion.slug;
+      activeCandidates=feats.map(regionFeatureToCandidate);
+      activeStreams=[];                       // OSM rivers arrive in the background
+      pipelineStats={total:feats.length,scored:feats.length,deployed:feats.length,
+        pctile:1,streams:0,filtered:0,catchEff:0.65,portals:0};
+      addMapLayers();                         // real sites render NOW — no Overpass wait
+      fitToCandidates();
+      updateCityInfo(p.n);
+      renderCityView();
+      // Background: fetch OSM waterways to draw the rivers and name the sites.
+      fetchRealStreams(p.la,p.lo,p.p).then(fetched=>{
+        if(myToken!==openCityToken||activeRegionSlug!==cityRegion.slug||!fetched)return;
+        if(fetched.draw)mergeDraw(fetched.draw);
+        activeStreams=fetched.cands||[];
+        nameRegionSitesByNearestRiver();      // Segment N → real river names + riverKeys
+        refreshMapSources();                  // redraw streams (now site-bearing) + candidates
+        updateCityInfo(p.n);
+        renderCityView();
+      }).catch(()=>{});
+      return;
+    }
+    activeRegionSlug=null;                     // region unavailable → unscored path below
+  }
+
+  // ── UNSCORED CITY: original Overpass-first path (unchanged behavior) ─────
   initialFetchInFlight=true;
   // X2: await into a LOCAL first. A slow fetch for city A must not clobber the
   // global activeStreams after the user has already opened city B. Only assign
@@ -1204,7 +1406,7 @@ async function openCity(idx){
     initialFetchInFlight=false;
   }
   // Guard against a stale fetch returning after the user navigated away
-  if(activeCityIdx!==idx)return;
+  if(myToken!==openCityToken)return;
   activeStreams=fetched?fetched.cands:null;
   // Populate the render set AFTER the stale-guard so a late city-A fetch can't
   // clobber city B's drawn geometry (same protection activeStreams gets).
@@ -1229,49 +1431,9 @@ async function openCity(idx){
     return;
   }
 
-  // Prefer the REAL precomputed pipeline output when this city sits inside a
-  // scored region; everything else about the page (rivers, layers, panels)
-  // renders exactly as before. Unscored cities take the original path untouched.
-  activeRegionSlug=null;
-  await loadRegionsIndex();
-  if(activeCityIdx!==idx)return;
-  const cityRegion=regionForPoint(p.lo,p.la);
-  if(cityRegion){
-    const feats=await fetchRegionCandidates(cityRegion.slug);
-    if(activeCityIdx!==idx)return;
-    if(feats&&feats.length){
-      activeRegionSlug=cityRegion.slug;
-      activeCandidates=feats.map(regionFeatureToCandidate);
-      pipelineStats={total:feats.length,scored:feats.length,deployed:feats.length,
-        pctile:1,streams:activeStreams.length,filtered:0,catchEff:0.65,portals:0};
-    }
-  }
-  if(!activeRegionSlug)activeCandidates=generateCandidates(activeStreams,p.p,p.c,seed);
-
-  // Draw streams from the full network. Rivers with a candidate site (hasSite=1) render
-  // full-opacity on the styled layers below; every other waterway (hasSite=0) renders on
-  // the CONTEXT layers, faded by distance to the nearest site — a soft halo, not on/off.
-  map.addSource('streams',{type:'geojson',data:buildStreamLayerGeo()});
-  // Context layers first so they sit UNDER the bright site-bearing rivers.
-  map.addLayer({id:'streams-context',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],0]],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.2,4,3],'line-opacity':CONTEXT_FADE},layout:{'line-cap':'round','line-join':'round'}});
-  map.addLayer({id:'streams-context-underground',type:'line',source:'streams',filter:['all',['==',['get','underground'],1],['==',['get','hasSite'],0]],paint:{'line-color':'#f59e0b','line-width':1.5,'line-opacity':CONTEXT_FADE,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
-  // Site-bearing rivers — full opacity, full styling (dark outline + labels).
-  map.addLayer({id:'streams-outline',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],1]],paint:{'line-color':'#000','line-width':['interpolate',['linear'],['get','order'],1,4,4,7],'line-opacity':.4},layout:{'line-cap':'round','line-join':'round'}});
-  map.addLayer({id:'streams',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],1]],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.5,4,4],'line-opacity':1.0},layout:{'line-cap':'round','line-join':'round'}});
-  map.addLayer({id:'streams-underground',type:'line',source:'streams',filter:['all',['==',['get','underground'],1],['==',['get','hasSite'],1]],paint:{'line-color':'#f59e0b','line-width':2,'line-opacity':.6,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
-  map.addLayer({id:'stream-labels',type:'symbol',source:'streams',filter:['==',['get','hasSite'],1],layout:{'symbol-placement':'line','text-field':['get','name'],'text-size':12,'text-font':['DIN Pro Medium','Arial Unicode MS Regular'],'text-offset':[0,-1],'text-allow-overlap':false},paint:{'text-color':'#fff','text-halo-color':'#000','text-halo-width':1.5}});
-
-  // Draw candidates (click + hover handlers are attached once in initMap)
-  map.addSource('candidates',{type:'geojson',data:buildCandidateGeo(activeCandidates)});
-  map.addLayer({id:'cand-glow',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,12,55,22],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-opacity':.25,'circle-blur':1}});
-  map.addLayer({id:'candidates',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,6,55,12],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-stroke-width':2.5,'circle-stroke-color':'#fff'}});
-
-  const drawn=siteDrawStreams();                                   // only site-bearing rivers
-  const nSurface=drawn.filter(s=>!s.underground).length;           // reflects what's drawn
-  const nUnderground=drawn.filter(s=>s.underground).length;
-  const nPortals=(activeStreams._portals||[]).length;
-  const portalInfo=nUnderground>0?` · ${nUnderground} culverts · ${nPortals} portals`:'';
-  document.getElementById('info').textContent=`${p.n||'Unknown'} · ${activeCandidates.length} nets · ${nSurface} surface rivers${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%`;
+  activeCandidates=generateCandidates(activeStreams,p.p,p.c,seed);
+  addMapLayers();
+  updateCityInfo(p.n);
   renderCityView();
 }
 
@@ -1530,11 +1692,19 @@ function getMapStyle(){
   if(isSat)return'mapbox://styles/mapbox/satellite-streets-v12';
   return isLightTheme?'mapbox://styles/mapbox/light-v11':'mapbox://styles/mapbox/dark-v11';
 }
+// Coalesce rapid style reloads. Firing map.setStyle() again while the previous style
+// is still rebuilding tears down in-flight sprite/image requests ("Could not load
+// image…" console errors) and wastes work. If a reload is in flight, just mark one
+// pending; when it lands we re-apply the latest desired style (getMapStyle() reads the
+// current isSat / isLightTheme), so a flurry of toggles collapses to the final state.
+let styleReloadPending=false;
 function reloadMap(){
+  if(!map.isStyleLoaded()){styleReloadPending=true;return;}
   map.setStyle(getMapStyle());
   map.once('style.load',()=>{
     if(wwOverlayOn)addWaterwayOverlay();
     if(activeCityIdx>=0)openCity(activeCityIdx);else loadWorldView();
+    if(styleReloadPending){styleReloadPending=false;reloadMap();}
   });
 }
 
@@ -1550,6 +1720,9 @@ document.getElementById('style-toggle').addEventListener('click',()=>{
 let wwOverlayOn=false;
 function addWaterwayOverlay(){
   if(map.getSource('osm-ww'))return;
+  // Toggling the overlay during a style reload would throw "Style is not done
+  // loading"; defer until the style is ready (reloadMap re-adds it when wwOverlayOn).
+  if(!styleReady()){map.once('style.load',addWaterwayOverlay);return;}
   map.addSource('osm-ww',{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap'});
   map.addLayer({id:'osm-ww-layer',type:'raster',source:'osm-ww',paint:{'raster-opacity':0.35}},
     map.getLayer('streams-outline')?'streams-outline':map.getLayer('clusters')?'clusters':undefined);
@@ -1577,7 +1750,9 @@ document.getElementById('theme-toggle').addEventListener('click',()=>{
 
 // ═══ INIT ═══════════════════════════════════════════════════════
 async function init(){
-  await initMap();
+  // No usable map (missing token / init failure) → a terminal error state is
+  // already shown by initMap(); stop before touching the (undefined) map.
+  if(!await initMap())return;
   document.getElementById('load-msg').textContent='Loading cities database...';
   places=await loadPlaces();
   places=places.filter(p=>p&&p.n&&p.c&&p.la!=null&&p.lo!=null);

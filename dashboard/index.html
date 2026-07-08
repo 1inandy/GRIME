@@ -182,6 +182,21 @@ section{padding:112px 64px}
 .nav-gh{display:flex;align-items:center;color:var(--td);transition:color .2s}
 .nav-gh:hover{color:var(--acc)}
 .nav-gh svg{width:16px;height:16px;fill:currentColor}
+
+/* ── Mobile: the desktop layout (3-column grids + 64px section padding) overflowed
+   ~150px past a phone viewport and got clipped by body{overflow-x:hidden}. Collapse
+   the grids and tighten padding at small widths. Desktop is untouched. ── */
+@media(max-width:640px){
+  section{padding:72px 20px}
+  .hero-content{padding:0 24px 56px}
+  .stats-grid,.how-cards,.reach-nums{grid-template-columns:1fr}
+  .how-cards{margin:0}
+  .stat-item{padding:44px 24px;border-right:none;border-bottom:1px solid var(--bdr)}
+  .stat-item:last-child{border-bottom:none}
+  .reach-item{padding:40px 20px;border-right:none;border-bottom:1px solid var(--bdr)}
+  .reach-item:last-child{border-bottom:none}
+  #cta{padding:64px 24px}
+}
 </style>
 </head>
 <body>
@@ -630,15 +645,22 @@ if(dashGlobeEl){
   const dObs=new IntersectionObserver(async entries=>{
     if(entries[0].isIntersecting){
       dObs.disconnect();
-      mapboxgl.accessToken=await getMapboxToken();
-      const dMap=new mapboxgl.Map({
-        container:'dash-globe',
-        style:'mapbox://styles/mapbox/dark-v11',
-        center:[40,20],zoom:1.2,
-        projection:'globe',
-        interactive:false,
-        attributionControl:false
-      });
+      // Decorative globe only — skip silently (no thrown error) when no token is
+      // configured; the rest of the landing page does not depend on Mapbox.
+      const token=await getMapboxToken();
+      if(!token)return;
+      mapboxgl.accessToken=token;
+      let dMap;
+      try{
+        dMap=new mapboxgl.Map({
+          container:'dash-globe',
+          style:'mapbox://styles/mapbox/dark-v11',
+          center:[40,20],zoom:1.2,
+          projection:'globe',
+          interactive:false,
+          attributionControl:false
+        });
+      }catch(err){return;}
       dMap.on('style.load',()=>{
         // Container uses aspect-ratio + a reveal animation, so its size may not be
         // settled when the map is created — resize now and again after reveal completes.
