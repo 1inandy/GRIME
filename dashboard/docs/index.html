@@ -105,6 +105,9 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
   .toc{display:none}
   main{padding:32px 20px 80px}
   nav{padding:12px 20px}
+  /* Wide data tables overflowed the phone viewport and got clipped by
+     body{overflow-x:hidden}; make each table scroll horizontally instead. */
+  table{display:block;overflow-x:auto}
 }
 </style>
 </head>
