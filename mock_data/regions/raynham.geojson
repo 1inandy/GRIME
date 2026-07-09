@@ -354,5 +354,9 @@
    "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
   }
  },
+ "streams": {
+  "features": [],
+  "type": "FeatureCollection"
+ },
  "type": "FeatureCollection"
 }

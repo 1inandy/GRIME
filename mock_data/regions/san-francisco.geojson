@@ -1773,8 +1773,8 @@
   {
    "geometry": {
     "coordinates": [
-     -122.482715,
-     37.788572
+     -122.482855,
+     37.787366
     ],
     "type": "Point"
    },
@@ -1789,6 +1789,8 @@
     "channel_width_score": 1.0,
     "composite_score": 42.5553,
     "cso_density": 0.1153,
+    "dem_lat": 37.788572,
+    "dem_lon": -122.482715,
     "ej_index": 0.3749,
     "elevation_m": 18.9178,
     "estuary_dist_km": 9.99,
@@ -1819,6 +1821,7 @@
     "seasonal_cv": 1.1865,
     "segment_id": 35,
     "segment_length_m": 1890.2692,
+    "snap_dist_m": 134.4,
     "stream_order": 3,
     "superfund_score": 0.0,
     "tourism_amenity_density": 30.0803,
@@ -2009,8 +2012,8 @@
   {
    "geometry": {
     "coordinates": [
-     -122.474116,
-     37.786288
+     -122.47507,
+     37.786942
     ],
     "type": "Point"
    },
@@ -2025,6 +2028,8 @@
     "channel_width_score": 1.0,
     "composite_score": 41.1136,
     "cso_density": 0.1295,
+    "dem_lat": 37.786288,
+    "dem_lon": -122.474116,
     "ej_index": 0.3325,
     "elevation_m": 41.6567,
     "estuary_dist_km": 9.27,
@@ -2055,6 +2060,7 @@
     "seasonal_cv": 1.1865,
     "segment_id": 19,
     "segment_length_m": 119.8664,
+    "snap_dist_m": 111.1,
     "stream_order": 3,
     "superfund_score": 0.0,
     "tourism_amenity_density": 47.0303,
@@ -2835,8 +2841,8 @@
   {
    "geometry": {
     "coordinates": [
-     -122.454235,
-     37.805663
+     -122.45375,
+     37.804402
     ],
     "type": "Point"
    },
@@ -2851,6 +2857,8 @@
     "channel_width_score": 1.0,
     "composite_score": 31.9038,
     "cso_density": 0.1084,
+    "dem_lat": 37.805663,
+    "dem_lon": -122.454235,
     "ej_index": 0.4243,
     "elevation_m": 1.415,
     "estuary_dist_km": 7.43,
@@ -2881,6 +2889,7 @@
     "seasonal_cv": 1.2025,
     "segment_id": 15,
     "segment_length_m": 449.9149,
+    "snap_dist_m": 146.3,
     "stream_order": 3,
     "superfund_score": 0.0,
     "tourism_amenity_density": 35.8894,
@@ -4719,6 +4728,309 @@
    "code": "PMS",
    "source": "Bieger et al. 2015 JAWRA Table 3, Pacific Mountain System"
   }
+ },
+ "streams": {
+  "features": [
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -122.479637,
+       37.797261
+      ],
+      [
+       -122.479869,
+       37.797225
+      ],
+      [
+       -122.480264,
+       37.797335
+      ],
+      [
+       -122.480997,
+       37.797364
+      ],
+      [
+       -122.482129,
+       37.797744
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.23,
+     "n_sites": 1,
+     "name": "Coyote Gulch",
+     "order": 2,
+     "riverKey": "coyote gulch",
+     "source": "osm",
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -122.454549,
+       37.801038
+      ],
+      [
+       -122.454113,
+       37.801169
+      ],
+      [
+       -122.453949,
+       37.801751
+      ],
+      [
+       -122.45403,
+       37.802018
+      ],
+      [
+       -122.45336,
+       37.803007
+      ],
+      [
+       -122.453304,
+       37.803222
+      ],
+      [
+       -122.45375,
+       37.804402
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.42,
+     "n_sites": 2,
+     "name": "El Pol\u00edn Creek",
+     "order": 2,
+     "riverKey": "el pol\u00edn creek",
+     "source": "osm",
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -122.474403,
+       37.768786
+      ],
+      [
+       -122.473716,
+       37.768865
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.06,
+     "n_sites": 2,
+     "name": "Huntington Falls",
+     "order": 2,
+     "riverKey": "huntington falls",
+     "source": "osm",
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -122.446421,
+       37.743929
+      ],
+      [
+       -122.446093,
+       37.743677
+      ],
+      [
+       -122.445089,
+       37.742466
+      ],
+      [
+       -122.443818,
+       37.741755
+      ],
+      [
+       -122.443188,
+       37.741791
+      ],
+      [
+       -122.442928,
+       37.741751
+      ],
+      [
+       -122.44271,
+       37.741609
+      ],
+      [
+       -122.441731,
+       37.740294
+      ],
+      [
+       -122.441696,
+       37.740039
+      ],
+      [
+       -122.441302,
+       37.739208
+      ],
+      [
+       -122.441063,
+       37.737876
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.89,
+     "n_sites": 5,
+     "name": "Islais Creek",
+     "order": 2,
+     "riverKey": "islais creek",
+     "source": "osm",
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -122.47507,
+       37.786942
+      ],
+      [
+       -122.477598,
+       37.787208
+      ],
+      [
+       -122.478117,
+       37.787023
+      ],
+      [
+       -122.47877,
+       37.78715
+      ],
+      [
+       -122.479432,
+       37.787187
+      ],
+      [
+       -122.479822,
+       37.787133
+      ],
+      [
+       -122.480286,
+       37.787314
+      ],
+      [
+       -122.480852,
+       37.787212
+      ],
+      [
+       -122.48139,
+       37.787462
+      ],
+      [
+       -122.482656,
+       37.787351
+      ],
+      [
+       -122.483696,
+       37.787427
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.78,
+     "n_sites": 3,
+     "name": "Lobos Creek",
+     "order": 2,
+     "riverKey": "lobos creek",
+     "source": "osm",
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -122.486305,
+       37.708033
+      ],
+      [
+       -122.487682,
+       37.708697
+      ],
+      [
+       -122.488225,
+       37.709133
+      ],
+      [
+       -122.488472,
+       37.709547
+      ],
+      [
+       -122.488671,
+       37.71041
+      ],
+      [
+       -122.48932,
+       37.711683
+      ],
+      [
+       -122.489584,
+       37.711812
+      ],
+      [
+       -122.490268,
+       37.711888
+      ],
+      [
+       -122.490493,
+       37.711985
+      ],
+      [
+       -122.492432,
+       37.71439
+      ],
+      [
+       -122.493895,
+       37.715404
+      ],
+      [
+       -122.494169,
+       37.71548
+      ],
+      [
+       -122.494533,
+       37.715408
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.17,
+     "n_sites": 3,
+     "name": "Vista Grande Canal",
+     "order": 2,
+     "riverKey": "vista grande canal",
+     "source": "osm",
+     "waterway": "drain"
+    },
+    "type": "Feature"
+   }
+  ],
+  "type": "FeatureCollection"
  },
  "type": "FeatureCollection"
 }
