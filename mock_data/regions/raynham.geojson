@@ -3,8 +3,8 @@
   {
    "geometry": {
     "coordinates": [
-     -79.2053,
-     34.570557
+     -79.205235,
+     34.570572
     ],
     "type": "Point"
    },
@@ -19,6 +19,8 @@
     "channel_width_score": 1.0,
     "composite_score": 62.5,
     "cso_density": 0.0,
+    "dem_lat": 34.570557,
+    "dem_lon": -79.2053,
     "ej_index": 0.4949,
     "elevation_m": 37.357,
     "estuary_dist_km": 292.95,
@@ -34,6 +36,7 @@
     "litter_complaint_density": 0.0,
     "lon": -79.2053,
     "npdes_points": null,
+    "on_unnamed_waterway": true,
     "pixel_col": 73.0,
     "pixel_row": 269.0,
     "population_density": 32.8,
@@ -49,6 +52,7 @@
     "seasonal_cv": null,
     "segment_id": 0,
     "segment_length_m": 1435.3295,
+    "snap_dist_m": 6.2,
     "stream_order": 1,
     "superfund_score": 0.0,
     "tourism_amenity_density": 0.1592,
@@ -62,8 +66,8 @@
   {
    "geometry": {
     "coordinates": [
-     -79.203148,
-     34.564525
+     -79.203208,
+     34.564658
     ],
     "type": "Point"
    },
@@ -78,6 +82,8 @@
     "channel_width_score": 1.0,
     "composite_score": 37.5,
     "cso_density": 0.0,
+    "dem_lat": 34.564525,
+    "dem_lon": -79.203148,
     "ej_index": 0.4949,
     "elevation_m": 37.0483,
     "estuary_dist_km": 292.89,
@@ -93,6 +99,7 @@
     "litter_complaint_density": 0.0,
     "lon": -79.2031,
     "npdes_points": null,
+    "on_unnamed_waterway": true,
     "pixel_col": 91.0,
     "pixel_row": 335.0,
     "population_density": 32.8,
@@ -108,6 +115,7 @@
     "seasonal_cv": null,
     "segment_id": 1,
     "segment_length_m": 1425.7663,
+    "snap_dist_m": 15.7,
     "stream_order": 1,
     "superfund_score": 0.0,
     "tourism_amenity_density": 0.1592,
@@ -732,7 +740,7 @@
      "name": "Ashpole Swamp",
      "order": 2,
      "riverKey": "ashpole swamp",
-     "source": "nhd",
+     "underground": 0,
      "waterway": "stream"
     },
     "type": "Feature"
@@ -957,7 +965,7 @@
      "name": "Back Swamp",
      "order": 2,
      "riverKey": "back swamp",
-     "source": "osm",
+     "underground": 0,
      "waterway": "stream"
     },
     "type": "Feature"
@@ -1062,7 +1070,7 @@
      "name": "Little Back Swamp",
      "order": 2,
      "riverKey": "little back swamp",
-     "source": "osm",
+     "underground": 0,
      "waterway": "ditch"
     },
     "type": "Feature"
@@ -2147,8 +2155,4374 @@
      "name": "Lumber River",
      "order": 4,
      "riverKey": "lumber river",
-     "source": "nhd",
+     "underground": 0,
      "waterway": "river"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.206196,
+       34.541998
+      ],
+      [
+       -79.206184,
+       34.541671
+      ],
+      [
+       -79.207391,
+       34.538318
+      ],
+      [
+       -79.207702,
+       34.535542
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.73,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.207734,
+       34.55041
+      ],
+      [
+       -79.20732,
+       34.549351
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.12,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.154319,
+       34.574768
+      ],
+      [
+       -79.152665,
+       34.573713
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.19,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.152665,
+       34.573713
+      ],
+      [
+       -79.150598,
+       34.572567
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.23,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.150598,
+       34.572567
+      ],
+      [
+       -79.14954,
+       34.57089
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.21,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.14954,
+       34.57089
+      ],
+      [
+       -79.149168,
+       34.570466
+      ],
+      [
+       -79.146854,
+       34.569158
+      ],
+      [
+       -79.145491,
+       34.567532
+      ],
+      [
+       -79.144341,
+       34.566532
+      ],
+      [
+       -79.143622,
+       34.564999
+      ],
+      [
+       -79.142581,
+       34.563942
+      ],
+      [
+       -79.141159,
+       34.56302
+      ],
+      [
+       -79.139899,
+       34.562478
+      ],
+      [
+       -79.139298,
+       34.56184
+      ],
+      [
+       -79.138719,
+       34.56153
+      ],
+      [
+       -79.135008,
+       34.557921
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 2.0,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.232369,
+       34.539513
+      ],
+      [
+       -79.232383,
+       34.539093
+      ],
+      [
+       -79.234264,
+       34.534711
+      ],
+      [
+       -79.234353,
+       34.53352
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.69,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.189705,
+       34.5486
+      ],
+      [
+       -79.19003,
+       34.549171
+      ],
+      [
+       -79.190794,
+       34.549364
+      ],
+      [
+       -79.207213,
+       34.550375
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.65,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.198272,
+       34.539312
+      ],
+      [
+       -79.199242,
+       34.539685
+      ],
+      [
+       -79.200112,
+       34.540224
+      ],
+      [
+       -79.201108,
+       34.540438
+      ],
+      [
+       -79.201419,
+       34.54029
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.33,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.192894,
+       34.578267
+      ],
+      [
+       -79.192151,
+       34.576612
+      ],
+      [
+       -79.19449,
+       34.574925
+      ],
+      [
+       -79.194947,
+       34.574923
+      ],
+      [
+       -79.195674,
+       34.575527
+      ],
+      [
+       -79.197742,
+       34.577744
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.93,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.198858,
+       34.584301
+      ],
+      [
+       -79.197693,
+       34.582936
+      ],
+      [
+       -79.196825,
+       34.579897
+      ],
+      [
+       -79.196883,
+       34.579429
+      ],
+      [
+       -79.197297,
+       34.579049
+      ],
+      [
+       -79.197826,
+       34.577728
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.79,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.185639,
+       34.572742
+      ],
+      [
+       -79.185904,
+       34.572544
+      ],
+      [
+       -79.186542,
+       34.572418
+      ],
+      [
+       -79.190539,
+       34.570173
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.54,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.189671,
+       34.604524
+      ],
+      [
+       -79.187379,
+       34.608822
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.52,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.207236,
+       34.554967
+      ],
+      [
+       -79.207344,
+       34.551509
+      ],
+      [
+       -79.207734,
+       34.55041
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.51,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.201271,
+       34.567411
+      ],
+      [
+       -79.200859,
+       34.566229
+      ],
+      [
+       -79.201125,
+       34.56541
+      ],
+      [
+       -79.201417,
+       34.565108
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.27,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.156561,
+       34.58197
+      ],
+      [
+       -79.1549,
+       34.582563
+      ],
+      [
+       -79.155384,
+       34.584256
+      ],
+      [
+       -79.155105,
+       34.584405
+      ],
+      [
+       -79.153132,
+       34.584041
+      ],
+      [
+       -79.150839,
+       34.58448
+      ],
+      [
+       -79.150115,
+       34.584485
+      ],
+      [
+       -79.149009,
+       34.584125
+      ],
+      [
+       -79.14815,
+       34.584421
+      ],
+      [
+       -79.147644,
+       34.585246
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.15,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.218645,
+       34.610669
+      ],
+      [
+       -79.217906,
+       34.608901
+      ],
+      [
+       -79.217062,
+       34.607659
+      ],
+      [
+       -79.21701,
+       34.60712
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.43,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.207502,
+       34.597026
+      ],
+      [
+       -79.210133,
+       34.596075
+      ],
+      [
+       -79.211103,
+       34.595256
+      ],
+      [
+       -79.211608,
+       34.594547
+      ],
+      [
+       -79.212951,
+       34.593904
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.62,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.229825,
+       34.554094
+      ],
+      [
+       -79.230489,
+       34.552653
+      ],
+      [
+       -79.231636,
+       34.551626
+      ],
+      [
+       -79.232747,
+       34.550968
+      ],
+      [
+       -79.233372,
+       34.549906
+      ],
+      [
+       -79.233642,
+       34.548537
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.74,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.211997,
+       34.553489
+      ],
+      [
+       -79.211292,
+       34.552868
+      ],
+      [
+       -79.210382,
+       34.552379
+      ],
+      [
+       -79.209253,
+       34.550868
+      ],
+      [
+       -79.20825,
+       34.550423
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.5,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.219203,
+       34.570733
+      ],
+      [
+       -79.219083,
+       34.569749
+      ],
+      [
+       -79.219714,
+       34.567754
+      ],
+      [
+       -79.220683,
+       34.566374
+      ],
+      [
+       -79.222191,
+       34.566099
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.66,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.166297,
+       34.570254
+      ],
+      [
+       -79.165348,
+       34.572372
+      ],
+      [
+       -79.165143,
+       34.572504
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.27,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.194749,
+       34.56867
+      ],
+      [
+       -79.192285,
+       34.569609
+      ],
+      [
+       -79.192079,
+       34.569653
+      ],
+      [
+       -79.191947,
+       34.569489
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.29,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.213519,
+       34.6096
+      ],
+      [
+       -79.216059,
+       34.609243
+      ],
+      [
+       -79.216167,
+       34.608735
+      ],
+      [
+       -79.21701,
+       34.60712
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.49,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.234145,
+       34.558329
+      ],
+      [
+       -79.232119,
+       34.556605
+      ],
+      [
+       -79.230934,
+       34.555188
+      ],
+      [
+       -79.230776,
+       34.554742
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.51,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.233249,
+       34.593101
+      ],
+      [
+       -79.232967,
+       34.592541
+      ],
+      [
+       -79.233219,
+       34.59197
+      ],
+      [
+       -79.232767,
+       34.591003
+      ],
+      [
+       -79.2327,
+       34.590459
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.31,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.2327,
+       34.590459
+      ],
+      [
+       -79.233131,
+       34.58998
+      ],
+      [
+       -79.234254,
+       34.589315
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.19,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.180613,
+       34.594802
+      ],
+      [
+       -79.177894,
+       34.596983
+      ],
+      [
+       -79.177037,
+       34.597087
+      ],
+      [
+       -79.176422,
+       34.597962
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.54,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.174644,
+       34.599088
+      ],
+      [
+       -79.168821,
+       34.604648
+      ],
+      [
+       -79.168581,
+       34.604852
+      ],
+      [
+       -79.168522,
+       34.604774
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.86,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.232831,
+       34.599249
+      ],
+      [
+       -79.232364,
+       34.597383
+      ],
+      [
+       -79.233321,
+       34.597097
+      ],
+      [
+       -79.233414,
+       34.596905
+      ],
+      [
+       -79.232589,
+       34.594674
+      ],
+      [
+       -79.231558,
+       34.593663
+      ],
+      [
+       -79.229718,
+       34.5939
+      ],
+      [
+       -79.229405,
+       34.593609
+      ],
+      [
+       -79.229451,
+       34.592927
+      ],
+      [
+       -79.230368,
+       34.591734
+      ],
+      [
+       -79.23032,
+       34.590908
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.27,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.230505,
+       34.587343
+      ],
+      [
+       -79.231186,
+       34.58696
+      ],
+      [
+       -79.231853,
+       34.586172
+      ],
+      [
+       -79.232953,
+       34.585867
+      ],
+      [
+       -79.233438,
+       34.585857
+      ],
+      [
+       -79.234155,
+       34.586095
+      ],
+      [
+       -79.235203,
+       34.58673
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.52,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.201736,
+       34.564993
+      ],
+      [
+       -79.202234,
+       34.565108
+      ],
+      [
+       -79.20242,
+       34.564899
+      ],
+      [
+       -79.203908,
+       34.564443
+      ],
+      [
+       -79.204074,
+       34.564163
+      ],
+      [
+       -79.204519,
+       34.564108
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.3,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.191183,
+       34.567663
+      ],
+      [
+       -79.191824,
+       34.567543
+      ],
+      [
+       -79.192302,
+       34.566961
+      ],
+      [
+       -79.192767,
+       34.566697
+      ],
+      [
+       -79.193372,
+       34.565367
+      ],
+      [
+       -79.194787,
+       34.564273
+      ],
+      [
+       -79.196732,
+       34.563879
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.71,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.184278,
+       34.56667
+      ],
+      [
+       -79.185477,
+       34.566475
+      ],
+      [
+       -79.187286,
+       34.567017
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.29,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.167549,
+       34.58846
+      ],
+      [
+       -79.164528,
+       34.590223
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.34,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.205316,
+       34.574906
+      ],
+      [
+       -79.20551,
+       34.571392
+      ],
+      [
+       -79.205078,
+       34.570103
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.54,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.208162,
+       34.57284
+      ],
+      [
+       -79.207539,
+       34.572508
+      ],
+      [
+       -79.207284,
+       34.572144
+      ],
+      [
+       -79.206566,
+       34.5718
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.19,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.205035,
+       34.56973
+      ],
+      [
+       -79.204808,
+       34.564566
+      ],
+      [
+       -79.204659,
+       34.564069
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.63,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.190289,
+       34.543121
+      ],
+      [
+       -79.189838,
+       34.542054
+      ],
+      [
+       -79.188124,
+       34.539279
+      ],
+      [
+       -79.18821,
+       34.538405
+      ],
+      [
+       -79.187889,
+       34.537645
+      ],
+      [
+       -79.188146,
+       34.536222
+      ],
+      [
+       -79.187824,
+       34.535091
+      ],
+      [
+       -79.188138,
+       34.534113
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.06,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.176251,
+       34.574308
+      ],
+      [
+       -79.176177,
+       34.575099
+      ],
+      [
+       -79.175799,
+       34.575544
+      ],
+      [
+       -79.175147,
+       34.575879
+      ],
+      [
+       -79.173938,
+       34.577726
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.45,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.206965,
+       34.578543
+      ],
+      [
+       -79.206174,
+       34.576897
+      ],
+      [
+       -79.20588,
+       34.575768
+      ],
+      [
+       -79.205429,
+       34.575309
+      ],
+      [
+       -79.205316,
+       34.574906
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.44,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.165258,
+       34.542008
+      ],
+      [
+       -79.168778,
+       34.542031
+      ],
+      [
+       -79.168798,
+       34.541663
+      ],
+      [
+       -79.170359,
+       34.541646
+      ],
+      [
+       -79.171707,
+       34.541344
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.64,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.171193,
+       34.581578
+      ],
+      [
+       -79.170442,
+       34.58204
+      ],
+      [
+       -79.169844,
+       34.58221
+      ],
+      [
+       -79.16783,
+       34.582402
+      ],
+      [
+       -79.166973,
+       34.581555
+      ],
+      [
+       -79.165625,
+       34.580802
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.6,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.233462,
+       34.548004
+      ],
+      [
+       -79.232238,
+       34.545917
+      ],
+      [
+       -79.231971,
+       34.544799
+      ],
+      [
+       -79.232411,
+       34.542643
+      ],
+      [
+       -79.232522,
+       34.54087
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.82,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.155493,
+       34.546881
+      ],
+      [
+       -79.152724,
+       34.546495
+      ],
+      [
+       -79.151767,
+       34.546528
+      ],
+      [
+       -79.15093,
+       34.546846
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.43,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.17349,
+       34.557487
+      ],
+      [
+       -79.172954,
+       34.55739
+      ],
+      [
+       -79.172144,
+       34.556424
+      ],
+      [
+       -79.172175,
+       34.555118
+      ],
+      [
+       -79.171911,
+       34.554287
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.42,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.15093,
+       34.546846
+      ],
+      [
+       -79.149649,
+       34.547217
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.12,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.14936,
+       34.547229
+      ],
+      [
+       -79.146938,
+       34.547169
+      ],
+      [
+       -79.145452,
+       34.546921
+      ],
+      [
+       -79.143146,
+       34.545523
+      ],
+      [
+       -79.142536,
+       34.544979
+      ],
+      [
+       -79.142086,
+       34.544137
+      ],
+      [
+       -79.141124,
+       34.543535
+      ],
+      [
+       -79.14039,
+       34.540475
+      ],
+      [
+       -79.14064,
+       34.540149
+      ],
+      [
+       -79.140745,
+       34.539169
+      ],
+      [
+       -79.140683,
+       34.536615
+      ],
+      [
+       -79.140102,
+       34.535663
+      ],
+      [
+       -79.139016,
+       34.534598
+      ],
+      [
+       -79.138628,
+       34.534269
+      ],
+      [
+       -79.13793,
+       34.534268
+      ],
+      [
+       -79.137134,
+       34.533081
+      ],
+      [
+       -79.136421,
+       34.532929
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 2.31,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.171904,
+       34.554065
+      ],
+      [
+       -79.17197,
+       34.552396
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.19,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.159192,
+       34.575106
+      ],
+      [
+       -79.158473,
+       34.575616
+      ],
+      [
+       -79.157425,
+       34.575945
+      ],
+      [
+       -79.15605,
+       34.575419
+      ],
+      [
+       -79.155673,
+       34.575521
+      ],
+      [
+       -79.155566,
+       34.575331
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.39,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.165646,
+       34.556072
+      ],
+      [
+       -79.167705,
+       34.555676
+      ],
+      [
+       -79.170196,
+       34.556963
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.46,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.155176,
+       34.591231
+      ],
+      [
+       -79.148905,
+       34.590626
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.58,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.213858,
+       34.578477
+      ],
+      [
+       -79.214156,
+       34.577076
+      ],
+      [
+       -79.212964,
+       34.576387
+      ],
+      [
+       -79.211669,
+       34.577414
+      ],
+      [
+       -79.210381,
+       34.576879
+      ],
+      [
+       -79.209677,
+       34.577868
+      ],
+      [
+       -79.209405,
+       34.577907
+      ],
+      [
+       -79.209133,
+       34.578187
+      ],
+      [
+       -79.20807,
+       34.578204
+      ],
+      [
+       -79.207498,
+       34.578391
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.93,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.173414,
+       34.562369
+      ],
+      [
+       -79.169464,
+       34.561881
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.37,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.173921,
+       34.563492
+      ],
+      [
+       -79.174408,
+       34.562638
+      ],
+      [
+       -79.174004,
+       34.562367
+      ],
+      [
+       -79.173746,
+       34.562326
+      ],
+      [
+       -79.17354,
+       34.562495
+      ],
+      [
+       -79.173414,
+       34.562369
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.22,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.19054,
+       34.591183
+      ],
+      [
+       -79.196033,
+       34.588355
+      ],
+      [
+       -79.196964,
+       34.58816
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.68,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.197341,
+       34.607574
+      ],
+      [
+       -79.197407,
+       34.608568
+      ],
+      [
+       -79.197148,
+       34.609838
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.25,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.197856,
+       34.604898
+      ],
+      [
+       -79.197272,
+       34.604953
+      ],
+      [
+       -79.197168,
+       34.605655
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.13,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.205535,
+       34.561074
+      ],
+      [
+       -79.205276,
+       34.560421
+      ],
+      [
+       -79.205301,
+       34.559836
+      ],
+      [
+       -79.205647,
+       34.558943
+      ],
+      [
+       -79.206087,
+       34.55835
+      ],
+      [
+       -79.207107,
+       34.555773
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.62,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.182535,
+       34.578161
+      ],
+      [
+       -79.179233,
+       34.578314
+      ],
+      [
+       -79.177599,
+       34.578138
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.45,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.177599,
+       34.578138
+      ],
+      [
+       -79.173938,
+       34.577726
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.34,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.173938,
+       34.577726
+      ],
+      [
+       -79.168819,
+       34.577115
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.47,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.168819,
+       34.577115
+      ],
+      [
+       -79.167425,
+       34.577154
+      ],
+      [
+       -79.166363,
+       34.578021
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.26,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.165001,
+       34.578137
+      ],
+      [
+       -79.164184,
+       34.577037
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.14,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.164184,
+       34.577037
+      ],
+      [
+       -79.163693,
+       34.576301
+      ],
+      [
+       -79.162703,
+       34.575718
+      ],
+      [
+       -79.161102,
+       34.575569
+      ],
+      [
+       -79.160052,
+       34.574937
+      ],
+      [
+       -79.159295,
+       34.575036
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.54,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.172042,
+       34.551964
+      ],
+      [
+       -79.172567,
+       34.550595
+      ],
+      [
+       -79.172755,
+       34.550455
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.18,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.173013,
+       34.550176
+      ],
+      [
+       -79.173163,
+       34.548382
+      ],
+      [
+       -79.172357,
+       34.544314
+      ],
+      [
+       -79.171877,
+       34.542894
+      ],
+      [
+       -79.171993,
+       34.54132
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.0,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.179938,
+       34.575622
+      ],
+      [
+       -79.177506,
+       34.576341
+      ],
+      [
+       -79.177553,
+       34.576479
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.25,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.216351,
+       34.564326
+      ],
+      [
+       -79.208585,
+       34.563574
+      ],
+      [
+       -79.208345,
+       34.562321
+      ],
+      [
+       -79.20782,
+       34.561964
+      ],
+      [
+       -79.207515,
+       34.56148
+      ],
+      [
+       -79.205695,
+       34.561101
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.15,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.169431,
+       34.561112
+      ],
+      [
+       -79.169158,
+       34.56087
+      ],
+      [
+       -79.169112,
+       34.559304
+      ],
+      [
+       -79.169923,
+       34.557595
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.41,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.158142,
+       34.566869
+      ],
+      [
+       -79.15864,
+       34.568029
+      ],
+      [
+       -79.157268,
+       34.570199
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.41,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.169941,
+       34.576269
+      ],
+      [
+       -79.169761,
+       34.576481
+      ],
+      [
+       -79.169123,
+       34.576697
+      ],
+      [
+       -79.168819,
+       34.577115
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.15,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.151147,
+       34.53824
+      ],
+      [
+       -79.149522,
+       34.538169
+      ],
+      [
+       -79.148857,
+       34.538319
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.21,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.180869,
+       34.563833
+      ],
+      [
+       -79.180484,
+       34.566735
+      ],
+      [
+       -79.176298,
+       34.566614
+      ],
+      [
+       -79.175548,
+       34.566564
+      ],
+      [
+       -79.175382,
+       34.564465
+      ],
+      [
+       -79.173861,
+       34.564047
+      ],
+      [
+       -79.173921,
+       34.563492
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.22,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.222276,
+       34.563604
+      ],
+      [
+       -79.222428,
+       34.562618
+      ],
+      [
+       -79.222836,
+       34.561881
+      ],
+      [
+       -79.223963,
+       34.560535
+      ],
+      [
+       -79.224373,
+       34.558975
+      ],
+      [
+       -79.224915,
+       34.558244
+      ],
+      [
+       -79.225435,
+       34.557716
+      ],
+      [
+       -79.227206,
+       34.55666
+      ],
+      [
+       -79.227916,
+       34.555628
+      ],
+      [
+       -79.229825,
+       34.554094
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.31,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.185421,
+       34.538999
+      ],
+      [
+       -79.18485,
+       34.539763
+      ],
+      [
+       -79.183701,
+       34.539708
+      ],
+      [
+       -79.182745,
+       34.540988
+      ],
+      [
+       -79.1805,
+       34.540279
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.59,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.175629,
+       34.538731
+      ],
+      [
+       -79.174329,
+       34.538046
+      ],
+      [
+       -79.173039,
+       34.537627
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.27,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.1805,
+       34.540279
+      ],
+      [
+       -79.180454,
+       34.54016
+      ],
+      [
+       -79.179709,
+       34.540166
+      ],
+      [
+       -79.179022,
+       34.539942
+      ],
+      [
+       -79.178357,
+       34.540119
+      ],
+      [
+       -79.177008,
+       34.539607
+      ],
+      [
+       -79.175629,
+       34.538731
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.51,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.222889,
+       34.565995
+      ],
+      [
+       -79.222842,
+       34.565132
+      ],
+      [
+       -79.222237,
+       34.563758
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.26,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.204659,
+       34.564069
+      ],
+      [
+       -79.205069,
+       34.562774
+      ],
+      [
+       -79.20509,
+       34.56157
+      ],
+      [
+       -79.205535,
+       34.561074
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.35,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.215763,
+       34.598613
+      ],
+      [
+       -79.215317,
+       34.597483
+      ],
+      [
+       -79.21455,
+       34.596771
+      ],
+      [
+       -79.213191,
+       34.595058
+      ],
+      [
+       -79.212917,
+       34.594305
+      ],
+      [
+       -79.21305,
+       34.593514
+      ],
+      [
+       -79.212922,
+       34.593083
+      ],
+      [
+       -79.212195,
+       34.591754
+      ],
+      [
+       -79.212611,
+       34.591327
+      ],
+      [
+       -79.212404,
+       34.590703
+      ],
+      [
+       -79.213278,
+       34.588568
+      ],
+      [
+       -79.212949,
+       34.586332
+      ],
+      [
+       -79.2121,
+       34.584763
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.67,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.171993,
+       34.54132
+      ],
+      [
+       -79.172397,
+       34.538524
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.31,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.161457,
+       34.586791
+      ],
+      [
+       -79.165625,
+       34.580802
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.77,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.21701,
+       34.60712
+      ],
+      [
+       -79.216354,
+       34.605189
+      ],
+      [
+       -79.215416,
+       34.599034
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.91,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.179456,
+       34.600946
+      ],
+      [
+       -79.179355,
+       34.608211
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.81,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.151113,
+       34.550733
+      ],
+      [
+       -79.15055,
+       34.548577
+      ],
+      [
+       -79.151022,
+       34.548308
+      ],
+      [
+       -79.151381,
+       34.547792
+      ],
+      [
+       -79.151289,
+       34.547336
+      ],
+      [
+       -79.15093,
+       34.546846
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.48,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.217233,
+       34.559412
+      ],
+      [
+       -79.21761,
+       34.555395
+      ],
+      [
+       -79.217524,
+       34.554938
+      ],
+      [
+       -79.216076,
+       34.554834
+      ],
+      [
+       -79.214694,
+       34.555109
+      ],
+      [
+       -79.213392,
+       34.554824
+      ],
+      [
+       -79.211924,
+       34.55483
+      ],
+      [
+       -79.211393,
+       34.554687
+      ],
+      [
+       -79.2076,
+       34.555468
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.43,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.212565,
+       34.541937
+      ],
+      [
+       -79.214934,
+       34.53505
+      ],
+      [
+       -79.214542,
+       34.534368
+      ],
+      [
+       -79.21352,
+       34.533516
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.01,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.206264,
+       34.585546
+      ],
+      [
+       -79.208961,
+       34.584172
+      ],
+      [
+       -79.210197,
+       34.583303
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.44,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.16292,
+       34.572766
+      ],
+      [
+       -79.16072,
+       34.573573
+      ],
+      [
+       -79.159149,
+       34.57503
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.44,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.187553,
+       34.567037
+      ],
+      [
+       -79.188958,
+       34.566772
+      ],
+      [
+       -79.189874,
+       34.567564
+      ],
+      [
+       -79.191183,
+       34.567663
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.37,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.201506,
+       34.540262
+      ],
+      [
+       -79.203173,
+       34.539993
+      ],
+      [
+       -79.203479,
+       34.539668
+      ],
+      [
+       -79.204481,
+       34.53764
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.44,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.19684,
+       34.563877
+      ],
+      [
+       -79.198328,
+       34.564268
+      ],
+      [
+       -79.199769,
+       34.565103
+      ],
+      [
+       -79.201417,
+       34.565108
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.46,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.197205,
+       34.588112
+      ],
+      [
+       -79.19934,
+       34.588152
+      ],
+      [
+       -79.200263,
+       34.587798
+      ],
+      [
+       -79.200478,
+       34.587285
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.35,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.200478,
+       34.587285
+      ],
+      [
+       -79.199835,
+       34.585377
+      ],
+      [
+       -79.200224,
+       34.584159
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.36,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.200224,
+       34.584159
+      ],
+      [
+       -79.203369,
+       34.580432
+      ],
+      [
+       -79.204217,
+       34.578665
+      ],
+      [
+       -79.20448,
+       34.576443
+      ],
+      [
+       -79.204903,
+       34.575719
+      ],
+      [
+       -79.205429,
+       34.575309
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.12,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.195564,
+       34.602158
+      ],
+      [
+       -79.195098,
+       34.602649
+      ],
+      [
+       -79.193553,
+       34.60328
+      ],
+      [
+       -79.193073,
+       34.603145
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.27,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.193617,
+       34.601103
+      ],
+      [
+       -79.192818,
+       34.603927
+      ],
+      [
+       -79.191681,
+       34.605541
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.53,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.191246,
+       34.607208
+      ],
+      [
+       -79.18981,
+       34.609635
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.3,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.159329,
+       34.534963
+      ],
+      [
+       -79.161049,
+       34.536094
+      ],
+      [
+       -79.161748,
+       34.536381
+      ],
+      [
+       -79.162317,
+       34.536924
+      ],
+      [
+       -79.163592,
+       34.537309
+      ],
+      [
+       -79.163951,
+       34.537315
+      ],
+      [
+       -79.164801,
+       34.536567
+      ],
+      [
+       -79.165492,
+       34.536611
+      ],
+      [
+       -79.167059,
+       34.53631
+      ],
+      [
+       -79.168553,
+       34.536821
+      ],
+      [
+       -79.169775,
+       34.537777
+      ],
+      [
+       -79.172139,
+       34.538454
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.37,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.176229,
+       34.598227
+      ],
+      [
+       -79.174644,
+       34.599088
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.17,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.147564,
+       34.573423
+      ],
+      [
+       -79.14897,
+       34.573185
+      ],
+      [
+       -79.150413,
+       34.572659
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.28,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.155005,
+       34.569473
+      ],
+      [
+       -79.152982,
+       34.56983
+      ],
+      [
+       -79.152478,
+       34.569503
+      ],
+      [
+       -79.15022,
+       34.570353
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.48,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.164345,
+       34.590356
+      ],
+      [
+       -79.161249,
+       34.591974
+      ],
+      [
+       -79.159926,
+       34.59404
+      ],
+      [
+       -79.16047,
+       34.594644
+      ],
+      [
+       -79.160357,
+       34.595513
+      ],
+      [
+       -79.160649,
+       34.59604
+      ],
+      [
+       -79.160452,
+       34.596379
+      ],
+      [
+       -79.159798,
+       34.596582
+      ],
+      [
+       -79.158722,
+       34.596523
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.04,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.199366,
+       34.574659
+      ],
+      [
+       -79.205052,
+       34.57195
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.6,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.188202,
+       34.578337
+      ],
+      [
+       -79.188722,
+       34.577838
+      ],
+      [
+       -79.189236,
+       34.578257
+      ],
+      [
+       -79.190551,
+       34.577671
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.28,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.179461,
+       34.553522
+      ],
+      [
+       -79.179466,
+       34.552706
+      ],
+      [
+       -79.178656,
+       34.551211
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.27,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.178656,
+       34.551211
+      ],
+      [
+       -79.178016,
+       34.550215
+      ],
+      [
+       -79.177004,
+       34.549488
+      ],
+      [
+       -79.175378,
+       34.549251
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.4,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.175145,
+       34.549191
+      ],
+      [
+       -79.174107,
+       34.548759
+      ],
+      [
+       -79.173156,
+       34.548644
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.19,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.173906,
+       34.553812
+      ],
+      [
+       -79.173222,
+       34.553551
+      ],
+      [
+       -79.172401,
+       34.552811
+      ],
+      [
+       -79.171974,
+       34.552741
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.22,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.165623,
+       34.551876
+      ],
+      [
+       -79.171994,
+       34.552254
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.59,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.176875,
+       34.558278
+      ],
+      [
+       -79.174472,
+       34.557856
+      ],
+      [
+       -79.17357,
+       34.557518
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.32,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.179375,
+       34.557056
+      ],
+      [
+       -79.178822,
+       34.557233
+      ],
+      [
+       -79.178259,
+       34.557714
+      ],
+      [
+       -79.176821,
+       34.558191
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.27,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.17798,
+       34.554997
+      ],
+      [
+       -79.17747,
+       34.554999
+      ],
+      [
+       -79.17547,
+       34.555757
+      ],
+      [
+       -79.177523,
+       34.557906
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.55,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.179477,
+       34.560559
+      ],
+      [
+       -79.178479,
+       34.55938
+      ],
+      [
+       -79.178441,
+       34.558916
+      ],
+      [
+       -79.177449,
+       34.557931
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.35,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.182856,
+       34.557449
+      ],
+      [
+       -79.179573,
+       34.557016
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.31,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.190824,
+       34.553883
+      ],
+      [
+       -79.187493,
+       34.553423
+      ],
+      [
+       -79.184539,
+       34.553684
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.58,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.165566,
+       34.580574
+      ],
+      [
+       -79.165154,
+       34.579477
+      ],
+      [
+       -79.165001,
+       34.578137
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.28,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.157173,
+       34.570348
+      ],
+      [
+       -79.155874,
+       34.572254
+      ],
+      [
+       -79.154884,
+       34.573364
+      ],
+      [
+       -79.154113,
+       34.5731
+      ],
+      [
+       -79.153159,
+       34.573392
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.57,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.150166,
+       34.620108
+      ],
+      [
+       -79.152432,
+       34.6163
+      ],
+      [
+       -79.153384,
+       34.613882
+      ],
+      [
+       -79.153311,
+       34.612877
+      ],
+      [
+       -79.152861,
+       34.611577
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 1.01,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.152843,
+       34.611459
+      ],
+      [
+       -79.152116,
+       34.610013
+      ],
+      [
+       -79.153607,
+       34.605776
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.66,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.162699,
+       34.615513
+      ],
+      [
+       -79.163746,
+       34.614297
+      ],
+      [
+       -79.164651,
+       34.61233
+      ],
+      [
+       -79.165023,
+       34.612023
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.45,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.181269,
+       34.592779
+      ],
+      [
+       -79.180805,
+       34.594193
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.16,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.201987,
+       34.59279
+      ],
+      [
+       -79.201003,
+       34.589555
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.37,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "ditch"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.212057,
+       34.584671
+      ],
+      [
+       -79.211364,
+       34.583708
+      ],
+      [
+       -79.210515,
+       34.583064
+      ],
+      [
+       -79.207769,
+       34.580404
+      ],
+      [
+       -79.206965,
+       34.578543
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.84,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
+    },
+    "type": "Feature"
+   },
+   {
+    "geometry": {
+     "coordinates": [
+      [
+       -79.230315,
+       34.590819
+      ],
+      [
+       -79.230447,
+       34.590124
+      ],
+      [
+       -79.23024,
+       34.587915
+      ],
+      [
+       -79.230465,
+       34.587415
+      ]
+     ],
+     "type": "LineString"
+    },
+    "properties": {
+     "length_km": 0.38,
+     "n_sites": 0,
+     "name": null,
+     "order": 2,
+     "riverKey": null,
+     "underground": 0,
+     "waterway": "stream"
     },
     "type": "Feature"
    }

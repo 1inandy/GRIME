@@ -8,6 +8,7 @@ Run: uvicorn api.main:app --reload --port 8000
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 import json
@@ -31,6 +32,9 @@ app = FastAPI(
 # to the deploy origin(s) instead of "*".
 _allowed = os.getenv("GRIME_ALLOWED_ORIGIN", "").strip()
 _origins = [o.strip() for o in _allowed.split(",") if o.strip()] or ["*"]
+# Region geojsons now carry the full baked waterway network (~1-2 MB raw for a
+# metro); gzip cuts that ~8-10x on the wire (also compresses places.json).
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
@@ -481,7 +485,9 @@ async def serve_landing():
     """Landing page — serves the dashboard."""
     landing = dashboard_dir / "index.html"
     if landing.exists():
-        return FileResponse(landing)
+        # no-cache: browsers heuristically cached the HTML and kept serving a
+        # stale app shell (old version badge / old JS) after deploys.
+        return FileResponse(landing, headers={"Cache-Control": "no-cache"})
     return JSONResponse(status_code=404, content={"error": "Landing page not found"})
 
 
@@ -490,7 +496,9 @@ async def serve_dashboard():
     """Dashboard page."""
     landing = dashboard_dir / "index.html"
     if landing.exists():
-        return FileResponse(landing)
+        # no-cache: browsers heuristically cached the HTML and kept serving a
+        # stale app shell (old version badge / old JS) after deploys.
+        return FileResponse(landing, headers={"Cache-Control": "no-cache"})
     return JSONResponse(status_code=404, content={"error": "Dashboard not found"})
 
 
@@ -499,7 +507,9 @@ async def serve_map():
     """Alias that serves the dashboard HTML (documented in README §11)."""
     landing = dashboard_dir / "index.html"
     if landing.exists():
-        return FileResponse(landing)
+        # no-cache: browsers heuristically cached the HTML and kept serving a
+        # stale app shell (old version badge / old JS) after deploys.
+        return FileResponse(landing, headers={"Cache-Control": "no-cache"})
     return JSONResponse(status_code=404, content={"error": "Dashboard not found"})
 
 
@@ -508,7 +518,7 @@ async def serve_explore():
     """App / map explorer."""
     explore = dashboard_dir / "explore" / "index.html"
     if explore.exists():
-        return FileResponse(explore)
+        return FileResponse(explore, headers={"Cache-Control": "no-cache"})
     return JSONResponse(status_code=404, content={"error": "Explorer not found"})
 
 
@@ -517,7 +527,7 @@ async def serve_docs():
     """GRIME technical documentation."""
     docs_file = dashboard_dir / "docs" / "index.html"
     if docs_file.exists():
-        return FileResponse(docs_file)
+        return FileResponse(docs_file, headers={"Cache-Control": "no-cache"})
     return JSONResponse(status_code=404, content={"error": "Docs not found"})
 
 
