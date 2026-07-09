@@ -274,15 +274,20 @@ async function fetchRegionCandidates(slug){
 function bakedStreamsToDraw(fc){
   const out=[];
   if(!fc||!fc.features)return out;
+  let u=0;
   for(const f of fc.features){
     const p=f.properties||{},g=f.geometry||{};
     const parts=g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[];
+    const under=!!p.underground;
     let i=0;
     for(const coords of parts){
       if(!coords||coords.length<2)continue;
-      out.push({osmId:'baked:'+(p.riverKey||p.name||'?')+':'+(i++),name:p.name||'River',
-        baseName:p.name||'River',order:p.order||2,coords,estWidth:5,
-        waterway:p.waterway||'stream',underground:false,riverKey:p.riverKey||null});
+      // Underground (culverted) reaches carry underground:true → the existing
+      // dashed layers render them, keeping a buried river visually continuous.
+      // Unnamed ways have name:'' (no label) and riverKey:null (context).
+      out.push({osmId:'baked:'+(p.riverKey||('u'+(u++)))+':'+(under?'u':'s')+(i++),
+        name:p.name||'',baseName:p.name||'',order:p.order||2,coords,estWidth:5,
+        waterway:p.waterway||'stream',underground:under,riverKey:p.riverKey||null});
     }
   }
   return out;
@@ -298,8 +303,13 @@ function regionFeatureToCandidate(f,i){
   const p=f.properties||{};
   const fmt=(v,d)=>(v==null||isNaN(+v))?'—':(+v).toFixed(d);
   const rn=(p.river_name||'').trim();
+  // No named waterway within 1 km, but the site sits on a real UNNAMED mapped
+  // channel (snapped onto it) → say so instead of a bare segment id.
+  const segLabel=p.on_unnamed_waterway
+    ?('Unnamed creek (seg '+(p.segment_id!=null?p.segment_id:i)+')')
+    :('Segment '+(p.segment_id!=null?p.segment_id:i));
   return{id:i,lon:f.geometry.coordinates[0],lat:f.geometry.coordinates[1],
-    stream:rn||('Segment '+(p.segment_id!=null?p.segment_id:i)),streamWidth:+p.channel_width_m||5,
+    stream:rn||segLabel,streamWidth:+p.channel_width_m||5,
     waterway:'stream',riverKey:rn?rn.toLowerCase():'__region_'+i,upstreamFrac:0,order:p.stream_order||2,
     streamIdx:-1,coordIdx:0,wayOrder:-1,isPortal:false,
     composite:+(+p.composite_score||0).toFixed(1),gen:+(+p.generation_score||0).toFixed(1),
