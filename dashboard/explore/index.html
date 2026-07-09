@@ -163,6 +163,11 @@ let map,places=[],activeCityIdx=-1,activeCandidates=[],activeStreams=[],selected
 // of client-side generation. Cities outside every region keep the exact
 // existing behavior. activeRegionSlug is non-null only while such a city is open.
 let regionsIndex=null,regionsIndexTried=false,regionCandCache={},activeRegionSlug=null,regionLatBuckets=null;
+// True while the open region city renders BAKED waterway geometry (the `streams`
+// FeatureCollection baked into the region file by scripts/add_river_names.py).
+// When set, the explorer has zero live-Overpass dependency: no background river
+// fetch, no pan-autoload, no whole-river trace — the baked lines are the rivers.
+let hasBakedStreams=false;
 // Remember city params so we can re-score after pan-autoload merges in new streams
 let activePop=0,activeCC='',activeSeed=0;
 // Pan-autoload state
@@ -240,6 +245,9 @@ function regionForPoint(lon,lat){
   return null;
 }
 
+// Returns the region doc {features, streams} — features are the scored sites,
+// streams is the BAKED waterway FeatureCollection (may be absent in older data,
+// in which case the caller falls back to the live Overpass fetch).
 async function fetchRegionCandidates(slug){
   if(regionCandCache[slug])return regionCandCache[slug];
   for(const p of [API+'/api/regions/'+slug+'/candidates','/api/regions/'+slug+'/candidates',
@@ -248,10 +256,33 @@ async function fetchRegionCandidates(slug){
       const r=await fetch(p);
       if(!r.ok)continue;
       const j=await r.json();
-      if(j&&j.features&&j.features.length){regionCandCache[slug]=j.features;return j.features}
+      if(j&&j.features&&j.features.length){
+        regionCandCache[slug]={features:j.features,streams:j.streams||null};
+        return regionCandCache[slug];
+      }
     }catch(e){}
   }
   return null;
+}
+
+// Convert the baked `streams` FeatureCollection into drawStreams entries (the
+// shape buildStreamLayerGeo consumes). A MultiLineString river becomes several
+// entries sharing one riverKey, so it still highlights/focuses as ONE river.
+function bakedStreamsToDraw(fc){
+  const out=[];
+  if(!fc||!fc.features)return out;
+  for(const f of fc.features){
+    const p=f.properties||{},g=f.geometry||{};
+    const parts=g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[];
+    let i=0;
+    for(const coords of parts){
+      if(!coords||coords.length<2)continue;
+      out.push({osmId:'baked:'+(p.riverKey||p.name||'?')+':'+(i++),name:p.name||'River',
+        baseName:p.name||'River',order:p.order||2,coords,estWidth:5,
+        waterway:p.waterway||'stream',underground:false,riverKey:p.riverKey||null});
+    }
+  }
+  return out;
 }
 
 // Map a real scored feature onto the exact shape the existing rendering reads.
@@ -491,6 +522,9 @@ function streamKey(s){
 // named waterway (e.g. all segments of "Anacostia River"). Falls back to a synthetic
 // per-way key for unnamed waterways so they at least cluster as themselves.
 function riverKeyOf(s){
+  // Baked region streams carry an explicit riverKey (matches the sites'
+  // river_name.toLowerCase(), even for bare generic names like "Creek").
+  if(s.riverKey)return s.riverKey;
   const n=(s.baseName||s.name||'').toLowerCase().replace(/\s*\(culvert\)$/,'').replace(/\s*\((entrance|exit)\)$/,'').trim();
   if(n&&n!=='river'&&n!=='creek'&&n!=='stream'&&n!=='canal'&&n!=='drain'&&n!=='ditch')return n;
   return'__unnamed_'+(s.osmId||streamKey(s));
@@ -880,6 +914,9 @@ function schedulePanFetch(){
 
 async function onPanFetch(){
   if(activeCityIdx<0)return;
+  // Baked-geometry region cities have their rivers already drawn from the region
+  // file — no live Overpass fetching on pan (no clutter, no rate-limit exposure).
+  if(hasBakedStreams)return;
   if(initialFetchInFlight)return; // openCity is still loading the city's first batch
   if(riverFetchInFlight)return;
   // Don't bother fetching when zoomed way out — streams aren't visible and Overpass
@@ -1044,6 +1081,12 @@ async function enterRiverFocus(key,name,lngLat){
     flyToFocusedRiver();
     return;
   }
+  // Baked-geometry region cities: the baked line already IS the merged whole
+  // river for this region — focus and frame it without any live Overpass trace.
+  if(hasBakedStreams){
+    flyToFocusedRiver();
+    return;
+  }
   if(riverFetchInFlight)return;
 
   riverFetchInFlight=true;
@@ -1125,6 +1168,7 @@ async function initMap(){
   mapboxgl.accessToken=token;
   try{
     map=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/satellite-streets-v12',center:[20,15],zoom:2,pitch:0,maxZoom:18});
+    currentMapStyle='mapbox://styles/mapbox/satellite-streets-v12';
   }catch(err){
     showFatalError('Map failed to initialize',String((err&&err.message)||err));
     return false;
@@ -1180,6 +1224,7 @@ function resetExploreState(){
   coveredBboxes=[];
   streamKeySet.clear();
   drawStreams=[];drawKeySet.clear();
+  hasBakedStreams=false;
   focusedRiverKey=null;focusedRiverName=null;
   panFetchInFlight=false;panFetchQueued=false;
   riverFetchInFlight=false;
@@ -1191,14 +1236,33 @@ function resetExploreState(){
   setLoadingPill(false);
 }
 
-// True only when the map style spec is fully loaded. A theme/satellite toggle calls
-// map.setStyle(), which rebuilds the style from scratch (satellite vs dark/light have
-// different sprites, so the diff bails) and briefly leaves it "not loaded". Calling
-// addSource/addLayer during that window throws "Style is not done loading". The map
-// builders below defer their layer work to 'style.load' when a reload is in flight;
-// they are all idempotent, so a double-run (this + reloadMap's own reload handler) is
-// harmless.
-function styleReady(){return map&&map.isStyleLoaded();}
+// Run a layer-building fn now; if the style is mid-setStyle (theme/satellite
+// toggle rebuilds it from scratch), Mapbox throws "Style is not done loading"
+// from addSource/addLayer — catch exactly that and re-run once the incoming
+// style fires 'style.load' (guaranteed to fire during a setStyle reload). All
+// builders below are idempotent, so a re-run can't double-add.
+// `stillValid` (optional) is re-checked when the deferred run fires: navigation
+// during the reload (back button, city switch) makes the queued builder stale —
+// without the check it would paint the previous view's layers over the new one.
+// The deferred run re-enters this wrapper so a second overlapping setStyle
+// defers again instead of throwing uncaught inside Mapbox's event dispatch.
+// NOTE deliberately NOT map.isStyleLoaded(): that also reports false while mere
+// TILES are loading (every flyTo/fitBounds), where 'style.load' never fires —
+// a predicate guard on it deferred the layers forever and left region cities
+// with data but no rendered sites/rivers.
+function withWritableStyle(fn,stillValid){
+  try{fn();}
+  catch(e){
+    if(/not done loading/i.test(String((e&&e.message)||e))){
+      map.once('style.load',()=>{
+        if(stillValid&&!stillValid())return;
+        withWritableStyle(fn,stillValid);
+      });
+      return;
+    }
+    throw e;
+  }
+}
 
 function loadWorldView(){
   activeCityIdx=-1;activeCandidates=[];activeStreams=[];drawStreams=[];selectedCand=null;activeRegionSlug=null;
@@ -1210,28 +1274,30 @@ function loadWorldView(){
   document.getElementById('city-view').classList.remove('vis');
   document.getElementById('place-list').style.display='';
   showStats();renderPlaceList();
-  // A style reload is mid-flight → adding the 'places' source now throws. Re-run once
-  // the style is ready (state is already reset, so this renders the world view).
-  if(!styleReady()){map.once('style.load',loadWorldView);return;}
-  clearLayers();
-  const geojson={type:'FeatureCollection',features:places.map((p,i)=>({
-    type:'Feature',geometry:{type:'Point',coordinates:[p.lo,p.la]},
-    properties:{idx:i,name:p.n||'Unknown',cc:p.c||'??',pop:p.p||0}
-  }))};
-  map.addSource('places',{type:'geojson',data:geojson,cluster:true,clusterMaxZoom:12,clusterRadius:40});
-  map.addLayer({id:'clusters',type:'circle',source:'places',filter:['has','point_count'],paint:{
-    'circle-color':['step',['get','point_count'],'#1D9E75',50,'#378ADD',200,'#7F77DD',1000,'#22d3ee'],
-    'circle-radius':['step',['get','point_count'],14,50,18,200,22,1000,28],
-    'circle-stroke-width':2,'circle-stroke-color':'#ffffff'
-  }});
-  map.addLayer({id:'cluster-count',type:'symbol',source:'places',filter:['has','point_count'],layout:{'text-field':'{point_count_abbreviated}','text-size':11,'text-font':['DIN Pro Medium','Arial Unicode MS Regular']},paint:{'text-color':'#ffffff'}});
-  map.addLayer({id:'unclustered',type:'circle',source:'places',filter:['!',['has','point_count']],paint:{
-    'circle-radius':['interpolate',['linear'],['get','pop'],1000,3,100000,6,1000000,10,10000000,14],
-    'circle-color':['interpolate',['linear'],['get','pop'],1000,'#10b981',100000,'#3b82f6',1000000,'#8b5cf6',10000000,'#22d3ee'],
-    'circle-stroke-width':1.5,'circle-stroke-color':'#ffffff'
-  }});
-  // Cluster/unclustered click + hover handlers are attached ONCE in initMap (X3) —
-  // re-registering them here leaked a listener per loadWorldView call.
+  // If a style reload is mid-flight, adding the 'places' source throws — the
+  // wrapper re-runs this builder on 'style.load' (state above is already reset),
+  // unless the user has since opened a city (world layers would paint over it).
+  withWritableStyle(()=>{
+    clearLayers();
+    const geojson={type:'FeatureCollection',features:places.map((p,i)=>({
+      type:'Feature',geometry:{type:'Point',coordinates:[p.lo,p.la]},
+      properties:{idx:i,name:p.n||'Unknown',cc:p.c||'??',pop:p.p||0}
+    }))};
+    map.addSource('places',{type:'geojson',data:geojson,cluster:true,clusterMaxZoom:12,clusterRadius:40});
+    map.addLayer({id:'clusters',type:'circle',source:'places',filter:['has','point_count'],paint:{
+      'circle-color':['step',['get','point_count'],'#1D9E75',50,'#378ADD',200,'#7F77DD',1000,'#22d3ee'],
+      'circle-radius':['step',['get','point_count'],14,50,18,200,22,1000,28],
+      'circle-stroke-width':2,'circle-stroke-color':'#ffffff'
+    }});
+    map.addLayer({id:'cluster-count',type:'symbol',source:'places',filter:['has','point_count'],layout:{'text-field':'{point_count_abbreviated}','text-size':11,'text-font':['DIN Pro Medium','Arial Unicode MS Regular']},paint:{'text-color':'#ffffff'}});
+    map.addLayer({id:'unclustered',type:'circle',source:'places',filter:['!',['has','point_count']],paint:{
+      'circle-radius':['interpolate',['linear'],['get','pop'],1000,3,100000,6,1000000,10,10000000,14],
+      'circle-color':['interpolate',['linear'],['get','pop'],1000,'#10b981',100000,'#3b82f6',1000000,'#8b5cf6',10000000,'#22d3ee'],
+      'circle-stroke-width':1.5,'circle-stroke-color':'#ffffff'
+    }});
+    // Cluster/unclustered click + hover handlers are attached ONCE in initMap (X3) —
+    // re-registering them here leaked a listener per loadWorldView call.
+  },()=>activeCityIdx<0);   // stale once a city is open — don't paint world layers over it
 }
 
 function clearLayers(){
@@ -1245,9 +1311,13 @@ function clearLayers(){
 // the OSM river fetch has returned).
 function addMapLayers(){
   // A theme/satellite toggle mid-openCity leaves the style reloading; adding sources
-  // now throws "Style is not done loading". Defer to style.load (reloadMap's handler
-  // re-opens the city too; both are safe because this function is idempotent).
-  if(!styleReady()){map.once('style.load',addMapLayers);return;}
+  // then throws "Style is not done loading" — the wrapper catches exactly that and
+  // re-runs on style.load (safe: this builder is idempotent). Stale once the user
+  // navigates on (newer openCity, or back to world view) before the reload lands.
+  const t=openCityToken;
+  withWritableStyle(_addMapLayersNow,()=>t===openCityToken&&activeCityIdx>=0);
+}
+function _addMapLayersNow(){
   // Idempotent: a rapid re-open of the same city can race two openCity flows into
   // here; without this, the second map.addSource('streams') throws "There is already
   // a source with ID streams" and wedges the map. Remove any prior stream/candidate
@@ -1274,17 +1344,17 @@ function addMapLayers(){
   map.addLayer({id:'candidates',type:'circle',source:'candidates',paint:{'circle-radius':['interpolate',['linear'],['get','composite'],20,6,55,12],'circle-color':['interpolate',['linear'],['get','composite'],20,'#ef4444',30,'#f59e0b',40,'#10b981',50,'#22d3ee'],'circle-stroke-width':2.5,'circle-stroke-color':'#fff'}});
 }
 
-// Header info line — reflects however many site-bearing rivers are currently drawn.
+// Header info line — counts DISTINCT site-bearing rivers actually drawn (a river
+// split across several ways/parts still counts once), not raw line segments.
 function updateCityInfo(name){
   const drawn=siteDrawStreams();
-  let nSurface=drawn.filter(s=>!s.underground).length;
+  let nSurface=new Set(drawn.filter(s=>!s.underground).map(s=>riverKeyOf(s))).size;
   const nUnderground=drawn.filter(s=>s.underground).length;
   const nPortals=((activeStreams&&activeStreams._portals)||[]).length;
-  // Region fast path draws the OSM river lines in the background, so `drawn` can be
-  // empty for a while (or if Overpass is slow/rate-limited). Fall back to the count of
-  // distinct NAMED waterways among the scored sites so the header never shows a
-  // misleading "0 surface rivers"; drop the clause entirely if there genuinely isn't
-  // a named surface waterway yet.
+  // Fallback while nothing is drawn yet (old region data mid-background-fetch, or
+  // Overpass slow/rate-limited): count distinct NAMED waterways among the scored
+  // sites so the header never shows a misleading "0 surface rivers"; drop the
+  // clause entirely if there genuinely isn't a named surface waterway yet.
   if(nSurface===0){
     const names=new Set();
     for(const c of activeCandidates){const s=(c.stream||'');if(s&&!/^Segment /.test(s))names.add(s);}
@@ -1383,19 +1453,31 @@ async function openCity(idx){
   const cityRegion=regionForPoint(p.lo,p.la);
   if(cityRegion){
     spin('Loading real scored sites…');
-    const feats=await fetchRegionCandidates(cityRegion.slug);
+    const doc=await fetchRegionCandidates(cityRegion.slug);
     if(myToken!==openCityToken)return;
-    if(feats&&feats.length){
+    if(doc&&doc.features&&doc.features.length){
       activeRegionSlug=cityRegion.slug;
-      activeCandidates=feats.map(regionFeatureToCandidate);
-      activeStreams=[];                       // OSM rivers arrive in the background
-      pipelineStats={total:feats.length,scored:feats.length,deployed:feats.length,
+      activeCandidates=doc.features.map(regionFeatureToCandidate);
+      activeStreams=[];
+      pipelineStats={total:doc.features.length,scored:doc.features.length,deployed:doc.features.length,
         pctile:1,streams:0,filtered:0,catchEff:0.65,portals:0};
-      addMapLayers();                         // real sites render NOW — no Overpass wait
+      // BAKED GEOMETRY (preferred): the region file carries the merged waterway
+      // lines (one clean line per site-bearing river, baked from OSM+NHD by
+      // scripts/add_river_names.py). Render them directly — instant, reliable,
+      // zero live-Overpass dependency, no context clutter, no culvert stubs.
+      const baked=bakedStreamsToDraw(doc.streams);
+      if(baked.length){
+        hasBakedStreams=true;
+        drawStreams=baked;
+        drawKeySet=new Set(baked.map(streamKey));
+      }
+      addMapLayers();                         // sites + baked rivers render NOW
       fitToCandidates();
       updateCityInfo(p.n);
       renderCityView();
-      // Background: fetch OSM waterways to draw the rivers and name the sites.
+      if(baked.length)return;                 // no live fetch needed at all
+      // FALLBACK (older region data without baked streams): background-fetch OSM
+      // waterways to draw the rivers and name the sites, as before.
       fetchRealStreams(p.la,p.lo,p.p).then(fetched=>{
         if(myToken!==openCityToken||activeRegionSlug!==cityRegion.slug||!fetched)return;
         if(fetched.draw)mergeDraw(fetched.draw);
@@ -1717,11 +1799,25 @@ function getMapStyle(){
 // image…" console errors) and wastes work. If a reload is in flight, just mark one
 // pending; when it lands we re-apply the latest desired style (getMapStyle() reads the
 // current isSat / isLightTheme), so a flurry of toggles collapses to the final state.
-let styleReloadPending=false;
+// Coalesce on OUR OWN in-flight reload only (an explicit flag, deliberately not
+// map.isStyleLoaded(): that is also false while mere tiles load, which would
+// swallow a toggle clicked during any flyTo and never apply it).
+// currentMapStyle guards against a SAME-style setStyle (theme toggle while
+// satellite is on): Mapbox would diff-apply it — stripping our runtime layers —
+// and never fire 'style.load', stranding styleReloadInFlight forever. When the
+// target equals what's already loaded there is nothing to do at all. Every real
+// transition here swaps sprites (satellite ↔ dark ↔ light), so the diff bails
+// to a full rebuild and 'style.load' is guaranteed.
+let styleReloadPending=false,styleReloadInFlight=false,currentMapStyle=null;
 function reloadMap(){
-  if(!map.isStyleLoaded()){styleReloadPending=true;return;}
-  map.setStyle(getMapStyle());
+  const target=getMapStyle();
+  if(target===currentMapStyle)return;   // e.g. theme toggled while satellite shows
+  if(styleReloadInFlight){styleReloadPending=true;return;}
+  styleReloadInFlight=true;
+  currentMapStyle=target;
+  map.setStyle(target);
   map.once('style.load',()=>{
+    styleReloadInFlight=false;
     if(wwOverlayOn)addWaterwayOverlay();
     if(activeCityIdx>=0)openCity(activeCityIdx);else loadWorldView();
     if(styleReloadPending){styleReloadPending=false;reloadMap();}
@@ -1740,12 +1836,15 @@ document.getElementById('style-toggle').addEventListener('click',()=>{
 let wwOverlayOn=false;
 function addWaterwayOverlay(){
   if(map.getSource('osm-ww'))return;
-  // Toggling the overlay during a style reload would throw "Style is not done
-  // loading"; defer until the style is ready (reloadMap re-adds it when wwOverlayOn).
-  if(!styleReady()){map.once('style.load',addWaterwayOverlay);return;}
-  map.addSource('osm-ww',{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap'});
-  map.addLayer({id:'osm-ww-layer',type:'raster',source:'osm-ww',paint:{'raster-opacity':0.35}},
-    map.getLayer('streams-outline')?'streams-outline':map.getLayer('clusters')?'clusters':undefined);
+  // Toggling the overlay during a style reload throws "Style is not done loading" —
+  // the wrapper re-runs on style.load (getSource guard keeps it idempotent; stale
+  // once the user has toggled the overlay back off).
+  withWritableStyle(()=>{
+    if(map.getSource('osm-ww'))return;
+    map.addSource('osm-ww',{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap'});
+    map.addLayer({id:'osm-ww-layer',type:'raster',source:'osm-ww',paint:{'raster-opacity':0.35}},
+      map.getLayer('streams-outline')?'streams-outline':map.getLayer('clusters')?'clusters':undefined);
+  },()=>wwOverlayOn);
 }
 function removeWaterwayOverlay(){
   try{map.removeLayer('osm-ww-layer')}catch(e){}
