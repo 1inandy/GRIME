@@ -21,7 +21,7 @@ load_dotenv()
 app = FastAPI(
     title="GRIME API",
     description="Garbage River Interception and Modeling Engine",
-    version="3.0.0",
+    version="4.0.0",
     docs_url="/api/swagger",
     redoc_url="/api/redoc",
 )

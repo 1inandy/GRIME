@@ -410,11 +410,15 @@ def test_streams_baked_and_sites_snapped(tmp_path, monkeypatch):
     assert status == "ok" and named == 2 and stats["snapped"] == 1
     out = json.load(open(tmp_path / "r.geojson"))
 
-    # streams: exactly ONE drawn river (Ellerbe; Eno has no site), merged to one line
-    sf = out["streams"]["features"]
-    assert [f["properties"]["name"] for f in sf] == ["Ellerbe Creek"]
-    assert sf[0]["geometry"]["type"] == "LineString"      # two segments merged into one
-    xs = [c[0] for c in sf[0]["geometry"]["coordinates"]]
+    # streams: BOTH rivers drawn — Ellerbe bright (n_sites=2), Eno as site-less
+    # CONTEXT (n_sites=0) so the full named network is visible.
+    sf = {f["properties"]["name"]: f for f in out["streams"]["features"]}
+    assert set(sf) == {"Ellerbe Creek", "Eno River"}
+    assert sf["Ellerbe Creek"]["properties"]["n_sites"] == 2
+    assert sf["Eno River"]["properties"]["n_sites"] == 0
+    ell = sf["Ellerbe Creek"]
+    assert ell["geometry"]["type"] == "LineString"        # two segments merged into one
+    xs = [c[0] for c in ell["geometry"]["coordinates"]]
     assert max(xs) <= -78.885 + 1e-6                      # culverted reach not drawn
 
     # site 1: snapped onto the creek (lat == 36.000), DEM preserved, scores untouched
