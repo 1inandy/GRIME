@@ -122,7 +122,7 @@ body.theme-light .hm button.active{border-color:var(--acc)!important}
     <button id="ww-toggle" title="Toggle OpenStreetMap waterway overlay">Waterways</button>
     <button id="style-toggle" class="active">Satellite ✓</button>
     <button id="theme-toggle">Light theme</button>
-    <span style="color:var(--feas)">● v3</span>
+    <span style="color:var(--feas)">● v4</span>
   </div>
 </div>
 <div id="content">
@@ -165,9 +165,12 @@ let map,places=[],activeCityIdx=-1,activeCandidates=[],activeStreams=[],selected
 let regionsIndex=null,regionsIndexTried=false,regionCandCache={},activeRegionSlug=null,regionLatBuckets=null;
 // True while the open region city renders BAKED waterway geometry (the `streams`
 // FeatureCollection baked into the region file by scripts/add_river_names.py).
-// When set, the explorer has zero live-Overpass dependency: no background river
-// fetch, no pan-autoload, no whole-river trace — the baked lines are the rivers.
-let hasBakedStreams=false;
+// When set, the city's rivers render with zero live-Overpass dependency (no
+// background river fetch, no whole-river trace). Pan-autoload still runs, but in
+// CONTEXT-ONLY mode: it extends the drawn river map outside the baked bbox and
+// never touches the fixed candidate set. activeRegionBbox is the baked coverage
+// ([w,s,e,n]) — pan fetches skip ways already represented inside it.
+let hasBakedStreams=false,activeRegionBbox=null;
 // Remember city params so we can re-score after pan-autoload merges in new streams
 let activePop=0,activeCC='',activeSeed=0;
 // Pan-autoload state
@@ -334,18 +337,27 @@ function hash01(str){
 // ═══ REAL RIVER DATA FROM OPENSTREETMAP ═════════════════════════
 const OVERPASS_URLS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
 
+// Race both Overpass mirrors concurrently and take the first success, aborting
+// the loser. The old sequential loop meant a hung/rate-limited primary burned
+// its full timeout before the mirror was even tried — the main reason live
+// (non-region) cities took 20-30 s to show rivers. The two mirrors are separate
+// operators, so the race doesn't double load on either one.
 async function runOverpass(query,abortMs){
-  for(const url of OVERPASS_URLS){
-    try{
-      const ctrl=new AbortController();
-      const timer=setTimeout(()=>ctrl.abort(),abortMs);
-      const resp=await fetch(url,{method:'POST',body:'data='+encodeURIComponent(query),headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ctrl.signal});
-      clearTimeout(timer);
-      if(!resp.ok)continue;
-      return await resp.json();
-    }catch(e){continue}
+  const ctrls=OVERPASS_URLS.map(()=>new AbortController());
+  const timers=ctrls.map(c=>setTimeout(()=>c.abort(),abortMs));
+  const attempts=OVERPASS_URLS.map((url,i)=>
+    fetch(url,{method:'POST',body:'data='+encodeURIComponent(query),
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ctrls[i].signal})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}));
+  try{
+    const j=await Promise.any(attempts);
+    ctrls.forEach(c=>c.abort());     // cancel the slower mirror
+    return j;
+  }catch(e){
+    return null;                     // both mirrors failed/timed out
+  }finally{
+    timers.forEach(clearTimeout);
   }
-  return null;
 }
 
 // ── Hard gates applied at parse time ────────────────────────────
@@ -359,13 +371,16 @@ const PORTAL_PARENTS=new Set(['river','canal','stream']);
 
 // Parse an Overpass JSON response into our streams[] shape with _portals attached.
 // Returns null on parse failure / no usable geometry.
-function parseStreams(data){
+function parseStreams(data,allowTidal){
   if(!data) return null;
   const streams=[];
   const portalPoints=[];
   for(const el of data.elements||[]){
     if(!el.geometry||el.geometry.length<2)continue;
     const tags=el.tags||{};
+    // Tidal gate moved here from the Overpass query so tidal rivers still reach
+    // the DRAW layer (parseStreamsFull); candidate behavior is unchanged.
+    if(tags.tidal==='yes'&&!allowTidal)continue;
     const wStr=tags.width||tags['width:mean']||'';
     const wM=parseFloat(wStr);
     if(wM&&wM>30)continue;
@@ -433,10 +448,13 @@ function parseStreamsFull(data){
 async function fetchStreamsInBbox(s,w,n,e,opts={}){
   const timeout=opts.timeout||10;
   const types=opts.types||'^(river|stream|canal|drain|ditch)$';
-  const tidalClause=opts.allowTidal?'':'["tidal"!="yes"]';
-  const query=`[out:json][timeout:${timeout}];(way["waterway"~"${types}"]${tidalClause}(${s},${w},${n},${e}););out geom tags;`;
+  // Tidal waterways are fetched (they're the dominant rivers of coastal metros —
+  // the Delaware, the lower Schuylkill — and the map must DRAW them) but are
+  // still excluded from CANDIDATE placement inside parseStreams unless
+  // opts.allowTidal, exactly matching the old query-level gate.
+  const query=`[out:json][timeout:${timeout}];(way["waterway"~"${types}"](${s},${w},${n},${e}););out geom tags;`;
   const data=await runOverpass(query,(timeout+5)*1000);
-  const cands=parseStreams(data);
+  const cands=parseStreams(data,opts.allowTidal);
   if(cands)cands._full=parseStreamsFull(data);  // full geometry for the draw layer
   return cands;
 }
@@ -914,9 +932,6 @@ function schedulePanFetch(){
 
 async function onPanFetch(){
   if(activeCityIdx<0)return;
-  // Baked-geometry region cities have their rivers already drawn from the region
-  // file — no live Overpass fetching on pan (no clutter, no rate-limit exposure).
-  if(hasBakedStreams)return;
   if(initialFetchInFlight)return; // openCity is still loading the city's first batch
   if(riverFetchInFlight)return;
   // Don't bother fetching when zoomed way out — streams aren't visible and Overpass
@@ -965,15 +980,29 @@ async function onPanFetch(){
     if(activeCityIdx!==cityAtFetch)return;
     if(newStreams){
       coveredBboxes.push([w,s,e,n]);
-      // DRAW: merge the full network so newly-panned-into rivers render continuous.
-      const drawAdded=mergeDraw(newStreams._full);
-      // CANDIDATES: apply the SAME per-fetch quality bar the initial city fetch uses,
-      // so panning can never sneak in low-priority short ditches or culverts
-      // that the initial criteria would have trimmed.
-      const filtered=applyQualityBar(newStreams,{maxStreams:25});
-      const added=mergeStreams(filtered);
-      if(added>0)scheduleRescore();              // re-score + redraw both sources
-      else if(drawAdded>0)refreshStreamsSource(); // new geometry only → just redraw streams
+      if(hasBakedStreams){
+        // CONTEXT-ONLY mode for baked regions: extend the drawn river map as the
+        // user pans beyond the baked bbox, but NEVER touch the fixed real-scored
+        // candidate set. Ways whose midpoint falls inside the baked bbox are
+        // skipped — the baked merged lines already represent them, and drawing
+        // both would produce the parallel-duplicate spaghetti we removed.
+        const rb=activeRegionBbox;
+        const fresh=(newStreams._full||[]).filter(st=>{
+          const m=st.coords[Math.floor(st.coords.length/2)];
+          return !(rb&&m[0]>=rb[0]&&m[0]<=rb[2]&&m[1]>=rb[1]&&m[1]<=rb[3]);
+        });
+        if(mergeDraw(fresh)>0)refreshStreamsSource();
+      }else{
+        // DRAW: merge the full network so newly-panned-into rivers render continuous.
+        const drawAdded=mergeDraw(newStreams._full);
+        // CANDIDATES: apply the SAME per-fetch quality bar the initial city fetch uses,
+        // so panning can never sneak in low-priority short ditches or culverts
+        // that the initial criteria would have trimmed.
+        const filtered=applyQualityBar(newStreams,{maxStreams:25});
+        const added=mergeStreams(filtered);
+        if(added>0)scheduleRescore();              // re-score + redraw both sources
+        else if(drawAdded>0)refreshStreamsSource(); // new geometry only → just redraw streams
+      }
     }
   }catch(err){
     console.warn('Pan-autoload fetch failed:',err);
@@ -1022,9 +1051,11 @@ function refreshStreamsSource(){
 }
 
 // Context (no-site) waterways fade with distance to the nearest candidate net:
-// brightest right beside a site-bearing river, ~transparent far away. Driven per
-// feature by the distM property stamped in buildStreamLayerGeo().
-const CONTEXT_FADE=['interpolate',['linear'],['get','distM'],0,1.0,2500,0.6,6000,0.3];
+// brightest right beside a site-bearing river, dimmer far away. Driven per
+// feature by the distM property stamped in buildStreamLayerGeo(). Deliberately
+// floors at 0.5 (was 0.3-at-6km): on satellite imagery a 0.3-opacity hairline is
+// effectively invisible, which read as rivers randomly cutting off mid-map.
+const CONTEXT_FADE=['interpolate',['linear'],['get','distM'],0,1.0,3000,0.75,8000,0.5];
 
 // ═══ RIVER FOCUS: click a stream to trace the entire named river ═
 // Original opacity values restored when focus is cleared.
@@ -1050,9 +1081,10 @@ function applyFocusPaint(){
   setIf('streams','line-opacity',expr(0.95,0.15));
   setIf('streams-outline','line-opacity',expr(0.5,0.08));
   setIf('streams-underground','line-opacity',expr(0.7,0.12));
-  // Context lines (always non-focused rivers) recede to a whisper during focus.
-  setIf('streams-context','line-opacity',0.12);
-  setIf('streams-context-underground','line-opacity',0.12);
+  // Context rivers are focusable too (their riverKey rides on the same source),
+  // so the focused one brightens while the rest recede to a whisper.
+  setIf('streams-context','line-opacity',expr(0.9,0.12));
+  setIf('streams-context-underground','line-opacity',expr(0.7,0.12));
   setIf('candidates','circle-opacity',expr(1.0,0.18));
   setIf('candidates','circle-stroke-opacity',expr(1.0,0.18));
   setIf('cand-glow','circle-opacity',expr(0.35,0.05));
@@ -1192,10 +1224,13 @@ async function initMap(){
   // the layers exist, and they automatically pick up new sources when re-added.
   map.on('click','streams',onStreamClick);
   map.on('click','streams-underground',onStreamClick);
+  map.on('click','streams-context',onStreamClick);   // faded context rivers focus too
   map.on('mouseenter','streams',cursorPointer);
   map.on('mouseleave','streams',cursorReset);
   map.on('mouseenter','streams-underground',cursorPointer);
   map.on('mouseleave','streams-underground',cursorReset);
+  map.on('mouseenter','streams-context',cursorPointer);
+  map.on('mouseleave','streams-context',cursorReset);
   // Candidate click + hover (used to live in openCity, where it leaked listeners)
   map.on('click','candidates',e=>{const f=e.features&&e.features[0];if(f)selectCand(f.properties.idx)});
   map.on('mouseenter','candidates',cursorPointer);
@@ -1214,7 +1249,7 @@ async function initMap(){
   // Clicking blank map (no stream/candidate hit) clears river focus
   map.on('click',e=>{
     if(!focusedRiverKey)return;
-    const hits=map.queryRenderedFeatures(e.point,{layers:['streams','streams-underground','candidates'].filter(l=>map.getLayer(l))});
+    const hits=map.queryRenderedFeatures(e.point,{layers:['streams','streams-underground','streams-context','candidates'].filter(l=>map.getLayer(l))});
     if(hits.length===0)exitRiverFocus();
   });
   return true;
@@ -1224,7 +1259,7 @@ function resetExploreState(){
   coveredBboxes=[];
   streamKeySet.clear();
   drawStreams=[];drawKeySet.clear();
-  hasBakedStreams=false;
+  hasBakedStreams=false;activeRegionBbox=null;
   focusedRiverKey=null;focusedRiverName=null;
   panFetchInFlight=false;panFetchQueued=false;
   riverFetchInFlight=false;
@@ -1477,6 +1512,10 @@ async function openCity(idx){
       const baked=bakedStreamsToDraw(doc.streams);
       if(baked.length){
         hasBakedStreams=true;
+        activeRegionBbox=cityRegion.bbox;
+        // The baked bbox is already covered — pan-autoload (context-only for
+        // baked regions) should fetch only when the user pans OUTSIDE it.
+        coveredBboxes.push([cityRegion.bbox[0],cityRegion.bbox[1],cityRegion.bbox[2],cityRegion.bbox[3]]);
         drawStreams=baked;
         drawKeySet=new Set(baked.map(streamKey));
       }
@@ -1829,7 +1868,10 @@ function reloadMap(){
     styleReloadInFlight=false;
     if(wwOverlayOn)addWaterwayOverlay();
     if(activeCityIdx>=0)openCity(activeCityIdx);else loadWorldView();
-    if(styleReloadPending){styleReloadPending=false;reloadMap();}
+    // Drain a queued toggle only once the new style has settled ('idle'), not
+    // right here: chaining setStyle inside style.load tears down the incoming
+    // style's in-flight sprite/image loads and spams Mapbox-internal errors.
+    if(styleReloadPending){styleReloadPending=false;map.once('idle',()=>reloadMap());}
   });
 }
 
