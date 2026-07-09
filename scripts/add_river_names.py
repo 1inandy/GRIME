@@ -9,36 +9,44 @@ sources only (no fabricated names or geometry):
 
   1. NAME  — each site gets `river_name`: its nearest NAMED waterway within 1 km
      (distance-tiered, whole-geometry snap, specific names preferred over bare
-     generics, but a real generic name is kept rather than nulled).
-  2. DRAW  — a `streams` FeatureCollection is written into the doc: ONE clean
-     merged line per named river in the region (union + linemerge of its
-     segments, culverted/underground reaches excluded, sub-200 m stray fragments
-     dropped, 5 m simplify). Rivers carrying >=1 site (n_sites>0) render bright
-     in the explorer; the rest are the distance-faded CONTEXT network, so the
-     full named river map is visible — not just the site-bearing lines. Context
-     rivers shorter than 500 m total are dropped as noise (site rivers are
-     always kept). Per river the geometry comes from a single source (OSM
-     preferred, NHD when OSM is fragmentary) so the map never draws overlapping
-     parallel duplicates. The explorer renders these directly — no live
-     Overpass dependency for scored regions.
-  3. SNAP  — each named site's DISPLAY coordinate is snapped to the nearest
-     point on its river's drawn line when that line passes within 150 m. The
+     generics, but a real generic name is kept rather than nulled). Sites with
+     no named waterway within 1 km stay null; if such a site sits on a real but
+     UNNAMED mapped waterway it is flagged `on_unnamed_waterway` so the UI can
+     say "Unnamed creek" instead of a bare segment id.
+  2. DRAW  — a `streams` FeatureCollection with the FULL mapped waterway
+     network:
+       - one merged feature per NAMED river's surface reaches. Where OSM only
+         partially maps a river, NHD flowlines that are NOT near any OSM
+         geometry of that river are merged in as gap-fill — rivers no longer
+         cut off where one source stops. (Near-duplicate NHD is dropped, so no
+         parallel double lines.)
+       - that river's CULVERTED/UNDERGROUND reaches (>=100 m) as a separate
+         feature with underground:1 — the explorer draws them dashed, so a
+         river that dives under a city stays visually continuous instead of
+         leaving floating fragments.
+       - every UNNAMED surface waterway (OSM, same per-type length gates as the
+         live explorer, plus NHD flowlines with no GNIS name that OSM doesn't
+         cover) as unnamed context lines — DEM sites usually sit on exactly
+         these, and without them they looked like dots floating on nothing.
+     Rivers carrying >=1 site render bright; everything else renders as
+     distance-faded context.
+  3. SNAP  — each named site's DISPLAY coordinate snaps to the nearest point on
+     its river's drawn geometry (surface or dashed-underground) within 150 m.
+     Unnamed sites snap to the nearest unnamed waterway within 150 m. The
      original DEM coordinate is preserved in `dem_lat`/`dem_lon` (and the
-     untouched `lat`/`lon` properties). NOTHING scientific changes: every score,
-     sub-score, rank, and DEM-derived parameter is byte-identical — only the
-     displayed geometry moves, and only within 150 m.
+     untouched `lat`/`lon` properties). NOTHING scientific changes: every
+     score, sub-score, rank, and DEM-derived parameter is byte-identical —
+     only the displayed geometry moves, and only within 150 m.
 
-Name/geometry sources (both cached on disk, see core.real_sources):
-  - OpenStreetMap named waterway ways (Overpass; tags kept so culverted reaches
-    are excluded from DRAWN geometry while still allowed to lend their NAME).
-  - USGS NHDPlus flowlines carrying a GNIS name (WaterData GeoServer WFS).
+Sources (all cached on disk, see core.real_sources):
+  - OSM named waterway ways (Overpass, kind=rivername) — the NAMING pool. Kept
+    as its own cached query so names stay stable across re-runs.
+  - OSM ALL waterway ways incl. unnamed (Overpass, kind=riverall) — geometry.
+  - USGS NHDPlus flowlines, named + unnamed (WaterData WFS, kind=nhdname).
 
-Honest failure states: if EITHER source fails to fetch, the file is left
-exactly as it was (names, geometry, snaps, streams) — a partial run must never
-rewrite the drawn rivers out from under sites that keep their names/snapped
-positions from a healthier run. A site with no named waterway within 1 km keeps
-river_name null and its DEM position. Idempotent: re-runs re-derive the snap
-from dem_lat/dem_lon, never from an already-snapped coordinate.
+Honest failure states: if ANY source fails to fetch, the file is left exactly
+as it was (names, geometry, snaps, streams). Idempotent: re-runs re-derive the
+snap from dem_lat/dem_lon, never from an already-snapped coordinate.
 
 Run:  python3 scripts/add_river_names.py            # all built regions
       python3 scripts/add_river_names.py --only durham
@@ -82,10 +90,17 @@ GENERIC_PENALTY_M = 250.0
 BBOX_BUFFER_DEG = 0.02
 
 # Display snap + drawn-geometry hygiene.
-SNAP_M = 150.0        # snap a site onto its river's drawn line only within this
+SNAP_M = 150.0        # snap a site onto drawn geometry only within this
 MIN_PART_M = 200.0    # drop stray merged fragments shorter than this ...
 MIN_TOTAL_M = 1000.0  # ... but only when the river has >= this much total length
 SIMPLIFY_M = 5.0      # simplify tolerance for drawn lines (UTM metres)
+MIN_UNDER_M = 100.0   # underground reaches shorter than this are road-crossing
+                      # stubs — skipped (the "dashed culvert spaghetti" guard)
+MIN_CONTEXT_M = 500.0 # site-less NAMED rivers shorter than this are noise
+NHD_DUP_M = 40.0      # NHD line ~this close to OSM geometry = same channel; drop
+# Unnamed OSM ways: same per-type minimum lengths the live explorer uses, so a
+# backyard ditch doesn't become map clutter.
+MIN_LEN_M = {"river": 50, "canal": 50, "stream": 120, "drain": 250, "ditch": 250}
 
 
 def _is_generic(name):
@@ -99,11 +114,9 @@ def _underground(tags):
 
 
 def named_waterways(bbox):
-    """Named OSM waterway ways within bbox (west,south,east,north). Cached.
-    Returns [(name, [(lon,lat),...], meta), ...] where meta carries the waterway
-    type and whether the reach is underground (culvert/tunnel/covered) — culverted
-    reaches may lend their NAME but are excluded from DRAWN geometry. Returns
-    None on fetch failure (distinct from an empty list = 'genuinely none')."""
+    """Named OSM waterway ways within bbox (west,south,east,north). Cached
+    (kind=rivername) — the stable NAMING pool. Returns
+    [(name, [(lon,lat),...], meta), ...] or None on fetch failure."""
     w, s, e, n = bbox
     q = (f'[out:json][timeout:90];'
          f'(way["waterway"]["name"]({s},{w},{n},{e}););out geom;')
@@ -124,10 +137,36 @@ def named_waterways(bbox):
     return None
 
 
+def all_waterways(bbox):
+    """ALL OSM waterway ways (named + unnamed) within bbox. Cached
+    (kind=riverall) — the GEOMETRY pool. Returns
+    [(name_or_empty, [(lon,lat),...], meta), ...] or None on fetch failure."""
+    w, s, e, n = bbox
+    q = (f'[out:json][timeout:120];'
+         f'(way["waterway"~"^(river|stream|canal|drain|ditch)$"]'
+         f'({s},{w},{n},{e}););out geom;')
+    for url in OVERPASS:
+        j = cached_get_json(url, {"data": q}, kind="riverall", timeout=150)
+        if j and "elements" in j:
+            out = []
+            for el in j["elements"]:
+                g = el.get("geometry")
+                tags = el.get("tags", {}) or {}
+                if not g or len(g) < 2:
+                    continue
+                meta = {"waterway": tags.get("waterway", "stream"),
+                        "underground": _underground(tags)}
+                out.append(((tags.get("name", "") or "").strip(),
+                            [(p["lon"], p["lat"]) for p in g], meta))
+            return out
+        time.sleep(2)
+    return None
+
+
 def named_flowlines_nhd(bbox):
-    """Named NHDPlus flowlines (USGS, national) within bbox (w,s,e,n). Cached +
-    paginated. Returns [(gnis_name, geojson_geometry), ...], or None on total
-    fetch failure. Empty gnis_name (incl. the ' ' placeholder) is skipped."""
+    """ALL NHDPlus flowlines (named and unnamed) within bbox (w,s,e,n). Cached +
+    paginated. Returns [(gnis_name_or_empty, geojson_geometry), ...], or None on
+    total fetch failure."""
     w, s, e, n = bbox
     out, start, PAGE, MAX_PAGES = [], 0, 1000, 8
     got_any = False
@@ -147,7 +186,7 @@ def named_flowlines_nhd(bbox):
         for f in feats:
             nm = ((f.get("properties", {}) or {}).get("gnis_name") or "").strip()
             g = f.get("geometry")
-            if nm and g:
+            if g:
                 out.append((nm, g))
         if len(feats) < PAGE:
             break
@@ -157,13 +196,12 @@ def named_flowlines_nhd(bbox):
 
 def _match(pt, gdf, sindex):
     """Nearest named waterway to a UTM point within MAX_M, preferring specific
-    names. Returns (name, distance_m, source) or (None, None, None)."""
+    names. Returns (name, distance_m) or (None, None)."""
     try:
         cand = list(sindex.query(pt.buffer(MAX_M)))
     except Exception:
         cand = list(range(len(gdf)))
-    best = (None, None, None)
-    best_score = None
+    best, best_d, best_score = None, None, None
     for j in cand:
         row = gdf.iloc[j]
         d = row.geometry.distance(pt)
@@ -171,30 +209,44 @@ def _match(pt, gdf, sindex):
             continue
         score = d + (GENERIC_PENALTY_M if row["is_generic"] else 0.0)
         if best_score is None or score < best_score:
-            best_score = score
-            best = (row["name"], d, row["src"])
-    return best
+            best_score, best, best_d = score, row["name"], d
+    return best, best_d
 
 
 def _waterway_order(ww):
     return {"river": 4, "canal": 3}.get(ww, 2)
 
 
-def _merge_river(geoms_utm):
-    """Union + line-merge a river's segment geometries into clean parts, dropping
-    short stray fragments (never the whole river). Returns [LineString] in UTM."""
+def _merge_parts(geoms_utm, drop_fragments=True):
+    """Union + line-merge geometries into clean LineString parts (UTM),
+    optionally dropping short stray fragments (never the whole set)."""
     if not geoms_utm:
         return []
     u = unary_union(geoms_utm)
     m = linemerge(u) if u.geom_type != "LineString" else u
     parts = list(m.geoms) if m.geom_type == "MultiLineString" else [m]
     parts = [p for p in parts if p.geom_type == "LineString" and p.length > 0]
-    total = sum(p.length for p in parts)
-    if total >= MIN_TOTAL_M:
-        kept = [p for p in parts if p.length >= MIN_PART_M]
-        if kept:
-            parts = kept
+    if drop_fragments:
+        total = sum(p.length for p in parts)
+        if total >= MIN_TOTAL_M:
+            kept = [p for p in parts if p.length >= MIN_PART_M]
+            if kept:
+                parts = kept
     return [p.simplify(SIMPLIFY_M) for p in parts]
+
+
+def _far_from(line, obstacles_union, min_d):
+    """True when >=70% of sampled points on `line` are at least min_d away from
+    obstacles_union — i.e. the line covers a reach the obstacles don't."""
+    if obstacles_union is None or obstacles_union.is_empty:
+        return True
+    n = max(3, min(15, int(line.length // 200) + 3))
+    far = 0
+    for i in range(n):
+        p = line.interpolate(line.length * (i + 0.5) / n)
+        if p.distance(obstacles_union) >= min_d:
+            far += 1
+    return far >= 0.7 * n
 
 
 def _round_coords(geom_4326, nd=6):
@@ -223,73 +275,57 @@ def add_names(slug):
 
     fb = (bbox[0] - BBOX_BUFFER_DEG, bbox[1] - BBOX_BUFFER_DEG,
           bbox[2] + BBOX_BUFFER_DEG, bbox[3] + BBOX_BUFFER_DEG)
-    osm = named_waterways(fb)
+    named = named_waterways(fb)
+    allw = all_waterways(fb)
     nhd = named_flowlines_nhd(fb)
-    if osm is None or nhd is None:
-        # EITHER source down → touch nothing. Names, snapped geometry, and the
-        # baked streams were derived together from a both-sources run; a partial
-        # rebuild would delete drawn rivers (or swap their geometry to the
-        # weaker source) while sites keep names/snaps that point at them.
+    if named is None or allw is None or nhd is None:
+        # ANY source down → touch nothing. Names, snapped geometry and drawn
+        # rivers are derived together; a partial rebuild would strand them.
         kept = sum(1 for f in feats if f["properties"].get("river_name"))
-        which = ("both" if osm is None and nhd is None
-                 else "overpass" if osm is None else "nhd")
+        which = ("overpass-names" if named is None else
+                 "overpass-all" if allw is None else "nhd")
         return slug, len(feats), kept, f"{which} fetch failed (kept existing)", {}
 
-    # ── Assemble the match pool (both sources, culverts included: a culverted
-    #    reach can lend its NAME) and per-river geometry pools for drawing. ──
-    names, geoms, generic, srcs = [], [], [], []
-    rivers = {}   # key → {display, osm:[(geom, underground)], nhd:[geom], ww:{type:len}}
+    to_utm = pyproj.Transformer.from_crs("EPSG:4326", utm, always_xy=True).transform
+    tf_back = pyproj.Transformer.from_crs(utm, "EPSG:4326", always_xy=True)
 
-    def _river(key, display):
-        if key not in rivers:
-            rivers[key] = {"display": display, "osm": [], "nhd": [], "ww": {}}
-        return rivers[key]
+    # ── NAMING pool (stable rivername cache + named NHD) ──
+    pool_names, pool_geoms, pool_gen = [], [], []
+    for nm, coords, meta in named:
+        try:
+            g = LineString(coords)
+        except Exception:
+            continue
+        pool_names.append(nm); pool_geoms.append(g); pool_gen.append(_is_generic(nm))
+    for nm, gj in nhd:
+        if not nm:
+            continue
+        try:
+            g = shape_of(gj)
+        except Exception:
+            continue
+        pool_names.append(nm); pool_geoms.append(g); pool_gen.append(_is_generic(nm))
 
-    if osm:
-        for nm, coords, meta in osm:
-            try:
-                g = LineString(coords)
-            except Exception:
-                continue
-            names.append(nm); geoms.append(g); generic.append(_is_generic(nm)); srcs.append("osm")
-            r = _river(nm.strip().lower(), nm)
-            r["osm"].append((g, bool(meta.get("underground"))))
-            ww = meta.get("waterway", "stream")
-            r["ww"][ww] = r["ww"].get(ww, 0) + g.length
-    if nhd:
-        for nm, gj in nhd:
-            try:
-                g = shape_of(gj)
-            except Exception:
-                continue
-            names.append(nm); geoms.append(g); generic.append(_is_generic(nm)); srcs.append("nhd")
-            _river(nm.strip().lower(), nm)["nhd"].append(g)
-
-    if not geoms:
+    if not pool_geoms:
         # Both sources succeeded but returned nothing named nearby. Null the
-        # names, and ALSO undo any previous run's snapping (restore the DEM
-        # position, drop the dem_/snap_ markers) so the file never carries a
-        # snapped coordinate pointing at a river that is no longer drawn.
+        # names and undo previous snapping so nothing points at missing rivers.
         for f in feats:
             p = f["properties"]
             p["river_name"] = None
             if p.get("dem_lat") is not None and p.get("dem_lon") is not None:
                 f["geometry"]["coordinates"] = [p["dem_lon"], p["dem_lat"]]
-            p.pop("dem_lat", None)
-            p.pop("dem_lon", None)
-            p.pop("snap_dist_m", None)
+            for k in ("dem_lat", "dem_lon", "snap_dist_m", "on_unnamed_waterway"):
+                p.pop(k, None)
         doc["streams"] = {"type": "FeatureCollection", "features": []}
         path.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n")
         return slug, len(feats), 0, "no named waterways in bbox", {}
 
     match_gdf = gpd.GeoDataFrame(
-        {"name": names, "is_generic": generic, "src": srcs},
-        geometry=geoms, crs="EPSG:4326").to_crs(utm)
+        {"name": pool_names, "is_generic": pool_gen},
+        geometry=pool_geoms, crs="EPSG:4326").to_crs(utm)
     sindex = match_gdf.sindex
 
-    # ── Site source coordinates: ALWAYS the DEM position. dem_lat/dem_lon (from
-    #    a previous snapped run) win over the (possibly snapped) geometry, which
-    #    is what makes re-runs idempotent instead of drifting. ──
+    # ── Site source coordinates: ALWAYS the DEM position (idempotency) ──
     src_lonlat = []
     for f in feats:
         p = f["properties"]
@@ -301,18 +337,18 @@ def add_names(slug):
     sites_utm = gpd.GeoSeries([Point(lon, lat) for lon, lat in src_lonlat],
                               crs="EPSG:4326").to_crs(utm)
 
-    # ── 1. NAME each site (both sources are healthy past the outage gate) ──
-    named = 0
+    # ── 1. NAME each site ──
+    n_named = 0
     stats = {"osm": 0, "nhd": 0, "generic": 0, "t300": 0, "t600": 0, "t1000": 0,
-             "snapped": 0, "rivers": 0, "context": 0}
+             "snapped": 0, "rivers": 0, "context": 0, "unnamed_ways": 0,
+             "snap_unnamed": 0}
     site_river = [None] * len(feats)
     for i, pt in enumerate(sites_utm):
-        name, dist, srctag = _match(pt, match_gdf, sindex)
+        name, dist = _match(pt, match_gdf, sindex)
         if name:
             feats[i]["properties"]["river_name"] = name
             site_river[i] = name.strip().lower()
-            named += 1
-            stats[srctag] = stats.get(srctag, 0) + 1
+            n_named += 1
             if _is_generic(name):
                 stats["generic"] += 1
             stats["t300" if dist <= TIERS[0] else
@@ -320,87 +356,164 @@ def add_names(slug):
         else:
             feats[i]["properties"]["river_name"] = None   # honest null
 
-    # ── 2. DRAW: one merged line per named river — site-bearing rivers render
-    #    bright in the explorer, everything else is the faded context network ──
+    # ── 2. DRAW the full network ──
+    # Group OSM geometry by river name; collect the unnamed pool. NAMED rivers
+    # take geometry from BOTH queries: the riverall pool (5 channel types, any
+    # name) AND the rivername pool (ANY waterway type, named) — the naming pool
+    # includes named docks/weir channels etc. ("Dry Dock 6") that the 5-type
+    # query misses; a site named after one must still get a drawn line.
+    # unary_union dedupes ways present in both.
+    rivers = {}   # key → {display, surf:[], under:[], ww:{}}
+    unnamed_osm = []   # (geom4326, ww)
+    for nm, coords, meta in list(allw) + [w for w in named if w[0]]:
+        try:
+            g = LineString(coords)
+        except Exception:
+            continue
+        if nm:
+            k = nm.strip().lower()
+            r = rivers.setdefault(k, {"display": nm, "surf": [], "under": [],
+                                      "ww": {}})
+            (r["under"] if meta["underground"] else r["surf"]).append(g)
+            r["ww"][meta["waterway"]] = r["ww"].get(meta["waterway"], 0) + g.length
+        else:
+            if meta["underground"]:
+                continue   # unnamed culverts = pure spaghetti, skip
+            unnamed_osm.append((g, meta["waterway"]))
+    nhd_by_name, nhd_unnamed = {}, []
+    for nm, gj in nhd:
+        try:
+            g = shape_of(gj)
+        except Exception:
+            continue
+        if nm:
+            nhd_by_name.setdefault(nm.strip().lower(), []).append(g)
+        else:
+            nhd_unnamed.append(g)
+
     site_keys = {}
     for k in site_river:
         if k:
             site_keys[k] = site_keys.get(k, 0) + 1
-    MIN_CONTEXT_M = 500.0   # context rivers shorter than this are map noise
-    drawn_parts_utm = {}    # key → [LineString] (UTM, for snapping)
-    stream_feats = []
-    for key in sorted(rivers):
-        r = rivers[key]
-        n_sites = site_keys.get(key, 0)
-        osm_surface = [g for g, under in r["osm"] if not under]
-        osm_len = sum(g.length for g in osm_surface)
-        nhd_len = sum(g.length for g in r["nhd"])
-        # One source per river → no overlapping parallel OSM/NHD duplicates.
-        # Prefer OSM (higher resolution); fall back to NHD when OSM is absent or
-        # clearly fragmentary compared to NHD's coverage of the same river.
-        if osm_surface and (not r["nhd"] or osm_len >= 0.5 * nhd_len):
-            chosen, source = osm_surface, "osm"
-        elif r["nhd"]:
-            chosen, source = r["nhd"], "nhd"
-        else:
-            continue   # river named only by fully-culverted OSM ways → nothing to draw
-        # Work in UTM (metres) for merge thresholds + snapping.
-        chosen_utm = list(gpd.GeoSeries(chosen, crs="EPSG:4326").to_crs(utm))
-        parts = _merge_river(chosen_utm)
-        if not parts:
+
+    def utm_series(geoms):
+        return list(gpd.GeoSeries(geoms, crs="EPSG:4326").to_crs(utm)) if geoms else []
+
+    # All OSM geometry (any name, incl. underground) in UTM — the obstacle set
+    # NHD must stay clear of to count as gap-fill rather than a duplicate.
+    _all_osm = []
+    for _nm, c, _m in allw:
+        try:
+            _all_osm.append(LineString(c))
+        except Exception:
             continue
-        total_m = sum(p.length for p in parts)
+    all_osm_utm = utm_series(_all_osm)
+    all_osm_union = unary_union(all_osm_utm) if all_osm_utm else None
+
+    stream_feats = []
+    snap_targets = {}       # riverKey → [parts] (surface + underground, UTM)
+    for key in sorted(set(rivers) | set(nhd_by_name)):
+        r = rivers.get(key, {"display": None, "surf": [], "under": [], "ww": {}})
+        n_sites = site_keys.get(key, 0)
+        surf_utm = utm_series(r["surf"])
+        under_utm = utm_series(r["under"])
+        river_osm_union = unary_union(surf_utm + under_utm) if (surf_utm or under_utm) else None
+        # NHD gap-fill: keep only flowlines of this river that OSM doesn't cover.
+        fill = [g for g in utm_series(nhd_by_name.get(key, []))
+                if _far_from(g, river_osm_union, NHD_DUP_M)]
+        display = r["display"] or next(
+            (nm for nm, gj in nhd if nm and nm.strip().lower() == key), key)
+        surf_parts = _merge_parts(surf_utm) + _merge_parts(fill)
+        under_parts = [p for p in _merge_parts(under_utm, drop_fragments=False)
+                       if p.length >= MIN_UNDER_M]
+        total_m = sum(p.length for p in surf_parts) + sum(p.length for p in under_parts)
+        if not surf_parts and not under_parts:
+            continue
         if n_sites == 0 and total_m < MIN_CONTEXT_M:
-            continue   # tiny site-less fragment → noise, skip
-        if n_sites > 0:
-            drawn_parts_utm[key] = parts   # snapping targets site rivers only
-        parts_4326 = list(gpd.GeoSeries(parts, crs=utm).to_crs("EPSG:4326"))
-        geom = parts_4326[0] if len(parts_4326) == 1 else MultiLineString(parts_4326)
+            continue   # tiny site-less named fragment → noise
         ww = max(r["ww"], key=r["ww"].get) if r["ww"] else (
             "river" if key.endswith("river") else "stream")
-        stream_feats.append({
-            "type": "Feature",
-            "geometry": _round_coords(geom),
-            "properties": {"name": r["display"], "riverKey": key,
-                           "waterway": ww, "order": _waterway_order(ww),
-                           "source": source, "n_sites": n_sites,
-                           "length_km": round(total_m / 1000.0, 2)},
-        })
-    stats["rivers"] = sum(1 for f in stream_feats if f["properties"]["n_sites"] > 0)
-    stats["context"] = sum(1 for f in stream_feats if f["properties"]["n_sites"] == 0)
+        if n_sites > 0:
+            snap_targets[key] = surf_parts + under_parts
+        for parts, under in ((surf_parts, 0), (under_parts, 1)):
+            if not parts:
+                continue
+            back = list(gpd.GeoSeries(parts, crs=utm).to_crs("EPSG:4326"))
+            geom = back[0] if len(back) == 1 else MultiLineString(back)
+            stream_feats.append({
+                "type": "Feature",
+                "geometry": _round_coords(geom),
+                "properties": {"name": display, "riverKey": key,
+                               "waterway": ww, "order": _waterway_order(ww),
+                               "underground": under, "n_sites": n_sites,
+                               "length_km": round(sum(p.length for p in parts) / 1000.0, 2)},
+            })
+        stats["rivers" if n_sites else "context"] += 1
+
+    # Unnamed pool: OSM unnamed surface ways (per-type length gates) + NHD
+    # unnamed flowlines clear of ALL OSM geometry. These draw as unnamed context
+    # and are the snap targets for unnamed (Segment N) sites.
+    unnamed_parts = []      # (LineString UTM, ww)
+    for g, ww in zip(utm_series([g for g, _ in unnamed_osm]),
+                     [ww for _, ww in unnamed_osm]):
+        if g.length >= MIN_LEN_M.get(ww, 120):
+            unnamed_parts.append((g.simplify(SIMPLIFY_M * 2), ww))  # coarser: faded context
+    for g in utm_series(nhd_unnamed):
+        if g.length >= 120 and _far_from(g, all_osm_union, NHD_DUP_M):
+            unnamed_parts.append((g.simplify(SIMPLIFY_M * 2), "stream"))
+    if unnamed_parts:
+        back = list(gpd.GeoSeries([g for g, _ in unnamed_parts],
+                                  crs=utm).to_crs("EPSG:4326"))
+        for (g_utm, ww), g4326 in zip(unnamed_parts, back):
+            stream_feats.append({
+                "type": "Feature",
+                "geometry": _round_coords(g4326),
+                "properties": {"name": None, "riverKey": None,
+                               "waterway": ww, "order": _waterway_order(ww),
+                               "underground": 0, "n_sites": 0,
+                               "length_km": round(g_utm.length / 1000.0, 2)},
+            })
+    stats["unnamed_ways"] = len(unnamed_parts)
     doc["streams"] = {"type": "FeatureCollection", "features": stream_feats}
 
-    # ── 3. SNAP each named site onto its river's drawn line (≤ SNAP_M) ──
-    tf = pyproj.Transformer.from_crs(utm, "EPSG:4326", always_xy=True)
+    unnamed_union = unary_union([g for g, _ in unnamed_parts]) if unnamed_parts else None
+
+    # ── 3. SNAP sites onto drawn geometry (≤ SNAP_M) ──
     for i, f in enumerate(feats):
         p = f["properties"]
         lon0, lat0 = src_lonlat[i]
-        key = site_river[i]
+        pt = sites_utm.iloc[i]
         snapped = False
-        if key and key in drawn_parts_utm:
-            pt = sites_utm.iloc[i]
-            drawn = unary_union(drawn_parts_utm[key]) if len(drawn_parts_utm[key]) > 1 \
-                else drawn_parts_utm[key][0]
-            d = pt.distance(drawn)
+        target, mark_unnamed = None, False
+        key = site_river[i]
+        if key and key in snap_targets:
+            target = unary_union(snap_targets[key]) if len(snap_targets[key]) > 1 \
+                else snap_targets[key][0]
+        elif key is None and unnamed_union is not None:
+            target, mark_unnamed = unnamed_union, True
+        if target is not None and not target.is_empty:
+            d = pt.distance(target)
             if d <= SNAP_M:
-                on_line = nearest_points(drawn, pt)[0]
-                slon, slat = tf.transform(on_line.x, on_line.y)
+                on_line = nearest_points(target, pt)[0]
+                slon, slat = tf_back.transform(on_line.x, on_line.y)
                 f["geometry"]["coordinates"] = [round(slon, 6), round(slat, 6)]
                 p["dem_lat"] = lat0
                 p["dem_lon"] = lon0
                 p["snap_dist_m"] = round(d, 1)
+                if mark_unnamed:
+                    p["on_unnamed_waterway"] = True
+                    stats["snap_unnamed"] += 1
+                else:
+                    p.pop("on_unnamed_waterway", None)
                 stats["snapped"] += 1
                 snapped = True
         if not snapped:
-            # Restore/keep the DEM position; drop stale snap markers from any
-            # previous run whose match no longer holds.
             f["geometry"]["coordinates"] = [lon0, lat0]
-            p.pop("dem_lat", None)
-            p.pop("dem_lon", None)
-            p.pop("snap_dist_m", None)
+            for k in ("dem_lat", "dem_lon", "snap_dist_m", "on_unnamed_waterway"):
+                p.pop(k, None)
 
     path.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n")
-    return slug, len(feats), named, "ok", stats
+    return slug, len(feats), n_named, "ok", stats
 
 
 def main():
@@ -411,30 +524,31 @@ def main():
     slugs = ([args.only] if args.only else
              sorted(p.stem for p in REGIONS.glob("*.geojson")))
     tot_named = tot_sites = 0
-    agg = {"osm": 0, "nhd": 0, "generic": 0, "t300": 0, "t600": 0, "t1000": 0,
-           "snapped": 0, "rivers": 0, "context": 0}
+    agg = {"snapped": 0, "snap_unnamed": 0, "rivers": 0, "context": 0,
+           "unnamed_ways": 0, "t300": 0, "t600": 0, "t1000": 0, "generic": 0}
     for i, slug in enumerate(slugs):
         try:
-            s, n, named, status, st = add_names(slug)
+            s, n, n_named, status, st = add_names(slug)
         except Exception as e:
-            s, n, named, status, st = slug, 0, 0, f"ERROR {type(e).__name__}: {e}", {}
-        nullpct = f"{100*(n-named)/n:.0f}%" if n else "—"
+            s, n, n_named, status, st = slug, 0, 0, f"ERROR {type(e).__name__}: {e}", {}
+        nullpct = f"{100*(n-n_named)/n:.0f}%" if n else "—"
         extra = ""
         if st:
-            extra = (f" [osm {st.get('osm',0)} · nhd {st.get('nhd',0)} · "
-                     f"snap {st.get('snapped',0)} · rivers {st.get('rivers',0)}+{st.get('context',0)}ctx]")
+            extra = (f" [snap {st.get('snapped',0)} ({st.get('snap_unnamed',0)} unnamed) · "
+                     f"rivers {st.get('rivers',0)}+{st.get('context',0)}ctx+"
+                     f"{st.get('unnamed_ways',0)}unnamed]")
             for k in agg:
                 agg[k] += st.get(k, 0)
-        print(f"  {s:20s} {named:>4}/{n:<4} named · null {nullpct:>4} · {status}{extra}", flush=True)
-        tot_named += named; tot_sites += n
+        print(f"  {s:20s} {n_named:>4}/{n:<4} named · null {nullpct:>4} · {status}{extra}", flush=True)
+        tot_named += n_named; tot_sites += n
         if i < len(slugs) - 1:
             time.sleep(args.pace)
     if tot_sites:
         print(f"\n  TOTAL {tot_named}/{tot_sites} named "
               f"({100*(tot_sites-tot_named)/tot_sites:.1f}% null) · "
-              f"snapped {agg['snapped']} · drawn rivers {agg['rivers']} (+{agg['context']} context) · "
-              f"by source: osm {agg['osm']} · nhd {agg['nhd']} · generic {agg['generic']} · "
-              f"tiers ≤300m {agg['t300']} / ≤600m {agg['t600']} / ≤1km {agg['t1000']}", flush=True)
+              f"snapped {agg['snapped']} (of which {agg['snap_unnamed']} onto unnamed ways) · "
+              f"rivers {agg['rivers']} bright + {agg['context']} named-context + "
+              f"{agg['unnamed_ways']} unnamed ways", flush=True)
 
 
 if __name__ == "__main__":

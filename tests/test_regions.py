@@ -244,10 +244,12 @@ def test_river_name_matching(tmp_path, monkeypatch):
     import scripts.add_river_names as arn
 
     # a named creek running east-west at lat 36.00, plus a generic-named ditch
-    monkeypatch.setattr(arn, "named_waterways", lambda bbox: [
+    _ways = [
         ("Ellerbe Creek", [(-78.905, 36.000), (-78.895, 36.000), (-78.885, 36.000)], _SURFACE),
         ("Creek", [(-78.905, 36.050), (-78.895, 36.050)], _SURFACE),   # generic → kept, not nulled
-    ])
+    ]
+    monkeypatch.setattr(arn, "named_waterways", lambda bbox: _ways)
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: _ways)
     monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: [])  # no NHD in test
     rdir = tmp_path
     monkeypatch.setattr(arn, "REGIONS", rdir)
@@ -279,10 +281,12 @@ def test_river_name_prefers_specific_over_generic(tmp_path, monkeypatch):
     gets the specific one (unless the generic is much closer)."""
     import scripts.add_river_names as arn
     # specific creek ~60 m south, generic 'Creek' ~30 m north of the site
-    monkeypatch.setattr(arn, "named_waterways", lambda bbox: [
+    _ways = [
         ("Sandy Creek", [(-78.905, 35.99946), (-78.885, 35.99946)], _SURFACE),  # ~60 m
         ("Creek",       [(-78.905, 36.00027), (-78.885, 36.00027)], _SURFACE),  # ~30 m
-    ])
+    ]
+    monkeypatch.setattr(arn, "named_waterways", lambda bbox: _ways)
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: _ways)
     monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: [])
     monkeypatch.setattr(arn, "REGIONS", tmp_path)
     doc = {"type": "FeatureCollection",
@@ -299,6 +303,7 @@ def test_river_name_prefers_specific_over_generic(tmp_path, monkeypatch):
 def test_river_name_fetch_failure_keeps_unnamed(tmp_path, monkeypatch):
     import scripts.add_river_names as arn
     monkeypatch.setattr(arn, "named_waterways", lambda bbox: None)        # Overpass failed
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: None)
     monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: None)    # NHD failed
     monkeypatch.setattr(arn, "REGIONS", tmp_path)
     doc = {"type": "FeatureCollection", "region": {"bbox": [-79, 35.9, -78.8, 36.1], "utm_epsg": 32617},
@@ -321,8 +326,9 @@ def test_single_source_outage_keeps_file_untouched(tmp_path, monkeypatch):
     import scripts.add_river_names as arn
     monkeypatch.setattr(arn, "REGIONS", tmp_path)
     # First: a healthy both-sources run bakes names + streams + snaps.
-    monkeypatch.setattr(arn, "named_waterways", lambda bbox: [
-        ("Ellerbe Creek", [(-78.905, 36.000), (-78.885, 36.000)], _SURFACE)])
+    _ways = [("Ellerbe Creek", [(-78.905, 36.000), (-78.885, 36.000)], _SURFACE)]
+    monkeypatch.setattr(arn, "named_waterways", lambda bbox: _ways)
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: _ways)
     monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: [])
     doc = {"type": "FeatureCollection",
            "region": {"bbox": [-79.0, 35.9, -78.8, 36.1], "utm_epsg": 32617},
@@ -338,11 +344,17 @@ def test_single_source_outage_keeps_file_untouched(tmp_path, monkeypatch):
     slug, n, named, status, stats = arn.add_names("r")
     assert "nhd fetch failed" in status and named == 1   # kept count reported
     assert (tmp_path / "r.geojson").read_text() == healthy
-    # And: OSM down (NHD up) → nothing may change either.
-    monkeypatch.setattr(arn, "named_waterways", lambda bbox: None)
+    # And: the all-waterways geometry fetch down → nothing may change either.
     monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: [])
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: None)
     slug, n, named, status, stats = arn.add_names("r")
-    assert "overpass fetch failed" in status
+    assert "overpass-all fetch failed" in status
+    assert (tmp_path / "r.geojson").read_text() == healthy
+    # And: the naming fetch down → nothing may change either.
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: _ways)
+    monkeypatch.setattr(arn, "named_waterways", lambda bbox: None)
+    slug, n, named, status, stats = arn.add_names("r")
+    assert "overpass-names fetch failed" in status
     assert (tmp_path / "r.geojson").read_text() == healthy
 
 
@@ -352,8 +364,9 @@ def test_no_named_waterways_unsnaps_and_clears_markers(tmp_path, monkeypatch):
     never a snapped coordinate pointing at a river that is no longer drawn."""
     import scripts.add_river_names as arn
     monkeypatch.setattr(arn, "REGIONS", tmp_path)
-    monkeypatch.setattr(arn, "named_waterways", lambda bbox: [
-        ("Ellerbe Creek", [(-78.905, 36.000), (-78.885, 36.000)], _SURFACE)])
+    _ways = [("Ellerbe Creek", [(-78.905, 36.000), (-78.885, 36.000)], _SURFACE)]
+    monkeypatch.setattr(arn, "named_waterways", lambda bbox: _ways)
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: _ways)
     monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: [])
     doc = {"type": "FeatureCollection",
            "region": {"bbox": [-79.0, 35.9, -78.8, 36.1], "utm_epsg": 32617},
@@ -364,8 +377,9 @@ def test_no_named_waterways_unsnaps_and_clears_markers(tmp_path, monkeypatch):
     arn.add_names("r")
     snapped = json.load(open(tmp_path / "r.geojson"))["features"][0]
     assert "snap_dist_m" in snapped["properties"]
-    # Re-run with both sources HEALTHY but empty.
+    # Re-run with all sources HEALTHY but empty.
     monkeypatch.setattr(arn, "named_waterways", lambda bbox: [])
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: [])
     slug, n, named, status, stats = arn.add_names("r")
     assert status == "no named waterways in bbox"
     out = json.load(open(tmp_path / "r.geojson"))
@@ -378,21 +392,27 @@ def test_no_named_waterways_unsnaps_and_clears_markers(tmp_path, monkeypatch):
 
 
 def test_streams_baked_and_sites_snapped(tmp_path, monkeypatch):
-    """add_river_names writes a `streams` FeatureCollection (one merged line per
-    site-bearing river, culverted reaches excluded) and snaps each named site's
-    DISPLAY geometry onto its river within 150 m, preserving the DEM coordinate
-    in dem_lat/dem_lon and changing NO score/rank property."""
+    """add_river_names bakes the FULL network — merged surface line per named
+    river, its long culverted reaches as a separate dashed (underground:1)
+    feature, unnamed ways as context — and snaps sites onto drawn geometry
+    within 150 m (unnamed sites onto unnamed ways, flagged), preserving the
+    DEM coordinate and changing NO score/rank property."""
     import scripts.add_river_names as arn
     culvert = {"waterway": "stream", "underground": True}
-    monkeypatch.setattr(arn, "named_waterways", lambda bbox: [
+    _ways = [
         # two connectable segments of the same creek → must merge into ONE line
         ("Ellerbe Creek", [(-78.905, 36.000), (-78.895, 36.000)], _SURFACE),
         ("Ellerbe Creek", [(-78.895, 36.000), (-78.885, 36.000)], _SURFACE),
-        # a culverted reach of the same creek → excluded from drawn geometry
+        # a long culverted reach (~180 m) → drawn as a SEPARATE underground feature
         ("Ellerbe Creek", [(-78.885, 36.000), (-78.883, 36.000)], culvert),
-        # a far river with no site → must NOT be drawn
+        # a far river with no site → drawn as named context
         ("Eno River", [(-78.905, 36.090), (-78.885, 36.090)], _SURFACE),
-    ])
+        # an unnamed stream (~1.8 km, passes the 120 m gate) → unnamed context
+        ("", [(-78.905, 36.020), (-78.885, 36.020)], _SURFACE),
+    ]
+    monkeypatch.setattr(arn, "named_waterways",
+                        lambda bbox: [w for w in _ways if w[0]])
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: _ways)
     monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: [])
     monkeypatch.setattr(arn, "REGIONS", tmp_path)
     doc = {"type": "FeatureCollection",
@@ -404,22 +424,30 @@ def test_streams_baked_and_sites_snapped(tmp_path, monkeypatch):
                # ~890 m north → named (within 1 km) but NOT snapped (>150 m)
                {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-78.900, 36.008]},
                 "properties": {"segment_id": 2, "rank": 2, "composite_score": 42.0}},
+               # ~2.2 km from any NAMED water but ~55 m from the unnamed stream
+               # → stays null-named, snaps onto the unnamed way, gets flagged
+               {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-78.900, 36.0205]},
+                "properties": {"segment_id": 3, "rank": 3, "composite_score": 40.0}},
            ]}
     (tmp_path / "r.geojson").write_text(json.dumps(doc))
     slug, n, named, status, stats = arn.add_names("r")
-    assert status == "ok" and named == 2 and stats["snapped"] == 1
+    assert status == "ok" and named == 2
+    assert stats["snapped"] == 2 and stats["snap_unnamed"] == 1
     out = json.load(open(tmp_path / "r.geojson"))
 
-    # streams: BOTH rivers drawn — Ellerbe bright (n_sites=2), Eno as site-less
-    # CONTEXT (n_sites=0) so the full named network is visible.
-    sf = {f["properties"]["name"]: f for f in out["streams"]["features"]}
-    assert set(sf) == {"Ellerbe Creek", "Eno River"}
-    assert sf["Ellerbe Creek"]["properties"]["n_sites"] == 2
-    assert sf["Eno River"]["properties"]["n_sites"] == 0
-    ell = sf["Ellerbe Creek"]
-    assert ell["geometry"]["type"] == "LineString"        # two segments merged into one
-    xs = [c[0] for c in ell["geometry"]["coordinates"]]
-    assert max(xs) <= -78.885 + 1e-6                      # culverted reach not drawn
+    feats = out["streams"]["features"]
+    ell_surf = [f for f in feats if f["properties"]["name"] == "Ellerbe Creek"
+                and not f["properties"]["underground"]]
+    ell_under = [f for f in feats if f["properties"]["name"] == "Ellerbe Creek"
+                 and f["properties"]["underground"]]
+    eno = [f for f in feats if f["properties"]["name"] == "Eno River"]
+    unnamed = [f for f in feats if f["properties"]["name"] is None]
+    assert len(ell_surf) == 1 and len(ell_under) == 1 and len(eno) == 1 and len(unnamed) == 1
+    assert ell_surf[0]["properties"]["n_sites"] == 2
+    assert ell_surf[0]["geometry"]["type"] == "LineString"   # merged into one
+    xs = [c[0] for c in ell_surf[0]["geometry"]["coordinates"]]
+    assert max(xs) <= -78.885 + 1e-6         # surface stops where the culvert starts
+    assert eno[0]["properties"]["n_sites"] == 0
 
     # site 1: snapped onto the creek (lat == 36.000), DEM preserved, scores untouched
     f1 = out["features"][0]
@@ -434,13 +462,21 @@ def test_streams_baked_and_sites_snapped(tmp_path, monkeypatch):
     assert "dem_lat" not in f2["properties"] and "snap_dist_m" not in f2["properties"]
     assert f2["properties"]["composite_score"] == 42.0
 
+    # site 3: null-named, snapped onto the unnamed way, flagged for the UI
+    f3 = out["features"][2]
+    assert f3["properties"]["river_name"] is None
+    assert f3["properties"]["on_unnamed_waterway"] is True
+    assert abs(f3["geometry"]["coordinates"][1] - 36.020) < 1e-4
+    assert f3["properties"]["composite_score"] == 40.0
+
 
 def test_snap_is_idempotent(tmp_path, monkeypatch):
     """Re-running the script must re-derive the snap from dem_lat/dem_lon, not
     from the already-snapped coordinate — output is byte-identical on a re-run."""
     import scripts.add_river_names as arn
-    monkeypatch.setattr(arn, "named_waterways", lambda bbox: [
-        ("Ellerbe Creek", [(-78.905, 36.000), (-78.885, 36.000)], _SURFACE)])
+    _ways = [("Ellerbe Creek", [(-78.905, 36.000), (-78.885, 36.000)], _SURFACE)]
+    monkeypatch.setattr(arn, "named_waterways", lambda bbox: _ways)
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: _ways)
     monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: [])
     monkeypatch.setattr(arn, "REGIONS", tmp_path)
     doc = {"type": "FeatureCollection",
