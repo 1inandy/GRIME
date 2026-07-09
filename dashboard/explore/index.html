@@ -1453,7 +1453,16 @@ async function openCity(idx){
   const cityRegion=regionForPoint(p.lo,p.la);
   if(cityRegion){
     spin('Loading real scored sites…');
-    const doc=await fetchRegionCandidates(cityRegion.slug);
+    // Guard pan-autoload while the region doc is in flight: on a slow network the
+    // flyTo's moveend lands BEFORE this fetch resolves, and pan-autoload would
+    // fire a live Overpass call in the gap before hasBakedStreams is set.
+    initialFetchInFlight=true;
+    let doc;
+    try{
+      doc=await fetchRegionCandidates(cityRegion.slug);
+    }finally{
+      initialFetchInFlight=false;
+    }
     if(myToken!==openCityToken)return;
     if(doc&&doc.features&&doc.features.length){
       activeRegionSlug=cityRegion.slug;
