@@ -11,12 +11,16 @@ sources only (no fabricated names or geometry):
      (distance-tiered, whole-geometry snap, specific names preferred over bare
      generics, but a real generic name is kept rather than nulled).
   2. DRAW  — a `streams` FeatureCollection is written into the doc: ONE clean
-     merged line per named river that carries >=1 site (union + linemerge of its
+     merged line per named river in the region (union + linemerge of its
      segments, culverted/underground reaches excluded, sub-200 m stray fragments
-     dropped, 5 m simplify). Per river the geometry comes from a single source
-     (OSM preferred, NHD when OSM is fragmentary) so the map never draws
-     overlapping parallel duplicates. The explorer renders these directly — no
-     live Overpass dependency for scored regions.
+     dropped, 5 m simplify). Rivers carrying >=1 site (n_sites>0) render bright
+     in the explorer; the rest are the distance-faded CONTEXT network, so the
+     full named river map is visible — not just the site-bearing lines. Context
+     rivers shorter than 500 m total are dropped as noise (site rivers are
+     always kept). Per river the geometry comes from a single source (OSM
+     preferred, NHD when OSM is fragmentary) so the map never draws overlapping
+     parallel duplicates. The explorer renders these directly — no live
+     Overpass dependency for scored regions.
   3. SNAP  — each named site's DISPLAY coordinate is snapped to the nearest
      point on its river's drawn line when that line passes within 150 m. The
      original DEM coordinate is preserved in `dem_lat`/`dem_lon` (and the
@@ -300,7 +304,7 @@ def add_names(slug):
     # ── 1. NAME each site (both sources are healthy past the outage gate) ──
     named = 0
     stats = {"osm": 0, "nhd": 0, "generic": 0, "t300": 0, "t600": 0, "t1000": 0,
-             "snapped": 0, "rivers": 0}
+             "snapped": 0, "rivers": 0, "context": 0}
     site_river = [None] * len(feats)
     for i, pt in enumerate(sites_utm):
         name, dist, srctag = _match(pt, match_gdf, sindex)
@@ -316,18 +320,18 @@ def add_names(slug):
         else:
             feats[i]["properties"]["river_name"] = None   # honest null
 
-    # ── 2. DRAW: one merged line per site-bearing river ──
+    # ── 2. DRAW: one merged line per named river — site-bearing rivers render
+    #    bright in the explorer, everything else is the faded context network ──
     site_keys = {}
     for k in site_river:
         if k:
             site_keys[k] = site_keys.get(k, 0) + 1
-    to_4326 = {}          # cache: key → transformer via GeoSeries below
-    drawn_parts_utm = {}  # key → [LineString] (UTM, for snapping)
+    MIN_CONTEXT_M = 500.0   # context rivers shorter than this are map noise
+    drawn_parts_utm = {}    # key → [LineString] (UTM, for snapping)
     stream_feats = []
-    for key in sorted(site_keys):
-        r = rivers.get(key)
-        if not r:
-            continue
+    for key in sorted(rivers):
+        r = rivers[key]
+        n_sites = site_keys.get(key, 0)
         osm_surface = [g for g, under in r["osm"] if not under]
         osm_len = sum(g.length for g in osm_surface)
         nhd_len = sum(g.length for g in r["nhd"])
@@ -345,21 +349,25 @@ def add_names(slug):
         parts = _merge_river(chosen_utm)
         if not parts:
             continue
-        drawn_parts_utm[key] = parts
+        total_m = sum(p.length for p in parts)
+        if n_sites == 0 and total_m < MIN_CONTEXT_M:
+            continue   # tiny site-less fragment → noise, skip
+        if n_sites > 0:
+            drawn_parts_utm[key] = parts   # snapping targets site rivers only
         parts_4326 = list(gpd.GeoSeries(parts, crs=utm).to_crs("EPSG:4326"))
         geom = parts_4326[0] if len(parts_4326) == 1 else MultiLineString(parts_4326)
         ww = max(r["ww"], key=r["ww"].get) if r["ww"] else (
             "river" if key.endswith("river") else "stream")
-        total_km = sum(p.length for p in parts) / 1000.0
         stream_feats.append({
             "type": "Feature",
             "geometry": _round_coords(geom),
             "properties": {"name": r["display"], "riverKey": key,
                            "waterway": ww, "order": _waterway_order(ww),
-                           "source": source, "n_sites": site_keys[key],
-                           "length_km": round(total_km, 2)},
+                           "source": source, "n_sites": n_sites,
+                           "length_km": round(total_m / 1000.0, 2)},
         })
-    stats["rivers"] = len(stream_feats)
+    stats["rivers"] = sum(1 for f in stream_feats if f["properties"]["n_sites"] > 0)
+    stats["context"] = sum(1 for f in stream_feats if f["properties"]["n_sites"] == 0)
     doc["streams"] = {"type": "FeatureCollection", "features": stream_feats}
 
     # ── 3. SNAP each named site onto its river's drawn line (≤ SNAP_M) ──
@@ -404,7 +412,7 @@ def main():
              sorted(p.stem for p in REGIONS.glob("*.geojson")))
     tot_named = tot_sites = 0
     agg = {"osm": 0, "nhd": 0, "generic": 0, "t300": 0, "t600": 0, "t1000": 0,
-           "snapped": 0, "rivers": 0}
+           "snapped": 0, "rivers": 0, "context": 0}
     for i, slug in enumerate(slugs):
         try:
             s, n, named, status, st = add_names(slug)
@@ -414,7 +422,7 @@ def main():
         extra = ""
         if st:
             extra = (f" [osm {st.get('osm',0)} · nhd {st.get('nhd',0)} · "
-                     f"snap {st.get('snapped',0)} · rivers {st.get('rivers',0)}]")
+                     f"snap {st.get('snapped',0)} · rivers {st.get('rivers',0)}+{st.get('context',0)}ctx]")
             for k in agg:
                 agg[k] += st.get(k, 0)
         print(f"  {s:20s} {named:>4}/{n:<4} named · null {nullpct:>4} · {status}{extra}", flush=True)
@@ -424,7 +432,7 @@ def main():
     if tot_sites:
         print(f"\n  TOTAL {tot_named}/{tot_sites} named "
               f"({100*(tot_sites-tot_named)/tot_sites:.1f}% null) · "
-              f"snapped {agg['snapped']} · drawn rivers {agg['rivers']} · "
+              f"snapped {agg['snapped']} · drawn rivers {agg['rivers']} (+{agg['context']} context) · "
               f"by source: osm {agg['osm']} · nhd {agg['nhd']} · generic {agg['generic']} · "
               f"tiers ≤300m {agg['t300']} / ≤600m {agg['t600']} / ≤1km {agg['t1000']}", flush=True)
 
