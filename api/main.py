@@ -52,18 +52,15 @@ _candidates_cache = None
 
 
 def load_candidates(force_mock=False):
-    """Load the scored candidates GeoJSON.
-
-    ``scored_candidates.geojson`` is an optional local-override slot that no
-    committed script writes; in a stock checkout the loader always serves
-    ``candidates.geojson`` — the frozen live-pipeline output.
+    """Load the scored candidates GeoJSON — ``candidates.geojson``, the frozen
+    live-pipeline output (fix-pass-2 Phase 5 removed the phantom
+    ``scored_candidates.geojson`` override slot that nothing ever wrote).
     """
     global _candidates_cache
     if _candidates_cache is not None and not force_mock:
         return _candidates_cache
 
     paths = [
-        MOCK_DIR / "scored_candidates.geojson",
         MOCK_DIR / "candidates.geojson",
     ]
     for p in paths:
