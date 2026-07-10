@@ -128,6 +128,27 @@ def main():
         errors.append(f"hard gates: expected to keep rows {{0,2,4,6}} of the probe, kept {sorted(kept)} "
                       f"(velocity<{vmax} strict, width [{wmin},{wmax}] inclusive, ownership>{own_min})")
 
+    # 7b) navigability gate (fix-pass-2 Phase 3) — boundary semantics: <= gate
+    # distance drops, > passes, NaN (no NWN data) passes. Checked against both
+    # the live gate (apply_hard_gates) and the parity helper + constant.
+    from core.feasibility import NAVIGABLE_GATE_M, passes_hard_gates
+    nav_gate = float(hg["navigable_waterway_min_distance_m"])
+    if not approx(NAVIGABLE_GATE_M, nav_gate):
+        errors.append(f"NAVIGABLE_GATE_M {NAVIGABLE_GATE_M} != model {nav_gate}")
+    nav_probe = pd.DataFrame({
+        "flow_velocity_ms": [1.0, 1.0, 1.0, 1.0],
+        "channel_width_m": [5.0, 5.0, 5.0, 5.0],
+        "land_ownership": [0.5, 0.5, 0.5, 0.5],
+        #                   drop      drop       keep            keep (NaN)
+        "navigable_dist_m": [50.0, nav_gate, nav_gate + 1e-6, float("nan")],
+    })
+    nav_kept = set(apply_hard_gates(nav_probe).index)
+    if nav_kept != {2, 3}:
+        errors.append(f"navigable gate: expected to keep rows {{2,3}}, kept {sorted(nav_kept)} "
+                      f"(<= {nav_gate} m drops, NaN passes)")
+    if passes_hard_gates(navigable_dist_m=nav_gate) or not passes_hard_gates(navigable_dist_m=nav_gate + 1e-6):
+        errors.append("passes_hard_gates navigable boundary diverges from apply_hard_gates")
+
     # 8) spacing — pipeline default and the explorer's JS constants
     spacing = m["spacing_m"]
     code_spacing = inspect.signature(generate_candidates).parameters["spacing_m"].default

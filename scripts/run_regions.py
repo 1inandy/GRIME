@@ -64,7 +64,7 @@ from core.flow import (
 )
 from core.feasibility import (
     road_access_score, channel_width_score, bank_slope_score, compute_bank_slope,
-    bridge_proximity_bonus,
+    bridge_proximity_bonus, NAVIGABLE_GATE_M,
 )
 from core.generation import get_road_density
 from core.impact import (get_tourism_amenity_density,
@@ -443,6 +443,28 @@ def wire_region_parameters(cands, region):
     for k, vals in extras.items():
         gdf[k] = vals
 
+    # Navigability gate input (fix-pass-2 Phase 3): distance to the nearest
+    # USACE NWN navigable segment. NaN when no NWN clip is on disk OR when no
+    # navigable water exists near this bbox — in both cases the hard gate
+    # stays inert for the row (gates only fire on real values). The gate
+    # itself lives in core.scoring.apply_hard_gates (NAVIGABLE_GATE_M).
+    nwn = rs.nwn_navigable_union(bbox, utm)
+    if nwn is None:
+        gdf["navigable_dist_m"] = np.nan
+        mark("navigable_dist_m", "fallback",
+             "USACE NWN clip not on disk (cache/nwn) — navigability gate inert")
+    elif nwn.is_empty:
+        gdf["navigable_dist_m"] = np.nan
+        mark("navigable_dist_m", "real",
+             "USACE/BTS NWN (NTAD): no navigable segment within this bbox "
+             "(+2 km) — computed absence, gate passes all sites", n_real=n)
+    else:
+        gdf["navigable_dist_m"] = [round(float(d), 1)
+                                   for d in gdf.geometry.distance(nwn)]
+        mark("navigable_dist_m", "real",
+             "USACE/BTS National Waterway Network lines (NTAD, retrieved "
+             "2026-07-10), distance to nearest navigable segment", n_real=n)
+
     # provenance for the real params
     real_sources_doc = {
         "population_density": "Census ACS 2022 B01003 block groups (bbox, multi-county), area-weighted",
@@ -644,6 +666,10 @@ def run_region(region, defaults):
         "provenance": {"n_parameters": len(ALL_PARAMS), "varying": varying,
                        "constant": constant, "parameters": prov,
                        "hard_gate_removed": gated_out, "candidates_pre_gate": n_before,
+                       # auditable navigability exclusions (Phase 3 gate)
+                       "gated_navigable": int(
+                           (wired["navigable_dist_m"] <= NAVIGABLE_GATE_M).sum()
+                           if "navigable_dist_m" in wired.columns else 0),
                        "stream_mask": {"buffer_m": STREAM_MASK_BUFFER_M,
                                        "sources": ["osm-overpass (all waterway ways)",
                                                    "usgs-nhdplus flowlines"],
