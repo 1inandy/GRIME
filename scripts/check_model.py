@@ -163,6 +163,54 @@ def main():
         if not approx(got, expected, 1e-9):
             errors.append(f"width_order_fallback(order={order}): code {got} != formula {expected}")
 
+    # 10) impact proximity curves (live since fix-pass-2 Phase 1) — functional
+    # probes: evaluate each scoring function on synthetic geometry and compare
+    # against the model.json formula/constants.
+    pc = m["proximity_curves"]
+    from core import inverse_distance_score
+    from core.impact import (PROTECTION_WEIGHTS, protected_area_score_from_gdf,
+                             water_intake_score)
+    from shapely.geometry import Polygon
+
+    # superfund / cso share the inverse-distance curve
+    for curve_name in ("superfund_score", "cso_density"):
+        half = float(pc[curve_name]["half_decay_m"])
+        for d in (0.0, half, 3 * half):
+            src = gpd.GeoDataFrame(geometry=[Point(d, 0.0)], crs="EPSG:32617")
+            got = inverse_distance_score(Point(0.0, 0.0), src, half)
+            expected = 1.0 / (1.0 + (d / half) ** 2)
+            if not approx(got, expected, 1e-9):
+                errors.append(f"{curve_name} inverse-distance({d} m)={got} != {expected}")
+
+    # protected areas: designation table + decay
+    pa = pc["protected_area_score"]
+    if {k: float(v) for k, v in pa["designation_weights"].items()} != PROTECTION_WEIGHTS:
+        errors.append("protected_area designation_weights: model != core.impact.PROTECTION_WEIGHTS")
+    sig = inspect.signature(protected_area_score_from_gdf)
+    if not approx(float(sig.parameters["distance_km"].default), float(pa["buffer_km"])):
+        errors.append(f"protected_area buffer_km: code default "
+                      f"{sig.parameters['distance_km'].default} != model {pa['buffer_km']}")
+    sq = Polygon([(9000, -500), (10000, -500), (10000, 500), (9000, 500)])  # centroid 9.5 km east
+    for desig, w in [("State Park", 0.7), ("Something Unlisted", float(pa["default_designation_weight"]))]:
+        padus = gpd.GeoDataFrame({"designation": [desig], "geometry": [sq]}, crs="EPSG:32617")
+        got = protected_area_score_from_gdf(Point(0.0, 0.0), padus)
+        expected = w * (1.0 / (1.0 + 9.5 / float(pa["decay_km"])))
+        if not approx(got, expected, 1e-9):
+            errors.append(f"protected_area_score({desig})={got} != {expected}")
+
+    # water intakes: exp decay + 50 km cutoff
+    wi = pc["water_intake_score"]
+    sig = inspect.signature(water_intake_score)
+    if not approx(float(sig.parameters["max_dist_km"].default), float(wi["max_dist_km"])):
+        errors.append(f"water_intake max_dist_km: code default "
+                      f"{sig.parameters['max_dist_km'].default} != model {wi['max_dist_km']}")
+    for d_km, in_range in ((5.0, True), (30.0, True), (55.0, False)):
+        gdfi = gpd.GeoDataFrame(geometry=[Point(d_km * 1000.0, 0.0)], crs="EPSG:32617")
+        got = water_intake_score(Point(0.0, 0.0), gdfi)
+        expected = math.exp(-d_km / float(wi["decay_km"])) if in_range else 0.0
+        if not approx(got, expected, 1e-9):
+            errors.append(f"water_intake_score(d={d_km} km)={got} != {expected}")
+
     if errors:
         print("MODEL DRIFT DETECTED:")
         for e in errors:
@@ -170,8 +218,9 @@ def main():
         sys.exit(1)
     print(f"model.json matches code: {n} parameters; validated param+subscore weights, "
           "runoff formula, velocity feasibility/transport curves, channel-width curve, "
-          "hard gates, spacing + occlusion constants (pipeline & explorer), and the "
-          "width-order fallback.")
+          "hard gates, spacing + occlusion constants (pipeline & explorer), the "
+          "width-order fallback, and the impact proximity curves "
+          "(superfund/cso inverse-distance, PAD-US designation weights, intake decay).")
     sys.exit(0)
 
 
