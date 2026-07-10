@@ -886,7 +886,7 @@ function buildStreamLayerGeo(){
     let distM=0;
     if(!hasSite){const mid=s.coords[Math.floor(s.coords.length/2)];distM=Math.round(nearestSiteDistM(mid,sites));}
     return{type:'Feature',geometry:{type:'LineString',coordinates:s.coords},
-      properties:{name:s.name,riverKey:riverKeyOf(s),order:s.order,underground:s.underground?1:0,hasSite:hasSite?1:0,distM}};
+      properties:{name:s.name,riverKey:riverKeyOf(s),order:s.order,underground:s.underground?1:0,hasSite:hasSite?1:0,unnamed:(!s.riverKey&&!s.name)?1:0,distM}};
   })};
 }
 
@@ -1074,6 +1074,7 @@ const ORIG_PAINT={
   'streams-outline':{'line-opacity':0.4},
   'streams-underground':{'line-opacity':0.6},
   'streams-context':{'line-opacity':CONTEXT_FADE},
+  'streams-context-unnamed':{'line-opacity':['interpolate',['linear'],['zoom'],11,0,13,0.55]},
   'streams-context-underground':{'line-opacity':CONTEXT_FADE},
   'candidates':{'circle-opacity':1.0,'circle-stroke-opacity':1.0},
   'cand-glow':{'circle-opacity':0.25}
@@ -1094,6 +1095,7 @@ function applyFocusPaint(){
   // Context rivers are focusable too (their riverKey rides on the same source),
   // so the focused one brightens while the rest recede to a whisper.
   setIf('streams-context','line-opacity',expr(0.9,0.12));
+  setIf('streams-context-unnamed','line-opacity',0.08);
   setIf('streams-context-underground','line-opacity',expr(0.7,0.12));
   setIf('candidates','circle-opacity',expr(1.0,0.18));
   setIf('candidates','circle-stroke-opacity',expr(1.0,0.18));
@@ -1346,7 +1348,7 @@ function loadWorldView(){
 }
 
 function clearLayers(){
-  ['stream-labels','streams-underground','streams-outline','streams','streams-context','streams-context-underground','cand-glow','candidates','cluster-count','clusters','unclustered'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
+  ['stream-labels','streams-underground','streams-outline','streams','streams-context','streams-context-unnamed','streams-context-underground','cand-glow','candidates','cluster-count','clusters','unclustered'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
   ['places','streams','candidates'].forEach(id=>{if(map.getSource(id))map.removeSource(id)});
 }
 
@@ -1368,14 +1370,17 @@ function _addMapLayersNow(){
   // a source with ID streams" and wedges the map. Remove any prior stream/candidate
   // layers+sources first (the openCity generation token normally prevents the double
   // call; this is belt-and-suspenders since a duplicate-source throw is fatal).
-  ['stream-labels','streams-underground','streams-outline','streams','streams-context','streams-context-underground','cand-glow','candidates'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
+  ['stream-labels','streams-underground','streams-outline','streams','streams-context','streams-context-unnamed','streams-context-underground','cand-glow','candidates'].forEach(id=>{if(map.getLayer(id))map.removeLayer(id)});
   ['streams','candidates'].forEach(id=>{if(map.getSource(id))map.removeSource(id)});
   // Draw streams from the full network. Rivers with a candidate site (hasSite=1) render
   // full-opacity on the styled layers below; every other waterway (hasSite=0) renders on
   // the CONTEXT layers, faded by distance to the nearest site — a soft halo, not on/off.
   map.addSource('streams',{type:'geojson',data:buildStreamLayerGeo()});
   // Context layers first so they sit UNDER the bright site-bearing rivers.
-  map.addLayer({id:'streams-context',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],0]],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.2,4,3],'line-opacity':CONTEXT_FADE},layout:{'line-cap':'round','line-join':'round'}});
+  // The UNNAMED capillary network fades in with zoom (invisible at metro zoom,
+  // full context fade by z13) — at city scale it read as spaghetti.
+  map.addLayer({id:'streams-context-unnamed',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],0],['==',['get','unnamed'],1]],paint:{'line-color':'#00e5ff','line-width':1,'line-opacity':['interpolate',['linear'],['zoom'],11,0,13,0.55]},layout:{'line-cap':'round','line-join':'round'}});
+  map.addLayer({id:'streams-context',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],0],['==',['get','unnamed'],0]],paint:{'line-color':'#00e5ff','line-width':['interpolate',['linear'],['get','order'],1,1.2,4,3],'line-opacity':CONTEXT_FADE},layout:{'line-cap':'round','line-join':'round'}});
   map.addLayer({id:'streams-context-underground',type:'line',source:'streams',filter:['all',['==',['get','underground'],1],['==',['get','hasSite'],0]],paint:{'line-color':'#f59e0b','line-width':1.5,'line-opacity':CONTEXT_FADE,'line-dasharray':[2,3]},layout:{'line-cap':'round','line-join':'round'}});
   // Site-bearing rivers — full opacity, full styling (dark outline + labels).
   map.addLayer({id:'streams-outline',type:'line',source:'streams',filter:['all',['==',['get','underground'],0],['==',['get','hasSite'],1]],paint:{'line-color':'#000','line-width':['interpolate',['linear'],['get','order'],1,4,4,7],'line-opacity':.4},layout:{'line-cap':'round','line-join':'round'}});
