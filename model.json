@@ -72,7 +72,7 @@
       "center": 0.9,
       "width": 0.6,
       "applies": "Flow sub-score only (M5): flow_velocity_ms is mapped through this peaked curve before MinMax normalization; the raw velocity still feeds velocity_feasibility and the hard gate.",
-      "construct": "Transport/delivery favorability (does the flow deliver debris to the site) — deliberately distinct from curves.velocity_feasibility (can a device operate there). The same raw velocity is scored through both curves because they measure different things."
+      "construct": "Transport/delivery favorability (does the flow deliver debris to the site) \u2014 deliberately distinct from curves.velocity_feasibility (can a device operate there). The same raw velocity is scored through both curves because they measure different things."
     },
     "velocity_feasibility": [
       {
@@ -134,10 +134,44 @@
   },
   "parameter_notes": {
     "_comment": "Status notes on parameters whose values are structurally constant or unpopulated in practice. The per-run varying/constant split is stamped into the output geojson's top-level 'provenance' block by scripts/score_candidates.py.",
-    "bridge_proximity_bonus": "Requires an NBI bridges layer that no shipped entry point supplies, so it evaluates to the 0.0 fallback (constant) and the constant-column drop renormalizes its weight away. Unpopulated — not a live driver of shipped scores.",
+    "bridge_proximity_bonus": "Requires an NBI bridges layer that no shipped entry point supplies, so it evaluates to the 0.0 fallback (constant) and the constant-column drop renormalizes its weight away. Unpopulated \u2014 not a live driver of shipped scores.",
     "impervious_pct": "NLCD imperviousness is fetched as a whole-bbox raster mean, so it is identical for every candidate within a run by construction (fallback 35.0 when the fetch fails).",
     "runoff_coeff_C": "Derived from impervious_pct (C = 0.05 + 0.009*I), so it is constant whenever impervious_pct is.",
     "seasonal_cv": "Inverted in scoring: steadier flow scores higher.",
-    "normalization": "Sub-scores MinMax-normalize each varying parameter within the candidate batch — including feasibility inputs that are already calibrated absolute [0,1] curve scores. Sub-scores are therefore batch-relative rankings, not absolute suitability values, and are not comparable across separately scored regions."
+    "normalization": "Sub-scores MinMax-normalize each varying parameter within the candidate batch \u2014 including feasibility inputs that are already calibrated absolute [0,1] curve scores. Sub-scores are therefore batch-relative rankings, not absolute suitability values, and are not comparable across separately scored regions."
+  },
+  "proximity_curves": {
+    "_comment": "Impact-side proximity curves made LIVE by the fix-pass-2 Phase 1 wiring (EPA SEMS, USGS PAD-US 4.1, NC DEQ SWAP). The curve shapes/constants are the ones shipped in core/*.py all along (science freeze) \u2014 this block documents them and check_model.py guards them functionally.",
+    "superfund_score": {
+      "formula": "sum over sites of 1 / (1 + (d_m / half_decay_m)^2)",
+      "half_decay_m": 500.0,
+      "source": "EPA Envirofacts SEMS (envirofacts_site), georeferenced sites, state-filtered"
+    },
+    "cso_density": {
+      "formula": "sum over sites of 1 / (1 + (d_m / half_decay_m)^2)",
+      "half_decay_m": 500.0,
+      "source": "EPA ECHO CSO inventory (national bulk) \u2014 same shared inverse-distance curve"
+    },
+    "protected_area_score": {
+      "formula": "sum over intersecting areas of weight(designation) * 1/(1 + d_km/decay_km)",
+      "buffer_km": 20.0,
+      "decay_km": 5.0,
+      "default_designation_weight": 0.2,
+      "designation_weights": {
+        "National Park": 1.0,
+        "National Wildlife Refuge": 0.9,
+        "Wilderness Area": 0.9,
+        "State Park": 0.7,
+        "State Wildlife": 0.6,
+        "Local Park": 0.3
+      },
+      "source": "USGS PAD-US 4.1 state clip (local GDB), designation matched on the descriptive d_Des_Tp"
+    },
+    "water_intake_score": {
+      "formula": "sum over intakes within max_dist_km of exp(-d_km / decay_km)",
+      "max_dist_km": 50.0,
+      "decay_km": 10.0,
+      "source": "NC OneMap / NC DEQ SWAP public water supply sources, source_typ='Surface Water' (NC-only)"
+    }
   }
 }
