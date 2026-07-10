@@ -247,6 +247,79 @@ def flood_q10_cfs_sir2014(drainage_km2, impervious_pct):
     return 484.0 * da ** 0.5539 * 10 ** (0.0060 * imp)
 
 
+def flood_q10_cfs_sir2014_hr4(drainage_km2, impervious_pct, i24h50y_in):
+    """10-percent AEP flood (cfs) for a Coastal Plain (HR4) site.
+
+    From USGS SIR 2014-5030 (Feaster, Gotvald & Weaver, 2014), Table 7, HR4:
+      0.10 mi² ≤ DA ≤ 53.5 mi² :
+        Q10 = 51.8·DA^0.6004 · 10^(0.0101·IMP) · 10^(0.0666·I24H50Y)
+    DA = drainage area in mi²; IMP = % impervious (IMPNLCD06 vintage in the
+    report; the wiring feeds StreamCat 2019 imperviousness, the same
+    documented vintage substitution the HR1 path has always made); I24H50Y =
+    24-hour 50-year maximum precipitation in inches (NOAA Atlas 14 point
+    value at the region center — see noaa_atlas14_24h50y_in). Out-of-range
+    drainage areas are clamped to the domain edges, matching the shipped HR1
+    convention. Requires i24h50y_in; returns None without it (documented
+    fallback, never a guessed constant).
+    """
+    if drainage_km2 is None or drainage_km2 <= 0 or i24h50y_in is None:
+        return None
+    da_mi2 = drainage_km2 * KM2_TO_MI2
+    imp = max(0.0, float(impervious_pct or 0.0))
+    da = min(max(da_mi2, 0.10), 53.5)
+    return (51.8 * da ** 0.6004 * 10 ** (0.0101 * imp)
+            * 10 ** (0.0666 * float(i24h50y_in)))
+
+
+def cached_get_text(url, params=None, kind="get_text", retries=3, timeout=45,
+                    backoff=4.0):
+    """GET plain text with the same disk cache + backoff as cached_get_json
+    (stored as a JSON-wrapped string so the cache dir stays uniform)."""
+    key = url + "|" + json.dumps(params or {}, sort_keys=True)
+    cp = _cache_path(kind, key)
+    if cp.exists():
+        return json.loads(cp.read_text())["text"]
+    last = None
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, params=params, timeout=timeout, headers=_UA)
+            if r.ok and r.text:
+                cp.write_text(json.dumps({"url": url, "text": r.text}))
+                return r.text
+            last = f"HTTP {r.status_code}"
+        except Exception as e:
+            last = str(e)
+        time.sleep(backoff * (2 ** attempt))
+    print(f"  [warn] cached_get_text gave up on {url} ({last})")
+    return None
+
+
+def noaa_atlas14_24h50y_in(lat, lon):
+    """24-hour, 50-year maximum precipitation (inches) at a point — the
+    I24H50Y covariate of the SIR 2014-5030 HR4 flood regression — from the
+    NOAA Atlas 14 precipitation-frequency data server (PFDS) mean-estimate
+    CSV. Returns float inches or None.
+
+    Source: https://hdsc.nws.noaa.gov/cgi-bin/new/fe_text_mean.csv
+    (NOAA Atlas 14 PFDS; wired 2026-07-10)."""
+    url = "https://hdsc.nws.noaa.gov/cgi-bin/new/fe_text_mean.csv"
+    params = {"lat": f"{lat:.4f}", "lon": f"{lon:.4f}",
+              "series": "pds", "units": "english", "data": "depth"}
+    text = cached_get_text(url, params, kind="noaa14", timeout=60)
+    if not text:
+        return None
+    for line in text.splitlines():
+        if line.strip().startswith("24-hr:"):
+            # "24-hr:, 3.84,4.66,6.04,7.24,9.10,10.8,..." — ARI columns are
+            # 1,2,5,10,25,50,... so the 50-year value is the 6th number.
+            vals = [v.strip() for v in line.split(":,")[1].split(",")]
+            try:
+                return float(vals[5])
+            except (IndexError, ValueError):
+                return None
+    return None
+
+
 # ── 5. Channel width — Bieger et al. 2015, Table 3, Appalachian Highlands ──
 
 def bankfull_width_m_bieger(drainage_km2):
@@ -411,7 +484,7 @@ def _dms_to_dd(v):
     return deg + minutes / 60.0 + seconds / 3600.0
 
 
-# ── 9. Durham County parcels — public/private land ownership ─────────
+# ── 9. Parcels — public/private land ownership ───────────────────────
 
 _PUBLIC_OWNER_HINTS = (
     "CITY OF", "COUNTY OF", "DURHAM CITY", "DURHAM COUNTY", "STATE OF",
@@ -419,6 +492,10 @@ _PUBLIC_OWNER_HINTS = (
     "PARK", "RECREATION", "OPEN SPACE", "GREENWAY", "WATER", "SEWER",
     "UNIVERSITY", "SCHOOL", "BOARD OF EDUCATION", "HOUSING AUTHORITY",
     "TRANSIT", "DEPARTMENT OF", "US GOVERNMENT", "MUNICIPAL",
+    # statewide extension (fix-pass-2 Phase 2): the Durham-era list predates
+    # towns/villages — same municipal-ownership construct, new name variants.
+    # Recorded in model.json land_ownership.public_owner_hints and guarded.
+    "TOWN OF", "VILLAGE OF",
 )
 
 
@@ -434,6 +511,32 @@ def parcel_owner_at(lat, lon):
     j = cached_get_json(url, params, kind="parcel", timeout=45)
     try:
         return j["features"][0]["attributes"].get("PROPERTY_OWNER")
+    except Exception:
+        return None
+
+
+def nc_parcel_owner_at(lat, lon):
+    """Owner name of the parcel containing (lat, lon) from the NC OneMap
+    STATEWIDE parcels layer (NC Parcels Transformer — all 100 counties, one
+    standardized schema; owner field 'ownname'), or None. Same per-point
+    lookup pattern as the Durham fetcher, so land_ownership extends beyond
+    Durham with the identical owner→class logic.
+
+    Source: https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/
+    MapServer/1 (wired 2026-07-10). Per-point queries (~150/region, disk-
+    cached) instead of the plan's per-region clips: an urban county clip is
+    tens of thousands of polygons; 150 point-intersects are strictly less
+    volume — noted as a deviation in FIX2_REPORT.md."""
+    url = ("https://services.nconemap.gov/secure/rest/services/"
+           "NC1Map_Parcels/MapServer/1/query")
+    params = {
+        "geometry": f"{lon},{lat}", "geometryType": "esriGeometryPoint",
+        "inSR": "4326", "spatialRel": "esriSpatialRelIntersects",
+        "outFields": "ownname", "returnGeometry": "false", "f": "json",
+    }
+    j = cached_get_json(url, params, kind="parcel_nc", timeout=45)
+    try:
+        return j["features"][0]["attributes"].get("ownname")
     except Exception:
         return None
 
