@@ -2040,65 +2040,6 @@
   {
    "geometry": {
     "coordinates": [
-     -79.413383,
-     34.786985
-    ],
-    "type": "Point"
-   },
-   "properties": {
-    "accumulation": 23687.0,
-    "bank_slope_deg": 0.14,
-    "bank_slope_score": 1.0,
-    "beach_dist_km": 162.01,
-    "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 2.3649,
-    "channel_width_m": 3.03,
-    "channel_width_score": 1.0,
-    "composite_score": 31.3687,
-    "cso_density": 0.0,
-    "ej_index": 0.5556,
-    "elevation_m": 63.3978,
-    "estuary_dist_km": 308.04,
-    "feasibility_score": 49.2063,
-    "flood_q10_cfs": null,
-    "flow_score": 9.2997,
-    "flow_velocity_ms": 0.0736,
-    "generation_score": 10.7331,
-    "impact_score": 61.4761,
-    "impervious_pct": 4.3,
-    "land_ownership": 0.5,
-    "lat": 34.787,
-    "litter_complaint_density": 0.0,
-    "lon": -79.4134,
-    "npdes_points": 0,
-    "pixel_col": 1222.0,
-    "pixel_row": 350.0,
-    "population_density": 28.9,
-    "position_along": 0.5,
-    "protected_area_score": 0.0,
-    "rank": 34,
-    "river_name": null,
-    "road_access_m": 737.5,
-    "road_access_score": 0.6,
-    "road_density_km_km2": 0.732,
-    "robustness_pct": 0.0,
-    "runoff_coeff_C": 0.0887,
-    "seasonal_cv": 0.4564,
-    "segment_id": 12,
-    "segment_length_m": 1153.7656,
-    "stream_order": 1,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 0.0,
-    "tri_facility_density": 0.0,
-    "usgs_mean_q_cfs": 3.429,
-    "velocity_feasibility": 0.7,
-    "water_intake_score": 0.0
-   },
-   "type": "Feature"
-  },
-  {
-   "geometry": {
-    "coordinates": [
      -79.526144,
      34.793736
     ],
@@ -2137,7 +2078,7 @@
     "population_density": 37.7,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 35,
+    "rank": 34,
     "river_name": "Gum Swamp Creek",
     "road_access_m": 378.1,
     "road_access_score": 0.8,
@@ -2199,7 +2140,7 @@
     "population_density": 44.9,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 36,
+    "rank": 35,
     "river_name": "Gum Swamp Creek",
     "road_access_m": 350.4,
     "road_access_score": 0.8,
@@ -2261,7 +2202,7 @@
     "population_density": 109.6,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 37,
+    "rank": 36,
     "river_name": "Gum Swamp Creek",
     "road_access_m": 162.5,
     "road_access_score": 1.0,
@@ -2323,7 +2264,7 @@
     "population_density": 179.6,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 38,
+    "rank": 37,
     "river_name": "Gum Swamp Creek",
     "road_access_m": 569.6,
     "road_access_score": 0.6,
@@ -2383,7 +2324,7 @@
     "population_density": 30.5,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 39,
+    "rank": 38,
     "river_name": "Gum Swamp Creek",
     "road_access_m": 156.4,
     "road_access_score": 1.0,
@@ -2444,7 +2385,7 @@
     "population_density": 33.9,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 40,
+    "rank": 39,
     "river_name": "Cabin Branch",
     "road_access_m": 990.1,
     "road_access_score": 0.6,
@@ -2504,7 +2445,7 @@
     "population_density": 17.5,
     "position_along": 0.25,
     "protected_area_score": 0.0,
-    "rank": 41,
+    "rank": 40,
     "river_name": "Jordan Creek",
     "road_access_m": 484.2,
     "road_access_score": 0.8,
@@ -2565,7 +2506,7 @@
     "population_density": 58.7,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 42,
+    "rank": 41,
     "river_name": "Water Creek",
     "road_access_m": 135.7,
     "road_access_score": 1.0,
@@ -2582,65 +2523,6 @@
     "tri_facility_density": 0.0,
     "usgs_mean_q_cfs": 2.494,
     "velocity_feasibility": 0.3,
-    "water_intake_score": 0.0
-   },
-   "type": "Feature"
-  },
-  {
-   "geometry": {
-    "coordinates": [
-     -79.486676,
-     34.788882
-    ],
-    "type": "Point"
-   },
-   "properties": {
-    "accumulation": 22528.0,
-    "bank_slope_deg": 0.31,
-    "bank_slope_score": 1.0,
-    "beach_dist_km": 168.28,
-    "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 2.2492,
-    "channel_width_m": 2.98,
-    "channel_width_score": 1.0,
-    "composite_score": 23.5512,
-    "cso_density": 0.0,
-    "ej_index": 0.6111,
-    "elevation_m": 70.9889,
-    "estuary_dist_km": 314.67,
-    "feasibility_score": 49.2063,
-    "flood_q10_cfs": null,
-    "flow_score": 6.5582,
-    "flow_velocity_ms": 0.0612,
-    "generation_score": 6.5665,
-    "impact_score": 41.8691,
-    "impervious_pct": 2.01,
-    "land_ownership": 0.5,
-    "lat": 34.7889,
-    "litter_complaint_density": 0.0,
-    "lon": -79.4867,
-    "npdes_points": 0,
-    "pixel_col": 549.0,
-    "pixel_row": 342.0,
-    "population_density": 38.2,
-    "position_along": 0.0714,
-    "protected_area_score": 0.0,
-    "rank": 43,
-    "river_name": "Bridge Creek",
-    "road_access_m": 649.4,
-    "road_access_score": 0.6,
-    "road_density_km_km2": 0.93,
-    "robustness_pct": 0.0,
-    "runoff_coeff_C": 0.0681,
-    "seasonal_cv": 0.4366,
-    "segment_id": 11,
-    "segment_length_m": 11114.2658,
-    "stream_order": 1,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 0.4775,
-    "tri_facility_density": 0.0,
-    "usgs_mean_q_cfs": 1.371,
-    "velocity_feasibility": 0.7,
     "water_intake_score": 0.0
    },
    "type": "Feature"
@@ -2686,7 +2568,7 @@
     "population_density": 79.0,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 44,
+    "rank": 42,
     "river_name": "Gum Swamp Creek",
     "road_access_m": 953.8,
     "road_access_score": 0.6,
@@ -2748,7 +2630,7 @@
     "population_density": 185.4,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 45,
+    "rank": 43,
     "river_name": "Gum Swamp Creek",
     "road_access_m": 349.3,
     "road_access_score": 0.8,
@@ -2810,7 +2692,7 @@
     "population_density": 84.6,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 46,
+    "rank": 44,
     "river_name": "Gum Swamp Creek",
     "road_access_m": 762.2,
     "road_access_score": 0.6,
@@ -2832,9 +2714,9 @@
    "type": "Feature"
   }
  ],
- "note": "GRIME region 'Laurinburg, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Atlantic Plain. Flood: not applicable here (documented fallback). NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood fallback)",
+ "note": "GRIME region 'Laurinburg, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192stream mask (sites confined to \u00b1150 m of mapped OSM/NHD waterways)\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Atlantic Plain. Flood: not applicable here (documented fallback). NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood fallback)",
  "provenance": {
-  "candidates_pre_gate": 46,
+  "candidates_pre_gate": 44,
   "constant": [
    "bank_slope_score",
    "bridge_proximity_bonus",
@@ -2852,166 +2734,175 @@
   "parameters": {
    "bank_slope_score": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "region DEM gradient (3x3)"
    },
    "beach_dist_km": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "haversine to region ref: Wrightsville Beach (shipped NC reference)"
    },
    "bridge_proximity_bonus": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "FHWA/BTS NBI (NTAD), 50 m proximity"
    },
    "catchment_area_km2": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "DEM flow accumulation (pipeline)"
    },
    "channel_width_score": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "Bieger 2015 APL width curve on DEM drainage area \u2192 shipped width curve"
    },
    "cso_density": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "EPA ECHO CSO inventory (national bulk), Cauchy proximity"
    },
    "ej_index": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "Census ACS C17002+B03002 two-component demographic index, percentile-ranked within region"
    },
    "estuary_dist_km": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "haversine to region ref: Pamlico Sound (shipped NC reference)"
    },
    "flood_q10_cfs": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 46,
+    "n_sites": 44,
     "source": "flood regression not valid here (NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; ...) \u2014 NaN, dropped by constant-column handling"
    },
    "flow_velocity_ms": {
     "kind": "real",
-    "n_real": 30,
-    "n_sites": 46,
+    "n_real": 28,
+    "n_sites": 44,
     "source": "Manning (region DEM/D8) blended with EROM continuity (shipped M4 logic)"
    },
    "impervious_pct": {
     "kind": "real",
-    "n_real": 30,
-    "n_sites": 46,
+    "n_real": 28,
+    "n_sites": 44,
     "source": "EPA StreamCat pctimp2019 (per NHDPlus watershed)"
    },
    "land_ownership": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 46,
+    "n_sites": 44,
     "source": "no parcel integration for this region (Durham only) \u2014 unknown 0.5"
    },
    "litter_complaint_density": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 46,
+    "n_sites": 44,
     "source": "no machine-readable 311/litter source for this region"
    },
    "npdes_points": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "EPA ECHO NPDES outfalls (national bulk), per catchment"
    },
    "population_density": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "Census ACS 2022 B01003 block groups (bbox, multi-county), area-weighted"
    },
    "protected_area_score": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 46,
+    "n_sites": 44,
     "source": "PAD-US services unreachable; OSM proxy saturates \u2014 documented fallback"
    },
    "road_access_score": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "OSM drive network nearest-node distance"
    },
    "road_density_km_km2": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "OSM drive network (osmnx, cached) clipped per catchment"
    },
    "runoff_coeff_C": {
     "kind": "real",
-    "n_real": 30,
-    "n_sites": 46,
+    "n_real": 28,
+    "n_sites": 44,
     "source": "derived from real impervious_pct (C=0.05+0.009*I)"
    },
    "seasonal_cv": {
     "kind": "real",
-    "n_real": 30,
-    "n_sites": 46,
+    "n_real": 28,
+    "n_sites": 44,
     "source": "CV of NHDPlus EROM monthly flows per COMID"
    },
    "stream_order": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "DEM stream-network confluence heuristic (pipeline)"
    },
    "superfund_score": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 46,
+    "n_sites": 44,
     "source": "not wired (low weight; roadmap)"
    },
    "tourism_amenity_density": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "OSM leisure/tourism features per 2 km radius"
    },
    "tri_facility_density": {
     "kind": "real",
-    "n_real": 46,
-    "n_sites": 46,
+    "n_real": 44,
+    "n_sites": 44,
     "source": "EPA Envirofacts TRI state=NC (sign-fixed), per catchment"
    },
    "usgs_mean_q_cfs": {
     "kind": "real",
-    "n_real": 30,
-    "n_sites": 46,
+    "n_real": 28,
+    "n_sites": 44,
     "source": "NHDPlus EROM qe_ma per COMID (snap-guarded)"
    },
    "velocity_feasibility": {
     "kind": "real",
-    "n_real": 30,
-    "n_sites": 46,
+    "n_real": 28,
+    "n_sites": 44,
     "source": "shipped step curve on the computed velocity"
    },
    "water_intake_score": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 46,
+    "n_sites": 44,
     "source": "no public surface-intake point layer (NC OneMap is wells-only and NC-only)"
    }
+  },
+  "stream_mask": {
+   "buffer_m": 150.0,
+   "pre_mask": 46,
+   "removed": 2,
+   "sources": [
+    "osm-overpass (all waterway ways)",
+    "usgs-nhdplus flowlines"
+   ]
   },
   "varying": [
    "beach_dist_km",
@@ -4734,7 +4625,7 @@
     },
     "properties": {
      "length_km": 26.95,
-     "n_sites": 7,
+     "n_sites": 6,
      "name": "Bridge Creek",
      "order": 2,
      "riverKey": "bridge creek",
