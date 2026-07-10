@@ -97,7 +97,11 @@ SIMPLIFY_M = 5.0      # simplify tolerance for drawn lines (UTM metres)
 MIN_UNDER_M = 100.0   # underground reaches shorter than this are road-crossing
                       # stubs — skipped (the "dashed culvert spaghetti" guard)
 MIN_CONTEXT_M = 500.0 # site-less NAMED rivers shorter than this are noise
-NHD_DUP_M = 40.0      # NHD line ~this close to OSM geometry = same channel; drop
+NHD_DUP_M = 100.0     # NHD line ~this close to OSM geometry = same channel; drop.
+                      # NHDPlus medium-res (1:100k) sits 50-100 m off the real
+                      # centreline — at 40 m its coarse duplicates of OSM creeks
+                      # slipped through and drew as misaligned stubs.
+MIN_NHD_UNNAMED_M = 300.0   # unnamed NHD shorter than this is braid/wetland noise
 # Unnamed OSM ways: same per-type minimum lengths the live explorer uses, so a
 # backyard ditch doesn't become map clutter.
 MIN_LEN_M = {"river": 50, "canal": 50, "stream": 120, "drain": 250, "ditch": 250}
@@ -369,7 +373,8 @@ def add_names(slug):
     # query misses; a site named after one must still get a drawn line.
     # unary_union dedupes ways present in both.
     rivers = {}   # key → {display, surf:[], under:[], ww:{}}
-    unnamed_osm = []   # (geom4326, ww)
+    unnamed_osm = []      # (geom4326, ww) — surface ways
+    unnamed_bridges = []  # short unnamed culverts: bridge the network, never dashed
     for nm, coords, meta in list(allw) + [w for w in named if w[0]]:
         try:
             g = LineString(coords)
@@ -383,7 +388,8 @@ def add_names(slug):
             r["ww"][meta["waterway"]] = r["ww"].get(meta["waterway"], 0) + g.length
         else:
             if meta["underground"]:
-                continue   # unnamed culverts = pure spaghetti, skip
+                unnamed_bridges.append(g)   # length-gated to <MIN_UNDER_M below
+                continue
             unnamed_osm.append((g, meta["waterway"]))
     nhd_by_name, nhd_unnamed = {}, []
     for nm, gj in nhd:
@@ -428,9 +434,13 @@ def add_names(slug):
                 if _far_from(g, river_osm_union, NHD_DUP_M)]
         display = r["display"] or next(
             (nm for nm, gj in nhd if nm and nm.strip().lower() == key), key)
-        surf_parts = _merge_parts(surf_utm) + _merge_parts(fill)
-        under_parts = [p for p in _merge_parts(under_utm, drop_fragments=False)
-                       if p.length >= MIN_UNDER_M]
+        # Short culverted ways (< MIN_UNDER_M — road crossings, driveways) BRIDGE
+        # the surface line instead of leaving a break at every street; only
+        # substantial underground reaches draw dashed.
+        bridges = [g for g in under_utm if g.length < MIN_UNDER_M]
+        long_under = [g for g in under_utm if g.length >= MIN_UNDER_M]
+        surf_parts = _merge_parts(surf_utm + bridges) + _merge_parts(fill)
+        under_parts = _merge_parts(long_under, drop_fragments=False)
         total_m = sum(p.length for p in surf_parts) + sum(p.length for p in under_parts)
         if not surf_parts and not under_parts:
             continue
@@ -458,14 +468,24 @@ def add_names(slug):
     # Unnamed pool: OSM unnamed surface ways (per-type length gates) + NHD
     # unnamed flowlines clear of ALL OSM geometry. These draw as unnamed context
     # and are the snap targets for unnamed (Segment N) sites.
-    unnamed_parts = []      # (LineString UTM, ww)
+    pool = []
     for g, ww in zip(utm_series([g for g, _ in unnamed_osm]),
                      [ww for _, ww in unnamed_osm]):
         if g.length >= MIN_LEN_M.get(ww, 120):
-            unnamed_parts.append((g.simplify(SIMPLIFY_M * 2), ww))  # coarser: faded context
+            pool.append(g)
+    # short unnamed culverts weld the unnamed network across road crossings
+    pool += [g for g in utm_series(unnamed_bridges) if g.length < MIN_UNDER_M]
     for g in utm_series(nhd_unnamed):
-        if g.length >= 120 and _far_from(g, all_osm_union, NHD_DUP_M):
-            unnamed_parts.append((g.simplify(SIMPLIFY_M * 2), "stream"))
+        if g.length >= MIN_NHD_UNNAMED_M and _far_from(g, all_osm_union, NHD_DUP_M):
+            pool.append(g)
+    # Merge the whole unnamed pool into CONNECTED lines: consecutive OSM ways of
+    # the same ditch become one line (no dangling endpoints), then re-drop
+    # anything still under 120 m.
+    unnamed_parts = []      # (LineString UTM, ww)
+    if pool:
+        merged = _merge_parts(pool, drop_fragments=False)
+        unnamed_parts = [(p.simplify(SIMPLIFY_M * 2), "stream")
+                         for p in merged if p.length >= 120]
     if unnamed_parts:
         back = list(gpd.GeoSeries([g for g, _ in unnamed_parts],
                                   crs=utm).to_crs("EPSG:4326"))
