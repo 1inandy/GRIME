@@ -55,6 +55,13 @@ def _configure_osmnx():
     ox.settings.cache_folder = os.path.join(_ROOT, "cache", "osmnx")
     ox.settings.overpass_rate_limit = True
     ox.settings.requests_timeout = 300
+    # Operational knob (fix-pass-2): point osmnx at an alternate Overpass
+    # mirror (e.g. https://overpass.kumi.systems/api/interpreter — the same
+    # mirror the explorer already races) when the default endpoint is
+    # rate-limiting a long batch. No default change; opt-in via env.
+    _ep = os.environ.get("GRIME_OVERPASS_ENDPOINT")
+    if _ep:
+        ox.settings.overpass_endpoint = _ep
     _configure_osmnx._done = True
 
 
