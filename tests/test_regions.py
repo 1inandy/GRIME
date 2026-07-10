@@ -530,3 +530,38 @@ def test_built_regions_match_index():
         documented = set(prov["parameters"].keys())
         assert documented == set(prov["varying"]) | set(prov["constant"]) or \
             documented >= set(prov["varying"]), entry["slug"]
+
+
+def test_stream_mask_union_and_gate(monkeypatch):
+    """The stream mask is the union of OSM+NHD geometry; a candidate within
+    150 m is kept, one farther is removed, and a source outage returns None
+    (the runner aborts rather than running unmasked)."""
+    import geopandas as gpd
+    from shapely.geometry import Point
+    import scripts.run_regions as rr
+    import scripts.add_river_names as arn
+    region = {"slug": "t", "bbox": [-79.0, 35.9, -78.8, 36.1], "utm_epsg": 32617}
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: [
+        ("", [(-78.905, 36.000), (-78.885, 36.000)], {"waterway": "stream", "underground": False})])
+    monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: [])
+    mask = rr.stream_mask_union(region)
+    assert mask is not None and not mask.is_empty
+    utm = "EPSG:32617"
+    cands = gpd.GeoDataFrame(
+        {"which": ["near", "far"]},
+        geometry=[Point(-78.900, 36.0005), Point(-78.900, 36.05)],
+        crs="EPSG:4326").to_crs(utm)
+    kept = rr.apply_stream_mask(cands, mask)        # the gate run_region uses
+    assert list(kept["which"]) == ["near"]          # ~55 m kept, ~5.5 km removed
+    # empty mask (healthy sources, no waterways) → everything removed
+    from shapely.geometry import GeometryCollection
+    assert len(rr.apply_stream_mask(cands, GeometryCollection())) == 0
+    # unnamed CULVERT must not hold a site in the mask (never drawn)
+    monkeypatch.setattr(arn, "all_waterways", lambda bbox: [
+        ("", [(-78.905, 36.000), (-78.885, 36.000)],
+         {"waterway": "stream", "underground": True})])
+    m2 = rr.stream_mask_union(region)
+    assert len(rr.apply_stream_mask(cands, m2)) == 0
+    # outage → None → caller refuses to run unmasked
+    monkeypatch.setattr(arn, "named_flowlines_nhd", lambda bbox: None)
+    assert rr.stream_mask_union(region) is None

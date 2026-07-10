@@ -934,7 +934,7 @@
    "type": "Feature"
   }
  ],
- "note": "GRIME region 'Elizabeth City, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Atlantic Plain. Flood: not applicable here (documented fallback). NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood fallback)",
+ "note": "GRIME region 'Elizabeth City, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192stream mask (sites confined to \u00b1150 m of mapped OSM/NHD waterways)\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Atlantic Plain. Flood: not applicable here (documented fallback). NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood fallback)",
  "provenance": {
   "candidates_pre_gate": 15,
   "constant": [
@@ -1114,6 +1114,15 @@
     "n_sites": 15,
     "source": "no public surface-intake point layer (NC OneMap is wells-only and NC-only)"
    }
+  },
+  "stream_mask": {
+   "buffer_m": 150.0,
+   "pre_mask": 15,
+   "removed": 0,
+   "sources": [
+    "osm-overpass (all waterway ways)",
+    "usgs-nhdplus flowlines"
+   ]
   },
   "varying": [
    "beach_dist_km",

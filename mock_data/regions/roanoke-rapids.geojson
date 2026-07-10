@@ -1787,65 +1787,6 @@
   {
    "geometry": {
     "coordinates": [
-     -77.63431,
-     36.483785
-    ],
-    "type": "Point"
-   },
-   "properties": {
-    "accumulation": 54058.0,
-    "bank_slope_deg": 8.21,
-    "bank_slope_score": 1.0,
-    "beach_dist_km": 253.23,
-    "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 5.3998,
-    "channel_width_m": 4.09,
-    "channel_width_score": 1.0,
-    "composite_score": 26.8743,
-    "cso_density": 0.0,
-    "ej_index": 0.532,
-    "elevation_m": 18.5205,
-    "estuary_dist_km": 214.12,
-    "feasibility_score": 32.967,
-    "flood_q10_cfs": null,
-    "flow_score": 25.026,
-    "flow_velocity_ms": 0.0932,
-    "generation_score": 27.7801,
-    "impact_score": 24.4623,
-    "impervious_pct": 5.24,
-    "land_ownership": 0.5,
-    "lat": 36.4838,
-    "litter_complaint_density": 0.0,
-    "lon": -77.6343,
-    "npdes_points": 0,
-    "pixel_col": 713.0,
-    "pixel_row": 156.0,
-    "population_density": 38.0,
-    "position_along": 0.75,
-    "protected_area_score": 0.0,
-    "rank": 30,
-    "river_name": "Lees Creek",
-    "road_access_m": 1000.6,
-    "road_access_score": 0.3,
-    "road_density_km_km2": 1.073,
-    "robustness_pct": 0.0,
-    "runoff_coeff_C": 0.0972,
-    "seasonal_cv": 0.4046,
-    "segment_id": 4,
-    "segment_length_m": 4044.0333,
-    "stream_order": 3,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 0.6366,
-    "tri_facility_density": 0.1852,
-    "usgs_mean_q_cfs": 1.701,
-    "velocity_feasibility": 0.7,
-    "water_intake_score": 0.0
-   },
-   "type": "Feature"
-  },
-  {
-   "geometry": {
-    "coordinates": [
      -77.621737,
      36.477255
     ],
@@ -1885,7 +1826,7 @@
     "population_density": 19.9,
     "position_along": 0.25,
     "protected_area_score": 0.0,
-    "rank": 31,
+    "rank": 30,
     "river_name": null,
     "road_access_m": 486.2,
     "road_access_score": 0.8,
@@ -1945,7 +1886,7 @@
     "population_density": 76.0,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 32,
+    "rank": 31,
     "river_name": "Roanoke River",
     "road_access_m": 765.4,
     "road_access_score": 0.6,
@@ -2004,7 +1945,7 @@
     "population_density": 77.3,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 33,
+    "rank": 32,
     "river_name": "Black Duck Creek",
     "road_access_m": 798.0,
     "road_access_score": 0.6,
@@ -2065,7 +2006,7 @@
     "population_density": 14.3,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 34,
+    "rank": 33,
     "river_name": "Lees Creek",
     "road_access_m": 254.7,
     "road_access_score": 0.8,
@@ -2127,7 +2068,7 @@
     "population_density": 60.4,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 35,
+    "rank": 34,
     "river_name": "Roanoke River",
     "road_access_m": 672.0,
     "road_access_score": 0.6,
@@ -2149,9 +2090,9 @@
    "type": "Feature"
   }
  ],
- "note": "GRIME region 'Roanoke Rapids, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Atlantic Plain. Flood: not applicable here (documented fallback). NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood fallback)",
+ "note": "GRIME region 'Roanoke Rapids, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192stream mask (sites confined to \u00b1150 m of mapped OSM/NHD waterways)\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Atlantic Plain. Flood: not applicable here (documented fallback). NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; flood fallback)",
  "provenance": {
-  "candidates_pre_gate": 35,
+  "candidates_pre_gate": 34,
   "constant": [
    "channel_width_score",
    "cso_density",
@@ -2167,166 +2108,175 @@
   "parameters": {
    "bank_slope_score": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "region DEM gradient (3x3)"
    },
    "beach_dist_km": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "haversine to region ref: Wrightsville Beach (shipped NC reference)"
    },
    "bridge_proximity_bonus": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "FHWA/BTS NBI (NTAD), 50 m proximity"
    },
    "catchment_area_km2": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "DEM flow accumulation (pipeline)"
    },
    "channel_width_score": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "Bieger 2015 APL width curve on DEM drainage area \u2192 shipped width curve"
    },
    "cso_density": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "EPA ECHO CSO inventory (national bulk), Cauchy proximity"
    },
    "ej_index": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "Census ACS C17002+B03002 two-component demographic index, percentile-ranked within region"
    },
    "estuary_dist_km": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "haversine to region ref: Pamlico Sound (shipped NC reference)"
    },
    "flood_q10_cfs": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 35,
+    "n_sites": 34,
     "source": "flood regression not valid here (NC Coastal Plain (SIR HR4 needs 24h-50y precip \u2014 not wired; ...) \u2014 NaN, dropped by constant-column handling"
    },
    "flow_velocity_ms": {
     "kind": "real",
-    "n_real": 28,
-    "n_sites": 35,
+    "n_real": 27,
+    "n_sites": 34,
     "source": "Manning (region DEM/D8) blended with EROM continuity (shipped M4 logic)"
    },
    "impervious_pct": {
     "kind": "real",
-    "n_real": 28,
-    "n_sites": 35,
+    "n_real": 27,
+    "n_sites": 34,
     "source": "EPA StreamCat pctimp2019 (per NHDPlus watershed)"
    },
    "land_ownership": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 35,
+    "n_sites": 34,
     "source": "no parcel integration for this region (Durham only) \u2014 unknown 0.5"
    },
    "litter_complaint_density": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 35,
+    "n_sites": 34,
     "source": "no machine-readable 311/litter source for this region"
    },
    "npdes_points": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "EPA ECHO NPDES outfalls (national bulk), per catchment"
    },
    "population_density": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "Census ACS 2022 B01003 block groups (bbox, multi-county), area-weighted"
    },
    "protected_area_score": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 35,
+    "n_sites": 34,
     "source": "PAD-US services unreachable; OSM proxy saturates \u2014 documented fallback"
    },
    "road_access_score": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "OSM drive network nearest-node distance"
    },
    "road_density_km_km2": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "OSM drive network (osmnx, cached) clipped per catchment"
    },
    "runoff_coeff_C": {
     "kind": "real",
-    "n_real": 28,
-    "n_sites": 35,
+    "n_real": 27,
+    "n_sites": 34,
     "source": "derived from real impervious_pct (C=0.05+0.009*I)"
    },
    "seasonal_cv": {
     "kind": "real",
-    "n_real": 28,
-    "n_sites": 35,
+    "n_real": 27,
+    "n_sites": 34,
     "source": "CV of NHDPlus EROM monthly flows per COMID"
    },
    "stream_order": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "DEM stream-network confluence heuristic (pipeline)"
    },
    "superfund_score": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 35,
+    "n_sites": 34,
     "source": "not wired (low weight; roadmap)"
    },
    "tourism_amenity_density": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "OSM leisure/tourism features per 2 km radius"
    },
    "tri_facility_density": {
     "kind": "real",
-    "n_real": 35,
-    "n_sites": 35,
+    "n_real": 34,
+    "n_sites": 34,
     "source": "EPA Envirofacts TRI state=NC (sign-fixed), per catchment"
    },
    "usgs_mean_q_cfs": {
     "kind": "real",
-    "n_real": 28,
-    "n_sites": 35,
+    "n_real": 27,
+    "n_sites": 34,
     "source": "NHDPlus EROM qe_ma per COMID (snap-guarded)"
    },
    "velocity_feasibility": {
     "kind": "real",
-    "n_real": 28,
-    "n_sites": 35,
+    "n_real": 27,
+    "n_sites": 34,
     "source": "shipped step curve on the computed velocity"
    },
    "water_intake_score": {
     "kind": "fallback",
     "n_real": 0,
-    "n_sites": 35,
+    "n_sites": 34,
     "source": "no public surface-intake point layer (NC OneMap is wells-only and NC-only)"
    }
+  },
+  "stream_mask": {
+   "buffer_m": 150.0,
+   "pre_mask": 35,
+   "removed": 1,
+   "sources": [
+    "osm-overpass (all waterway ways)",
+    "usgs-nhdplus flowlines"
+   ]
   },
   "varying": [
    "bank_slope_score",
@@ -4902,7 +4852,7 @@
     },
     "properties": {
      "length_km": 5.0,
-     "n_sites": 2,
+     "n_sites": 1,
      "name": "Lees Creek",
      "order": 2,
      "riverKey": "lees creek",

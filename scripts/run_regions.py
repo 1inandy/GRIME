@@ -85,6 +85,86 @@ def log(slug, msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] [{slug}] {msg}", flush=True)
 
 
+# ── Stream mask (owner-approved site-selection gate, 2026-07-09) ─────────
+# DEM flow accumulation happily routes "streams" down street grids in flat,
+# heavily-built metros (NYC/Chicago/LA/SF), producing candidate sites hundreds
+# of metres from any real channel. The stream mask confines candidates to
+# within STREAM_MASK_BUFFER_M of a REAL mapped waterway — the union of OSM
+# waterway ways (named + unnamed, any channel type) and USGS NHDPlus flowlines,
+# fetched through the same cached fetchers the river-name bake uses. The buffer
+# matches the display snap radius (150 m), i.e. a kept site is exactly one that
+# can honestly sit on its mapped channel. Applied BEFORE parameter wiring and
+# the shipped hard gates; removals are recorded in provenance + the index. If
+# EITHER geometry source is unavailable the region run ABORTS rather than
+# running unmasked — never a silent methodology downgrade.
+STREAM_MASK_BUFFER_M = 150.0
+
+
+def stream_mask_union(region):
+    """UTM union of the mapped waterway geometry for the region (OSM + NHD,
+    cached). The pool is aligned with what the explorer can DRAW and SNAP TO
+    (see scripts/add_river_names): named ways of any kind (surface + culverted,
+    the latter drawn dashed), unnamed SURFACE ways above the per-type length
+    gates, and NHD flowlines — so a site kept by the mask is always one whose
+    channel is actually visible on the map. Returns shapely geometry, or None
+    when a source is unavailable."""
+    from shapely.geometry import LineString
+    from shapely.geometry import shape as shape_of
+    from shapely.ops import unary_union
+    from scripts.add_river_names import (BBOX_BUFFER_DEG, MIN_LEN_M,
+                                         all_waterways, named_flowlines_nhd)
+    bbox = region["bbox"]
+    fb = (bbox[0] - BBOX_BUFFER_DEG, bbox[1] - BBOX_BUFFER_DEG,
+          bbox[2] + BBOX_BUFFER_DEG, bbox[3] + BBOX_BUFFER_DEG)
+    osm = all_waterways(fb)
+    nhd = named_flowlines_nhd(fb)
+    if osm is None or nhd is None:
+        return None
+    utm = f"EPSG:{region['utm_epsg']}"
+
+    def to_utm(geoms):
+        return list(gpd.GeoSeries(geoms, crs="EPSG:4326").to_crs(utm)) if geoms else []
+
+    named_geoms, unnamed_geoms, unnamed_ww = [], [], []
+    for nm, coords, meta in osm:
+        try:
+            g = LineString(coords)
+        except Exception:
+            continue
+        if nm:
+            named_geoms.append(g)
+        elif not meta["underground"]:
+            # unnamed culverts are never drawn — they must not keep a site
+            unnamed_geoms.append(g)
+            unnamed_ww.append(meta["waterway"])
+    nhd_geoms = []
+    for _nm, gj in nhd:
+        try:
+            nhd_geoms.append(shape_of(gj))
+        except Exception:
+            continue
+
+    pool = to_utm(named_geoms) + to_utm(nhd_geoms)
+    for g, ww in zip(to_utm(unnamed_geoms), unnamed_ww):
+        if g.length >= MIN_LEN_M.get(ww, 120):   # same gates as the drawn network
+            pool.append(g)
+    if not pool:
+        # Sources healthy but genuinely no mapped waterway in the bbox: an
+        # empty mask (removes everything) is the honest result.
+        from shapely.geometry import GeometryCollection
+        return GeometryCollection()
+    return unary_union(pool)
+
+
+def apply_stream_mask(cands, mask):
+    """Keep only candidates within STREAM_MASK_BUFFER_M of the mask geometry
+    (same-CRS GeoDataFrame + shapely geometry). Empty mask → empty result."""
+    if mask.is_empty:
+        return cands.iloc[0:0].reset_index(drop=True)
+    dists = cands.geometry.distance(mask)
+    return cands[dists <= STREAM_MASK_BUFFER_M].reset_index(drop=True)
+
+
 def catchment_disc(pt_utm, area_km2):
     """The model's own per-candidate catchment proxy (matches core.scoring)."""
     area_km2 = area_km2 or 1.0
@@ -392,6 +472,24 @@ def run_region(region, defaults):
             "no waterway above the 2 km² channel threshold in this bbox")
     log(slug, f"candidates: {len(cands)}")
 
+    # ── STREAM MASK: confine candidates to real mapped waterways ──
+    mask = stream_mask_union(region)
+    if mask is None:
+        raise RuntimeError("stream-mask geometry sources unavailable "
+                           "(Overpass/NHD) — refusing to run unmasked")
+    n_pre_mask = len(cands)
+    cands = apply_stream_mask(cands, mask)
+    mask_removed = n_pre_mask - len(cands)
+    log(slug, f"stream mask (±{STREAM_MASK_BUFFER_M:.0f} m of mapped OSM/NHD "
+              f"waterways): kept {len(cands)}/{n_pre_mask}")
+    if len(cands) == 0:
+        # Honest zero: every DEM flow path in this bbox is an artifact with no
+        # mapped channel within the buffer (gridded metro) — no deployable site.
+        return write_zero_region(region, 0,
+            f"all {n_pre_mask} DEM candidate sites lie >{STREAM_MASK_BUFFER_M:.0f} m "
+            "from any mapped OSM/NHD waterway (stream mask)",
+            mask_stats={"pre_mask": n_pre_mask, "removed": mask_removed})
+
     region = dict(region)
     region["_dem"], region["_transform"], region["_fdir"] = elevation, transform, fdir
 
@@ -409,7 +507,8 @@ def run_region(region, defaults):
         # confirmed private). Also a correct zero — never loosen a gate.
         return write_zero_region(region, n_before,
             f"all {n_before} candidate sites removed by the hard gates "
-            "(velocity/width/ownership) — no deployable site in this bbox")
+            "(velocity/width/ownership) — no deployable site in this bbox",
+            mask_stats={"pre_mask": n_pre_mask, "removed": mask_removed})
     log(slug, f"scored {len(scored)}/{n_before} sites (hard gates removed {gated_out}); "
               f"composite {scored['composite_score'].min():.1f}-{scored['composite_score'].max():.1f}")
 
@@ -435,7 +534,8 @@ def run_region(region, defaults):
     doc = {
         "type": "FeatureCollection",
         "note": (f"GRIME region '{region['name']}' — real-data pipeline (DEM→streams→candidates→"
-                 f"region-appropriate real parameters→shipped scoring, math unchanged). "
+                 f"stream mask (sites confined to ±{STREAM_MASK_BUFFER_M:.0f} m of mapped OSM/NHD "
+                 f"waterways)→region-appropriate real parameters→shipped scoring, math unchanged). "
                  f"Width curve: {region['width_curve']['source']}. Flood: "
                  f"{'SIR 2014-5030 HR1' if region['flood_method']=='sir2014_hr1' else 'not applicable here (documented fallback)'}. "
                  f"{region['notes']}"),
@@ -444,7 +544,12 @@ def run_region(region, defaults):
                     "width_curve", "flood_method", "estuary_ref", "beach_ref", "notes")},
         "provenance": {"n_parameters": len(ALL_PARAMS), "varying": varying,
                        "constant": constant, "parameters": prov,
-                       "hard_gate_removed": gated_out, "candidates_pre_gate": n_before},
+                       "hard_gate_removed": gated_out, "candidates_pre_gate": n_before,
+                       "stream_mask": {"buffer_m": STREAM_MASK_BUFFER_M,
+                                       "sources": ["osm-overpass (all waterway ways)",
+                                                   "usgs-nhdplus flowlines"],
+                                       "pre_mask": n_pre_mask,
+                                       "removed": mask_removed}},
         "features": feats,
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -460,7 +565,8 @@ def run_region(region, defaults):
         "bbox": region["bbox"], "center": region["center"],
         "tier": region.get("tier", "metro"),
         "site_count": len(feats), "candidates_pre_gate": n_before,
-        "gate_removed": gated_out, "params_varying": len(varying),
+        "gate_removed": gated_out, "mask_removed": mask_removed,
+        "params_varying": len(varying),
         "scored_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "status": "ok", "runtime_min": round(dt / 60, 1),
         "top_site": {"rank": 1, "segment_id": top.get("segment_id"),
@@ -534,11 +640,21 @@ def supervise(args):
     timeout = args.timeout
     pace_lo, pace_hi = args.pace, args.pace + args.jitter
 
+    # A failed forced rebuild leaves the PREVIOUS geojson on disk (serving
+    # continuity) with status=failed in the index. Resume must treat such a
+    # region as NOT done, or it stays stuck on the stale file forever.
+    _failed = {r["slug"] for r in load_index().get("regions", [])
+               if not str(r.get("status", "")).startswith("ok")}
+
     def already_done(slug):
-        return (OUT_DIR / f"{slug}.geojson").exists()
+        if getattr(args, "force", False):
+            return False
+        return (OUT_DIR / f"{slug}.geojson").exists() and slug not in _failed
 
     def run_one(slug):
         cmd = [sys.executable, os.path.abspath(__file__), "--only", slug]
+        if getattr(args, "force", False):
+            cmd.append("--force")
         try:
             r = subprocess.run(cmd, timeout=timeout)
             return r.returncode == 0
