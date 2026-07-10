@@ -211,6 +211,42 @@ def main():
         if not approx(got, expected, 1e-9):
             errors.append(f"water_intake_score(d={d_km} km)={got} != {expected}")
 
+    # 11) flood regressions (SIR 2014-5030 Table 7) — functional probes against
+    # the model.json coefficient sets, inside each equation's domain.
+    fr = m["flood_regressions"]
+    from core.real_sources import (KM2_TO_MI2, flood_q10_cfs_sir2014,
+                                   flood_q10_cfs_sir2014_hr4)
+    c_small = fr["sir2014_hr1"]["coeffs"]["small"]
+    c_large = fr["sir2014_hr1"]["coeffs"]["large"]
+    for da_km2, imp, c in ((40.0, 30.0, c_large), (2.0, 15.0, c_small)):
+        da_mi2 = da_km2 * KM2_TO_MI2
+        expected = c[0] * da_mi2 ** c[1] * 10 ** (c[2] * imp)
+        got = flood_q10_cfs_sir2014(da_km2, imp)
+        if not approx(got, expected, 1e-6):
+            errors.append(f"flood HR1(DA={da_km2} km2, IMP={imp})={got} != {expected}")
+    c4 = fr["sir2014_hr4"]["coeffs"]
+    for da_km2, imp, i24 in ((10.0, 20.0, 8.5), (2.0, 5.0, 10.8)):
+        da_mi2 = da_km2 * KM2_TO_MI2
+        expected = c4[0] * da_mi2 ** c4[1] * 10 ** (c4[2] * imp) * 10 ** (c4[3] * i24)
+        got = flood_q10_cfs_sir2014_hr4(da_km2, imp, i24)
+        if not approx(got, expected, 1e-6):
+            errors.append(f"flood HR4(DA={da_km2} km2, IMP={imp}, I24={i24})={got} != {expected}")
+    if flood_q10_cfs_sir2014_hr4(10.0, 20.0, None) is not None:
+        errors.append("flood HR4 must return None without I24H50Y (no guessed constant)")
+
+    # 12) land-ownership classifier — model table == code table, plus mapping
+    lo = m["land_ownership"]
+    from core.real_sources import _PUBLIC_OWNER_HINTS, land_ownership_from_owner
+    if tuple(lo["public_owner_hints"]) != _PUBLIC_OWNER_HINTS:
+        errors.append("land_ownership public_owner_hints: model != core.real_sources")
+    checks = [("TOWN OF BOONE", lo["public_value"]),
+              ("SMITH FAMILY TRUST", lo["unknown_value"]),
+              (None, lo["unknown_value"])]
+    for owner, exp in checks:
+        got = land_ownership_from_owner(owner)
+        if not approx(got, float(exp)):
+            errors.append(f"land_ownership_from_owner({owner!r})={got} != {exp}")
+
     if errors:
         print("MODEL DRIFT DETECTED:")
         for e in errors:
@@ -219,8 +255,10 @@ def main():
     print(f"model.json matches code: {n} parameters; validated param+subscore weights, "
           "runoff formula, velocity feasibility/transport curves, channel-width curve, "
           "hard gates, spacing + occlusion constants (pipeline & explorer), the "
-          "width-order fallback, and the impact proximity curves "
-          "(superfund/cso inverse-distance, PAD-US designation weights, intake decay).")
+          "width-order fallback, the impact proximity curves "
+          "(superfund/cso inverse-distance, PAD-US designation weights, intake decay), "
+          "the SIR 2014-5030 HR1/HR4 flood regressions, and the land-ownership "
+          "classifier table.")
     sys.exit(0)
 
 

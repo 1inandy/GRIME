@@ -173,5 +173,70 @@
       "decay_km": 10.0,
       "source": "NC OneMap / NC DEQ SWAP public water supply sources, source_typ='Surface Water' (NC-only)"
     }
+  },
+  "flood_regressions": {
+    "_comment": "USGS SIR 2014-5030 Table 7 10%-AEP (Q10) regional regression equations, applied only inside each region's calibration domain (regions.json flood_method). DA in mi2, IMP = % impervious, I24H50Y = NOAA Atlas 14 24-h/50-y depth (in). Blue Ridge (HR2) has NO urban equation in the report ('methods are not applicable to urban streams in the Blue Ridge region') and stays flood_method none.",
+    "sir2014_hr1": {
+      "small": "Q10 = 381*DA^0.7536 * 10^(0.0076*IMP)  (0.10 <= DA <= 3 mi2)",
+      "large": "Q10 = 484*DA^0.5539 * 10^(0.0060*IMP)  (3 < DA <= 436 mi2)",
+      "coeffs": {
+        "small": [
+          381.0,
+          0.7536,
+          0.0076
+        ],
+        "large": [
+          484.0,
+          0.5539,
+          0.006
+        ]
+      }
+    },
+    "sir2014_hr4": {
+      "equation": "Q10 = 51.8*DA^0.6004 * 10^(0.0101*IMP) * 10^(0.0666*I24H50Y)  (0.10 <= DA <= 53.5 mi2)",
+      "coeffs": [
+        51.8,
+        0.6004,
+        0.0101,
+        0.0666
+      ],
+      "domain_mi2": [
+        0.1,
+        53.5
+      ]
+    }
+  },
+  "land_ownership": {
+    "_comment": "Parcel owner-name -> land_ownership mapping (core/real_sources.py). Public 1.0, unknown 0.5; never 0.0 from ownership alone (0.0 would trip the hard gate). TOWN OF / VILLAGE OF are the fix-pass-2 statewide extension of the Durham-era hint list (same municipal-ownership construct).",
+    "public_value": 1.0,
+    "unknown_value": 0.5,
+    "public_owner_hints": [
+      "CITY OF",
+      "COUNTY OF",
+      "DURHAM CITY",
+      "DURHAM COUNTY",
+      "STATE OF",
+      "NC DEPT",
+      "NORTH CAROLINA",
+      "UNITED STATES",
+      "USA",
+      "FEDERAL",
+      "PARK",
+      "RECREATION",
+      "OPEN SPACE",
+      "GREENWAY",
+      "WATER",
+      "SEWER",
+      "UNIVERSITY",
+      "SCHOOL",
+      "BOARD OF EDUCATION",
+      "HOUSING AUTHORITY",
+      "TRANSIT",
+      "DEPARTMENT OF",
+      "US GOVERNMENT",
+      "MUNICIPAL",
+      "TOWN OF",
+      "VILLAGE OF"
+    ]
   }
 }

@@ -220,3 +220,58 @@ def test_padus_protected_area_score_math():
     assert got == pytest.approx(0.7 * (1 / (1 + 5.0 / 5)), rel=1e-9)  # substring 'State Park'
     empty = gpd.GeoDataFrame({"designation": []}, geometry=[], crs="EPSG:32617")
     assert protected_area_score_from_gdf(Point(0, 0), empty) == 0.0
+
+
+# ── SIR 2014-5030 HR4 (Coastal Plain) flood — fix-pass-2 Phase 2 ──
+
+def test_flood_q10_hr4_matches_sir2014_equation():
+    da_km2 = 10.0
+    da_mi2 = da_km2 * rs.KM2_TO_MI2
+    exp = 51.8 * da_mi2 ** 0.6004 * 10 ** (0.0101 * 20.0) * 10 ** (0.0666 * 8.5)
+    assert rs.flood_q10_cfs_sir2014_hr4(da_km2, 20.0, 8.5) == pytest.approx(exp, rel=1e-9)
+
+
+def test_flood_q10_hr4_guards_and_domain():
+    assert rs.flood_q10_cfs_sir2014_hr4(None, 20, 8.5) is None
+    assert rs.flood_q10_cfs_sir2014_hr4(0, 20, 8.5) is None
+    # no I24H50Y constant → None (documented fallback, never a guess)
+    assert rs.flood_q10_cfs_sir2014_hr4(10.0, 20, None) is None
+    # domain clamps (HR1 convention): below 0.10 mi2 and above 53.5 mi2
+    lo = rs.flood_q10_cfs_sir2014_hr4(0.01, 0, 8.0)
+    assert lo == pytest.approx(51.8 * 0.10 ** 0.6004 * 10 ** (0.0666 * 8.0), rel=1e-9)
+    hi = rs.flood_q10_cfs_sir2014_hr4(1000.0, 0, 8.0)
+    assert hi == pytest.approx(51.8 * 53.5 ** 0.6004 * 10 ** (0.0666 * 8.0), rel=1e-9)
+    # wetter design storm → larger flood
+    assert (rs.flood_q10_cfs_sir2014_hr4(10, 10, 11.0)
+            > rs.flood_q10_cfs_sir2014_hr4(10, 10, 7.0))
+
+
+def test_noaa_atlas14_parser(monkeypatch):
+    text = (
+        "Point precipitation frequency estimates (inches)\n"
+        "by duration for ARI (years):, 1,2,5,10,25,50,100,200,500,1000\n"
+        "12-hr:, 3.28,3.99,5.14,6.16,7.69,9.06,10.6,12.4,15.1,17.5\n"
+        "24-hr:, 3.84,4.66,6.04,7.24,9.10,10.8,12.6,14.8,18.1,21.1\n"
+        "2-day:, 4.54,5.48,7.03,8.38,10.4,12.3,14.3,16.6,20.2,23.3\n")
+    monkeypatch.setattr(rs, "cached_get_text", lambda *a, **k: text)
+    assert rs.noaa_atlas14_24h50y_in(34.22, -77.94) == pytest.approx(10.8)
+    monkeypatch.setattr(rs, "cached_get_text", lambda *a, **k: None)
+    assert rs.noaa_atlas14_24h50y_in(34.22, -77.94) is None
+
+
+# ── statewide land-ownership extension — fix-pass-2 Phase 2 ──
+
+def test_land_ownership_statewide_hints():
+    assert rs.land_ownership_from_owner("BOONE TOWN OF") == 1.0
+    assert rs.land_ownership_from_owner("TOWN OF CHAPEL HILL") == 1.0
+    assert rs.land_ownership_from_owner("VILLAGE OF PINEHURST") == 1.0
+    assert rs.land_ownership_from_owner("DOE JOHN & JANE") == 0.5
+    assert rs.land_ownership_from_owner(None) == 0.5
+
+
+def test_nc_parcel_owner_parse(monkeypatch):
+    fixture = {"features": [{"attributes": {"ownname": "BOONE TOWN OF"}}]}
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: fixture)
+    assert rs.nc_parcel_owner_at(36.2017, -81.6526) == "BOONE TOWN OF"
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: None)
+    assert rs.nc_parcel_owner_at(36.2017, -81.6526) is None

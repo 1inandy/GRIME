@@ -738,18 +738,18 @@ Fewer than 5% of OpenStreetMap waterways have explicit width tags, so GRIME uses
 
 ### Velocity Feasibility Function
 
-Flow velocity affects feasibility non-linearly. Very low velocity means little trash transport; very high velocity means nets will be destroyed. The feasibility function is a piecewise curve:
+Flow velocity affects feasibility non-linearly. Very low velocity means little trash transport; very high velocity means nets will be destroyed. The shipped feasibility function (`core/flow.py::velocity_feasibility`, guarded against `model.json` by `scripts/check_model.py`) is a step curve:
 
-$$f(v) = \begin{cases} 0.3 & v < 0.1 \;\text{m/s} \\ \frac{v - 0.1}{0.4} & 0.1 \leq v < 0.5 \\ 1.0 & 0.5 \leq v \leq 1.5 \\ \frac{3.0 - v}{1.5} & 1.5 < v \leq 3.0 \\ 0 & v > 3.0 \end{cases}$$
+$$f(v) = \begin{cases} 0.3 & v < 0.05 \;\text{m/s} \\ 0.7 & 0.05 \leq v < 0.30 \\ 1.0 & 0.30 \leq v \leq 1.50 \\ 0.5 & 1.50 < v \leq 2.50 \\ 0.1 & v > 2.50 \end{cases}$$
 
 ```Mathematica
-(* Piecewise velocity feasibility *)
+(* Piecewise velocity feasibility (shipped step curve) *)
 feasibility[v_] := Piecewise[{
-  {0.3, v < 0.1},
-  {(v - 0.1)/0.4, 0.1 <= v < 0.5},
-  {1.0, 0.5 <= v <= 1.5},
-  {(3.0 - v)/1.5, 1.5 < v <= 3.0},
-  {0, v > 3.0}
+  {0.3, v < 0.05},
+  {0.7, 0.05 <= v < 0.30},
+  {1.0, 0.30 <= v <= 1.50},
+  {0.5, 1.50 < v <= 2.50},
+  {0.1, v > 2.50}
 }];
 
 Plot[feasibility[v], {v, 0, 4},
@@ -779,9 +779,16 @@ Plot[feasibility[v], {v, 0, 4},
 <img src="images/velocity_feasibility.png" width="600">
 </p>
 
-The sweet spot is 0.5–1.5 m/s — enough current to transport trash into nets without exceeding the structural limits of standard boom-and-net systems. Above 3.0 m/s, the hard gate eliminates the site entirely.
+The plateau is 0.30–1.50 m/s — enough current to transport trash into nets without exceeding the structural limits of standard boom-and-net systems. The plateau's upper edge matches the published in-line netting design limit almost exactly (Fresh Creek TrashTrap SWRCB certification: 5 ft/s = 1.52 m/s), and the 3.0 m/s hard gate matches the highest published commercial trash-trap rating (Bandalong Litter Trap, 10 ft/s = 3.05 m/s). Above 3.0 m/s, the hard gate eliminates the site entirely. (The figure above illustrates the curve's shape from an earlier revision; the breakpoints in force are the ones in the formula and `model.json`.)
 
-We can also view the full feasibility surface as a function of both channel width and velocity:
+### Why velocity appears twice in the model
+
+The same raw velocity (`flow_velocity_ms`) is deliberately scored through **two different curves answering two different questions**:
+
+1. **Transport favorability** (Flow sub-score, provenance name `velocity_transport_favorability`): *does the flow deliver debris to this site?* Before the Flow family is normalized, the raw velocity is mapped through a peaked Gaussian, $\exp(-((v - 0.9)/0.6)^2)$, centred at 0.9 m/s. A peaked delivery curve is defensible — at near-zero velocities floating debris strands or is wind-dominated (below ~0.05–0.1 m/s wind forcing dominates surface drift), while at high velocities surface debris mixes downward and bypasses capture devices. Measured discharge–transport relationships are monotonically increasing through the low range GRIME actually encounters (van Emmerik et al.: transport scales with discharge at 5 of 6 monitored Dutch sites; the Meuse flood moved 141× baseline plastic), so on the shipped 0.07–1.11 m/s data this curve acts as an increasing delivery weight.
+2. **Installation feasibility** (Feasibility sub-score, `velocity_feasibility`): *can a net physically be anchored and survive here?* This is the step plateau above — an engineering envelope with hard cutoffs, anchored to published device ratings (1.52 m/s in-line netting limit; 3.05 m/s Bandalong maximum; boom-entrainment physics degrade capture above ~0.36–0.51 m/s perpendicular current, which is why the plateau is not a spike).
+
+At 1.5 m/s the two curves *disagree on purpose*: transport favorability is falling (fast water carries debris past a net), while installation feasibility is still 1.0 (hardware tolerates it). Collapsing them into one curve would conflate "will debris arrive?" with "will the device survive?" — different failure modes with different consequences. Both curves' constants are recorded in `model.json` (`curves.velocity_transport_favorability`, `curves.velocity_feasibility`) and drift-guarded by `scripts/check_model.py`; the Gaussian's specific constants (0.9, 0.6) are the model's least evidence-anchored numbers and are flagged for re-parameterization review in a future model revision — a documented limitation, not a hidden one.
 
 ```Mathematica
 (* Feasibility surface: width x velocity *)
