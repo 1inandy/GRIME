@@ -476,3 +476,116 @@ def nc_water_source_points(bbox_wide):
             continue
         out.append((float(lat), float(lon)))
     return out
+
+
+def nc_surface_intake_points(bbox_wide):
+    """Surface-water intake points only (source_typ == 'Surface Water') from the
+    same NC OneMap public-water-supply layer as nc_water_source_points. This is
+    the NC DEQ Source Water Assessment Program (SWAP) sources layer; NC-only —
+    out-of-state regions keep the documented 0.0 fallback. Returns [(lat, lon)].
+
+    Source: https://services.nconemap.gov/secure/rest/services/NC1Map_Water_Sources/MapServer/1
+    (NC OneMap / NC DEQ Public Water Supply "Water Sources"; wired 2026-07-10)."""
+    w, s, e, n = bbox_wide
+    url = ("https://services.nconemap.gov/secure/rest/services/"
+           "NC1Map_Water_Sources/MapServer/1/query")
+    params = {
+        "where": "source_typ = 'Surface Water'",
+        "geometry": f"{w},{s},{e},{n}",
+        "geometryType": "esriGeometryEnvelope", "inSR": "4326", "outSR": "4326",
+        "outFields": "source_typ", "returnGeometry": "true", "f": "json",
+        "resultRecordCount": 2000,
+    }
+    j = cached_get_json(url, params, kind="intake", timeout=60)
+    if not j or "features" not in j:
+        return None                      # fetch failed → caller keeps fallback
+    out = []
+    for feat in j["features"]:
+        g = feat.get("geometry", {})
+        lon, lat = g.get("x"), g.get("y")
+        if lat is None or lon is None:
+            continue
+        out.append((float(lat), float(lon)))
+    return out
+
+
+# ── 11. EPA SEMS (Superfund) — active site inventory by state ─────────
+
+def sems_superfund_points(state_abbr, bbox):
+    """Superfund (SEMS, the CERCLIS successor) site points in bbox for a state,
+    from EPA Envirofacts — the same REST family + longitude-sign fix as the TRI
+    wiring. Only georeferenced sites are usable (~1/3 of SEMS rows carry
+    coordinates); non-georeferenced sites are simply absent, which understates
+    rather than fabricates. Returns [(lat, lon)], or None when the endpoint is
+    unreachable (caller keeps the documented fallback).
+
+    Source: https://data.epa.gov/efservice/envirofacts_site/fk_ref_state_code/
+    {STATE}/rows/0:9999/JSON (EPA Envirofacts SEMS; wired 2026-07-10)."""
+    url = (f"https://data.epa.gov/efservice/envirofacts_site/fk_ref_state_code/"
+           f"{state_abbr}/rows/0:9999/JSON")
+    j = cached_get_json(url, kind="sems", timeout=120)
+    if j is None:
+        return None
+    w, s, e, n = bbox
+    pts = []
+    for f in j:
+        lat = f.get("primary_latitude_decimal_val")
+        lon = f.get("primary_longitude_decimal_val")
+        if lat in (None, "", 0) or lon in (None, "", 0):
+            continue
+        try:
+            lat, lon = float(lat), float(lon)
+        except (TypeError, ValueError):
+            continue
+        if lon > 0:
+            lon = -lon           # Envirofacts drops the minus sign in CONUS
+        if lat < 0:
+            lat = -lat
+        if s <= lat <= n and w <= lon <= e:
+            pts.append((lat, lon))
+    return pts
+
+
+# ── 12. USGS PAD-US 4.1 — protected areas (local state clip) ──────────
+
+# One-time bulk download (FIX_PROMPT_2 rule 8):
+#   cache/padus/nc/PADUS4_1_StateNC.gdb
+#   from https://www.sciencebase.gov/catalog/item/6759abcfd34edfeb8710a004
+#   ("PAD-US 4.1 State Downloads", PADUS4_1_State_NC_GDB_KMZ.zip, retrieved
+#   2026-07-10 — see cache/padus/PROVENANCE.txt). PAD-US 4.x ships state
+#   downloads as GDB+KMZ only (no state GeoPackage exists for 4.x; FIX_PLAN_2
+#   P1.2 said "GeoPackage" — format deviation, same dataset).
+_PADUS_GDB = Path(os.environ.get(
+    "GRIME_PADUS_GDB", "cache/padus/nc/PADUS4_1_StateNC.gdb"))
+_PADUS_LAYER = "PADUS4_1Comb_DOD_Trib_NGP_Fee_Desig_Ease_State_NC"
+_PADUS_STATE = "NC"          # the downloaded clip covers North Carolina only
+_padus_cache = {"gdf": None, "loaded": False}
+
+
+def padus_protected_gdf(bbox, utm_crs, pad_km=20.0):
+    """Protected-area polygons intersecting ``bbox`` (WGS84 lon/lat, padded by
+    ``pad_km`` so the shipped 20 km scoring buffer never runs off the clip),
+    reprojected to ``utm_crs``, with a ``designation`` column carrying the
+    PAD-US descriptive designation type (d_Des_Tp — e.g. 'State Park',
+    'Local Park'), which is what core.impact.PROTECTION_WEIGHTS keys match
+    against. Returns a GeoDataFrame, or None when the local PAD-US clip is not
+    on disk (caller keeps the documented fallback). Whole-state layer is read
+    once per process and clipped per call."""
+    import geopandas as gpd
+
+    if not _padus_cache["loaded"]:
+        _padus_cache["loaded"] = True
+        if _PADUS_GDB.exists():
+            gdf = gpd.read_file(_PADUS_GDB, layer=_PADUS_LAYER)
+            gdf = gdf[["d_Des_Tp", "GAP_Sts", "geometry"]].rename(
+                columns={"d_Des_Tp": "designation"})
+            _padus_cache["gdf"] = gdf          # native CONUS Albers (ESRI:102039)
+    full = _padus_cache["gdf"]
+    if full is None:
+        return None
+    from shapely.geometry import box
+    w, s, e, n = bbox
+    clip_wgs = gpd.GeoSeries([box(w, s, e, n)], crs="EPSG:4326")
+    clip = clip_wgs.to_crs(full.crs).buffer(pad_km * 1000.0).iloc[0]
+    sub = full[full.intersects(clip)]
+    return sub.to_crs(utm_crs)
