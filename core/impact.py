@@ -216,6 +216,32 @@ def _bbox_osm_features(bbox, tags, label, utm_crs=UTM_CRS):
     return result
 
 
+def protected_area_score_from_gdf(candidate_point_utm, padus_gdf,
+                                  distance_km=20,
+                                  designation_col="designation"):
+    """The shipped PAD-US proximity math on an already-loaded protected-areas
+    GeoDataFrame (same CRS as the candidate point): for every area whose
+    geometry intersects a ``distance_km`` buffer, weight the designation via
+    the PROTECTION_WEIGHTS substring table (0.2 default) and decay by
+    centroid distance, score += weight * 1/(1 + d_km/5). This is byte-for-byte
+    the formula the original data/padus.gpkg branch shipped — only the data
+    plumbing is new (science freeze)."""
+    buffer = candidate_point_utm.buffer(distance_km * 1000)
+    intersecting = padus_gdf[padus_gdf.intersects(buffer)]
+    if intersecting.empty:
+        return 0.0
+    score = 0.0
+    for _, area in intersecting.iterrows():
+        designation = str(area.get(designation_col, ""))
+        weight = next(
+            (w for k, w in PROTECTION_WEIGHTS.items() if k in designation),
+            0.2,
+        )
+        dist = candidate_point_utm.distance(area.geometry.centroid) / 1000
+        score += weight * (1 / (1 + dist / 5))
+    return score
+
+
 def get_protected_area_score(candidate_point_utm, distance_km=20, bbox=None):
     """
     Score based on proximity to protected areas.
@@ -225,21 +251,9 @@ def get_protected_area_score(candidate_point_utm, distance_km=20, bbox=None):
         # Try PAD-US local cache first
         padus = gpd.read_file("data/padus.gpkg", layer="PADUS3_0Combined_Proclamation")
         padus = padus.to_crs(UTM_CRS)
-        buffer = candidate_point_utm.buffer(distance_km * 1000)
-        intersecting = padus[padus.intersects(buffer)]
-        if intersecting.empty:
-            return 0.0
-
-        score = 0.0
-        for _, area in intersecting.iterrows():
-            designation = str(area.get("Des_Tp", ""))
-            weight = next(
-                (w for k, w in PROTECTION_WEIGHTS.items() if k in designation),
-                0.2,
-            )
-            dist = candidate_point_utm.distance(area.geometry.centroid) / 1000
-            score += weight * (1 / (1 + dist / 5))
-        return score
+        return protected_area_score_from_gdf(
+            candidate_point_utm, padus,
+            distance_km=distance_km, designation_col="Des_Tp")
 
     except Exception:
         # Fallback: use OSM parks/protected areas (whole-bbox set, cached).

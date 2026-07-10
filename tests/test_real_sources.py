@@ -143,3 +143,80 @@ def test_nbi_parses_decimal_degrees(monkeypatch):
 def test_cso_download_failure_is_none_not_zero(monkeypatch):
     monkeypatch.setattr(rs, "cached_download", lambda *a, **k: None)
     assert rs.cso_points_nc((-79.05, 35.90, -78.75, 36.05)) is None  # unknown, not confirmed 0
+
+
+# ── SEMS (Superfund) — fix-pass-2 Phase 1 (shapes recorded 2026-07-10) ──
+
+def test_sems_sign_fix_bbox_filter_and_null_handling(monkeypatch):
+    fixture = [
+        # in-bbox, longitude sign dropped by Envirofacts → must be flipped
+        {"name": "IN-BBOX SIGNFIX", "fk_ref_state_code": "NC",
+         "primary_latitude_decimal_val": "35.99",
+         "primary_longitude_decimal_val": "78.90"},
+        # in-bbox, correct sign
+        {"name": "IN-BBOX OK", "fk_ref_state_code": "NC",
+         "primary_latitude_decimal_val": "36.01",
+         "primary_longitude_decimal_val": "-78.95"},
+        # no coordinates (2/3 of SEMS rows) → skipped, not fabricated
+        {"name": "NO COORDS", "fk_ref_state_code": "NC",
+         "primary_latitude_decimal_val": None,
+         "primary_longitude_decimal_val": None},
+        # out of bbox
+        {"name": "CHARLOTTE", "fk_ref_state_code": "NC",
+         "primary_latitude_decimal_val": "35.23",
+         "primary_longitude_decimal_val": "-80.84"},
+    ]
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: fixture)
+    pts = rs.sems_superfund_points("NC", (-79.05, 35.90, -78.75, 36.05))
+    assert pts == [(35.99, -78.90), (36.01, -78.95)]
+
+
+def test_sems_none_when_endpoint_dead(monkeypatch):
+    # None (unreachable) must be distinguishable from [] (no sites in bbox):
+    # the wiring keeps the documented fallback only for None.
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: None)
+    assert rs.sems_superfund_points("NC", (-79.05, 35.90, -78.75, 36.05)) is None
+
+
+# ── SWAP surface intakes — fix-pass-2 Phase 1 ──
+
+def test_surface_intake_parse(monkeypatch):
+    fixture = {"features": [
+        {"attributes": {"source_typ": "Surface Water"},
+         "geometry": {"x": -79.406, "y": 36.127}},
+        {"attributes": {"source_typ": "Surface Water"},
+         "geometry": {}},                                   # no geometry → skip
+    ]}
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: fixture)
+    assert rs.nc_surface_intake_points((-80, 35, -79, 37)) == [(36.127, -79.406)]
+
+
+def test_surface_intake_none_when_endpoint_dead(monkeypatch):
+    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: None)
+    assert rs.nc_surface_intake_points((-80, 35, -79, 37)) is None
+
+
+# ── PAD-US local clip — fix-pass-2 Phase 1 ──
+
+def test_padus_missing_gdb_returns_none(monkeypatch):
+    monkeypatch.setattr(rs, "_PADUS_GDB", rs.Path("/nonexistent/padus.gdb"))
+    monkeypatch.setattr(rs, "_padus_cache", {"gdf": None, "loaded": False})
+    assert rs.padus_protected_gdf((-79.05, 35.90, -78.75, 36.05), "EPSG:32617") is None
+
+
+def test_padus_protected_area_score_math():
+    # The scoring math itself (shipped curve, science-frozen): substring
+    # designation match with 0.2 default, 1/(1+d_km/5) decay, 20 km buffer.
+    import geopandas as gpd
+    from shapely.geometry import Point, Polygon
+    from core.impact import protected_area_score_from_gdf
+
+    sq = Polygon([(4500, -500), (5500, -500), (5500, 500), (4500, 500)])  # centroid 5 km
+    far = Polygon([(60000, 0), (61000, 0), (61000, 1000), (60000, 1000)])  # >20 km → excluded
+    gdf = gpd.GeoDataFrame(
+        {"designation": ["State Park Land", "National Park"]},
+        geometry=[sq, far], crs="EPSG:32617")
+    got = protected_area_score_from_gdf(Point(0, 0), gdf)
+    assert got == pytest.approx(0.7 * (1 / (1 + 5.0 / 5)), rel=1e-9)  # substring 'State Park'
+    empty = gpd.GeoDataFrame({"designation": []}, geometry=[], crs="EPSG:32617")
+    assert protected_area_score_from_gdf(Point(0, 0), empty) == 0.0

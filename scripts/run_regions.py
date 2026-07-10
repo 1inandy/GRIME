@@ -67,7 +67,8 @@ from core.feasibility import (
     bridge_proximity_bonus,
 )
 from core.generation import get_road_density
-from core.impact import get_tourism_amenity_density
+from core.impact import (get_tourism_amenity_density,
+                         protected_area_score_from_gdf, water_intake_score)
 from core.scoring import compute_composite_score, sensitivity_analysis, ALL_PARAMS
 from core.pipeline import run_pipeline
 from core import real_sources as rs
@@ -207,6 +208,29 @@ def wire_region_parameters(cands, region):
     nbi_gdf = gpd.GeoDataFrame(geometry=nbi_pts, crs=utm) if len(nbi_pts) else None
     log(slug, f"  TRI={len(tri)} NPDES={len(npdes)} CSO={'dl-fail' if cso_raw is None else len(cso)} NBI={len(nbi_pts)}")
 
+    log(slug, "Impact layers: SEMS(superfund) / PAD-US / SWAP intakes...")
+    # Superfund: SEMS state inventory, bbox +0.05 deg so a just-outside site
+    # still contributes through the fast (500 m half-decay) proximity curve.
+    pad = 0.05
+    sems_raw = rs.sems_superfund_points(
+        region["state"], (bbox[0] - pad, bbox[1] - pad, bbox[2] + pad, bbox[3] + pad))
+    sems = rg.to_utm_points(sems_raw or [], utm)
+    # Protected areas: local PAD-US 4.1 state clip (NC download only).
+    padus = rs.padus_protected_gdf(bbox, utm) if region["state"] == "NC" else None
+    # Drinking-water intakes: NC OneMap SWAP surface intakes; the shipped curve
+    # integrates to 50 km, so fetch a 0.5-deg-padded bbox.
+    intakes_gdf = None
+    intake_raw = None
+    if region["state"] == "NC":
+        intake_raw = rs.nc_surface_intake_points(
+            (bbox[0] - 0.5, bbox[1] - 0.5, bbox[2] + 0.5, bbox[3] + 0.5))
+        if intake_raw is not None:
+            intake_pts = rg.to_utm_points(intake_raw, utm)
+            intakes_gdf = gpd.GeoDataFrame(geometry=intake_pts, crs=utm)
+    log(slug, f"  SEMS={'dl-fail' if sems_raw is None else len(sems)} "
+              f"PAD-US={'none' if padus is None else len(padus)} "
+              f"intakes={'n/a' if region['state'] != 'NC' else ('dl-fail' if intake_raw is None else len(intake_raw))}")
+
     log(slug, "OSM drive network + tourism features (rate-limited, cached)...")
     drive = safe_call(osm_drive_graph, bbox, utm_crs=utm, default=None)
     if drive is None:
@@ -318,7 +342,24 @@ def wire_region_parameters(cands, region):
         if tour is not None:
             cols["tourism_amenity_density"][i] = round(float(tour), 4)
             counts["tourism_amenity_density"] += 1
-        # water_intake_score / protected_area_score / superfund_score: documented fallbacks
+        # superfund: shipped inverse-distance curve (500 m half-decay) over the
+        # SEMS state inventory. A 0.0 here is a COMPUTED zero (no site in
+        # range), not a fallback.
+        if sems_raw is not None:
+            cols["superfund_score"][i] = round(inverse_distance_score(pt, sems, 500), 4)
+            counts["superfund_score"] += 1
+        # protected areas: shipped PAD-US proximity math on the local 4.1 clip.
+        if padus is not None:
+            sc = safe_call(protected_area_score_from_gdf, pt, padus, default=None)
+            if sc is not None:
+                cols["protected_area_score"][i] = round(float(sc), 4)
+                counts["protected_area_score"] += 1
+        # drinking-water intakes: shipped exp(-d/10km) sum within 50 km over
+        # SWAP surface intakes (NC-only layer).
+        if intakes_gdf is not None:
+            cols["water_intake_score"][i] = round(
+                water_intake_score(pt, intakes_gdf), 4)
+            counts["water_intake_score"] += 1
 
         # feasibility
         if drive is not None and drive.get("nodes_utm") is not None and not drive["nodes_utm"].empty:
@@ -357,10 +398,20 @@ def wire_region_parameters(cands, region):
     # fallback constants where a whole column stayed NaN-by-design
     fallback_notes = {
         "litter_complaint_density": (0.0, "no machine-readable 311/litter source for this region"),
-        "water_intake_score": (0.0, "no public surface-intake point layer (NC OneMap is wells-only and NC-only)"),
-        "protected_area_score": (0.0, "PAD-US services unreachable; OSM proxy saturates — documented fallback"),
-        "superfund_score": (0.0, "not wired (low weight; roadmap)"),
     }
+    if sems_raw is None:
+        fallback_notes["superfund_score"] = (
+            0.0, "EPA Envirofacts SEMS unreachable for this run — documented fallback")
+    if padus is None:
+        fallback_notes["protected_area_score"] = (
+            0.0, ("no local PAD-US 4.1 clip for this state (NC-only download)"
+                  if region["state"] != "NC" else
+                  "PAD-US 4.1 NC clip missing from cache/padus — documented fallback"))
+    if intakes_gdf is None:
+        fallback_notes["water_intake_score"] = (
+            0.0, ("no public surface-intake layer wired outside NC (SWAP layer is NC-only)"
+                  if region["state"] != "NC" else
+                  "NC OneMap SWAP intake layer unreachable for this run — documented fallback"))
     for p, (val, why) in fallback_notes.items():
         cols[p] = [val] * n
         mark(p, "fallback", why)
@@ -401,6 +452,15 @@ def wire_region_parameters(cands, region):
         "road_access_score": "OSM drive network nearest-node distance",
         "bank_slope_score": "region DEM gradient (3x3)",
         "bridge_proximity_bonus": "FHWA/BTS NBI (NTAD), 50 m proximity",
+        "superfund_score": (f"EPA Envirofacts SEMS state={region['state']} "
+                            "(sign-fixed, georeferenced sites), shipped 500 m "
+                            "inverse-distance curve") if sems_raw is not None else None,
+        "protected_area_score": ("USGS PAD-US 4.1 NC state clip (local GDB, retrieved "
+                                 "2026-07-10), shipped designation-weighted proximity "
+                                 "curve") if padus is not None else None,
+        "water_intake_score": ("NC OneMap / NC DEQ SWAP public water supply sources "
+                               "(source_typ='Surface Water'), shipped exp(-d/10km) "
+                               "curve") if intakes_gdf is not None else None,
     }
     if parcels_on:
         real_sources_doc["land_ownership"] = "Durham County parcels PROPERTY_OWNER"
