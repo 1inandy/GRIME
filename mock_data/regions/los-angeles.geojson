@@ -3,8 +3,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.219516,
-     34.010376
+     -118.219396,
+     34.010479
     ],
     "type": "Point"
    },
@@ -17,10 +17,8 @@
     "catchment_area_km2": 62.1665,
     "channel_width_m": 14.34,
     "channel_width_score": 1.0,
-    "composite_score": 69.6035,
+    "composite_score": 70.629,
     "cso_density": 0.0,
-    "dem_lat": 34.010479,
-    "dem_lon": -118.219396,
     "ej_index": 0.7523,
     "elevation_m": 54.5127,
     "estuary_dist_km": 28.54,
@@ -29,12 +27,13 @@
     "flow_score": 66.3224,
     "flow_velocity_ms": 0.5,
     "generation_score": 62.9879,
-    "impact_score": 63.7551,
+    "impact_score": 67.1736,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0105,
     "litter_complaint_density": 0.0,
     "lon": -118.2194,
+    "navigable_dist_m": null,
     "npdes_points": 279,
     "pixel_col": 1387.0,
     "pixel_row": 1315.0,
@@ -42,7 +41,6 @@
     "position_along": 0.25,
     "protected_area_score": 0.0,
     "rank": 1,
-    "river_name": "Los Angeles River",
     "road_access_m": 74.5,
     "road_access_score": 1.0,
     "road_density_km_km2": 11.531,
@@ -51,9 +49,8 @@
     "seasonal_cv": null,
     "segment_id": 63,
     "segment_length_m": 9120.0301,
-    "snap_dist_m": 16.0,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 2.643,
     "tourism_amenity_density": 1.2732,
     "tri_facility_density": 2.2359,
     "usgs_mean_q_cfs": null,
@@ -65,8 +62,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.224336,
-     34.022178
+     -118.224364,
+     34.022174
     ],
     "type": "Point"
    },
@@ -79,10 +76,8 @@
     "catchment_area_km2": 61.8206,
     "channel_width_m": 14.31,
     "channel_width_score": 1.0,
-    "composite_score": 69.4462,
+    "composite_score": 70.0688,
     "cso_density": 0.0,
-    "dem_lat": 34.022174,
-    "dem_lon": -118.224364,
     "ej_index": 0.7287,
     "elevation_m": 59.7812,
     "estuary_dist_km": 29.88,
@@ -91,12 +86,13 @@
     "flow_score": 66.2084,
     "flow_velocity_ms": 0.5,
     "generation_score": 65.2788,
-    "impact_score": 61.0349,
+    "impact_score": 63.1102,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0222,
     "litter_complaint_density": 0.0,
     "lon": -118.2244,
+    "navigable_dist_m": null,
     "npdes_points": 275,
     "pixel_col": 1341.0,
     "pixel_row": 1184.0,
@@ -104,7 +100,6 @@
     "position_along": 0.0833,
     "protected_area_score": 0.0,
     "rank": 2,
-    "river_name": "Los Angeles River",
     "road_access_m": 189.6,
     "road_access_score": 1.0,
     "road_density_km_km2": 12.674,
@@ -113,9 +108,8 @@
     "seasonal_cv": null,
     "segment_id": 63,
     "segment_length_m": 9120.0301,
-    "snap_dist_m": 2.6,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 2.2921,
     "tourism_amenity_density": 3.1831,
     "tri_facility_density": 2.1837,
     "usgs_mean_q_cfs": null,
@@ -127,8 +121,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.205394,
-     34.007088
+     -118.205399,
+     34.007478
     ],
     "type": "Point"
    },
@@ -141,10 +135,8 @@
     "catchment_area_km2": 62.9752,
     "channel_width_m": 14.41,
     "channel_width_score": 1.0,
-    "composite_score": 68.1165,
+    "composite_score": 68.708,
     "cso_density": 0.0,
-    "dem_lat": 34.007478,
-    "dem_lon": -118.205399,
     "ej_index": 0.7486,
     "elevation_m": 50.8662,
     "estuary_dist_km": 28.11,
@@ -153,12 +145,13 @@
     "flow_score": 66.5888,
     "flow_velocity_ms": 0.5,
     "generation_score": 58.3975,
-    "impact_score": 63.1669,
+    "impact_score": 65.1386,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0075,
     "litter_complaint_density": 0.0,
     "lon": -118.2054,
+    "navigable_dist_m": null,
     "npdes_points": 285,
     "pixel_col": 1516.0,
     "pixel_row": 1348.0,
@@ -166,7 +159,6 @@
     "position_along": 0.4167,
     "protected_area_score": 0.0,
     "rank": 3,
-    "river_name": "Los Angeles River",
     "road_access_m": 60.5,
     "road_access_score": 1.0,
     "road_density_km_km2": 10.9,
@@ -175,9 +167,8 @@
     "seasonal_cv": null,
     "segment_id": 63,
     "segment_length_m": 9120.0301,
-    "snap_dist_m": 43.3,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 2.3276,
     "tourism_amenity_density": 1.512,
     "tri_facility_density": 2.1913,
     "usgs_mean_q_cfs": null,
@@ -189,70 +180,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.2259,
-     34.029063
-    ],
-    "type": "Point"
-   },
-   "properties": {
-    "accumulation": 562473.0,
-    "bank_slope_deg": 0.33,
-    "bank_slope_score": 1.0,
-    "beach_dist_km": 25.36,
-    "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 56.1276,
-    "channel_width_m": 13.77,
-    "channel_width_score": 1.0,
-    "composite_score": 66.965,
-    "cso_density": 0.0,
-    "dem_lat": 34.029037,
-    "dem_lon": -118.226062,
-    "ej_index": 0.7095,
-    "elevation_m": 62.8697,
-    "estuary_dist_km": 30.65,
-    "feasibility_score": 100.0,
-    "flood_q10_cfs": null,
-    "flow_score": 64.3324,
-    "flow_velocity_ms": 0.5,
-    "generation_score": 60.0478,
-    "impact_score": 59.5584,
-    "impervious_pct": null,
-    "land_ownership": 0.5,
-    "lat": 34.029,
-    "litter_complaint_density": 0.0,
-    "lon": -118.2261,
-    "npdes_points": 208,
-    "pixel_col": 1326.0,
-    "pixel_row": 1108.0,
-    "population_density": 4642.6,
-    "position_along": 0.5,
-    "protected_area_score": 0.0,
-    "rank": 4,
-    "river_name": "Los Angeles River",
-    "road_access_m": 21.5,
-    "road_access_score": 1.0,
-    "road_density_km_km2": 13.22,
-    "robustness_pct": 98.0,
-    "runoff_coeff_C": null,
-    "seasonal_cv": null,
-    "segment_id": 56,
-    "segment_length_m": 128.1477,
-    "snap_dist_m": 15.2,
-    "stream_order": 3,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 5.65,
-    "tri_facility_density": 1.9776,
-    "usgs_mean_q_cfs": null,
-    "velocity_feasibility": 1.0,
-    "water_intake_score": 0.0
-   },
-   "type": "Feature"
-  },
-  {
-   "geometry": {
-    "coordinates": [
-     -118.192233,
-     34.000785
+     -118.192246,
+     34.00077
     ],
     "type": "Point"
    },
@@ -265,10 +194,8 @@
     "catchment_area_km2": 63.9362,
     "channel_width_m": 14.5,
     "channel_width_score": 1.0,
-    "composite_score": 66.3026,
+    "composite_score": 67.205,
     "cso_density": 0.0,
-    "dem_lat": 34.00077,
-    "dem_lon": -118.192246,
     "ej_index": 0.749,
     "elevation_m": 45.5841,
     "estuary_dist_km": 27.33,
@@ -277,31 +204,30 @@
     "flow_score": 66.9055,
     "flow_velocity_ms": 0.5,
     "generation_score": 50.4909,
-    "impact_score": 64.7632,
+    "impact_score": 67.7712,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0008,
     "litter_complaint_density": 0.0,
     "lon": -118.1922,
+    "navigable_dist_m": null,
     "npdes_points": 274,
     "pixel_col": 1636.0,
     "pixel_row": 1424.0,
     "population_density": 3474.8,
     "position_along": 0.5833,
     "protected_area_score": 0.0,
-    "rank": 5,
-    "river_name": "Los Angeles River",
+    "rank": 4,
     "road_access_m": 191.6,
     "road_access_score": 1.0,
     "road_density_km_km2": 9.173,
-    "robustness_pct": 68.5,
+    "robustness_pct": 84.5,
     "runoff_coeff_C": null,
     "seasonal_cv": null,
     "segment_id": 63,
     "segment_length_m": 9120.0301,
-    "snap_dist_m": 2.1,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 2.5849,
     "tourism_amenity_density": 4.5359,
     "tri_facility_density": 2.0802,
     "usgs_mean_q_cfs": null,
@@ -313,8 +239,67 @@
   {
    "geometry": {
     "coordinates": [
-     -118.22765,
-     34.036768
+     -118.226062,
+     34.029037
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 562473.0,
+    "bank_slope_deg": 0.33,
+    "bank_slope_score": 1.0,
+    "beach_dist_km": 25.36,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 56.1276,
+    "channel_width_m": 13.77,
+    "channel_width_score": 1.0,
+    "composite_score": 67.1618,
+    "cso_density": 0.0,
+    "ej_index": 0.7095,
+    "elevation_m": 62.8697,
+    "estuary_dist_km": 30.65,
+    "feasibility_score": 100.0,
+    "flood_q10_cfs": null,
+    "flow_score": 64.3324,
+    "flow_velocity_ms": 0.5,
+    "generation_score": 60.0478,
+    "impact_score": 60.2146,
+    "impervious_pct": null,
+    "land_ownership": 0.5,
+    "lat": 34.029,
+    "litter_complaint_density": 0.0,
+    "lon": -118.2261,
+    "navigable_dist_m": null,
+    "npdes_points": 208,
+    "pixel_col": 1326.0,
+    "pixel_row": 1108.0,
+    "population_density": 4642.6,
+    "position_along": 0.5,
+    "protected_area_score": 0.0,
+    "rank": 5,
+    "road_access_m": 21.5,
+    "road_access_score": 1.0,
+    "road_density_km_km2": 13.22,
+    "robustness_pct": 95.5,
+    "runoff_coeff_C": null,
+    "seasonal_cv": null,
+    "segment_id": 56,
+    "segment_length_m": 128.1477,
+    "stream_order": 3,
+    "superfund_score": 1.9587,
+    "tourism_amenity_density": 5.65,
+    "tri_facility_density": 1.9776,
+    "usgs_mean_q_cfs": null,
+    "velocity_feasibility": 1.0,
+    "water_intake_score": 0.0
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -118.227796,
+     34.036745
     ],
     "type": "Point"
    },
@@ -327,10 +312,8 @@
     "catchment_area_km2": 51.663,
     "channel_width_m": 13.32,
     "channel_width_score": 1.0,
-    "composite_score": 65.4778,
+    "composite_score": 65.2116,
     "cso_density": 0.0,
-    "dem_lat": 34.036745,
-    "dem_lon": -118.227796,
     "ej_index": 0.6968,
     "elevation_m": 67.2129,
     "estuary_dist_km": 31.52,
@@ -339,12 +322,13 @@
     "flow_score": 62.8612,
     "flow_velocity_ms": 0.5,
     "generation_score": 57.4603,
-    "impact_score": 58.4148,
+    "impact_score": 57.5272,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0367,
     "litter_complaint_density": 0.0,
     "lon": -118.2278,
+    "navigable_dist_m": null,
     "npdes_points": 166,
     "pixel_col": 1312.0,
     "pixel_row": 1022.0,
@@ -352,18 +336,16 @@
     "position_along": 0.75,
     "protected_area_score": 0.0,
     "rank": 6,
-    "river_name": "Los Angeles River",
     "road_access_m": 135.1,
     "road_access_score": 1.0,
     "road_density_km_km2": 14.051,
-    "robustness_pct": 31.5,
+    "robustness_pct": 15.5,
     "runoff_coeff_C": null,
     "seasonal_cv": null,
     "segment_id": 39,
     "segment_length_m": 3418.7333,
-    "snap_dist_m": 13.7,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 1.6084,
     "tourism_amenity_density": 8.3556,
     "tri_facility_density": 1.6453,
     "usgs_mean_q_cfs": null,
@@ -375,8 +357,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.229251,
-     34.051034
+     -118.22941,
+     34.051062
     ],
     "type": "Point"
    },
@@ -389,10 +371,8 @@
     "catchment_area_km2": 51.2919,
     "channel_width_m": 13.28,
     "channel_width_score": 1.0,
-    "composite_score": 63.8972,
+    "composite_score": 64.4151,
     "cso_density": 0.0,
-    "dem_lat": 34.051062,
-    "dem_lon": -118.22941,
     "ej_index": 0.683,
     "elevation_m": 74.3575,
     "estuary_dist_km": 33.12,
@@ -401,12 +381,13 @@
     "flow_score": 62.739,
     "flow_velocity_ms": 0.5,
     "generation_score": 49.889,
-    "impact_score": 60.819,
+    "impact_score": 62.5456,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0511,
     "litter_complaint_density": 0.0,
     "lon": -118.2294,
+    "navigable_dist_m": null,
     "npdes_points": 117,
     "pixel_col": 1298.0,
     "pixel_row": 863.0,
@@ -414,18 +395,16 @@
     "position_along": 0.25,
     "protected_area_score": 0.0,
     "rank": 7,
-    "river_name": "Los Angeles River",
     "road_access_m": 156.8,
     "road_access_score": 1.0,
     "road_density_km_km2": 14.378,
-    "robustness_pct": 0.0,
+    "robustness_pct": 1.5,
     "runoff_coeff_C": null,
     "seasonal_cv": null,
     "segment_id": 39,
     "segment_length_m": 3418.7333,
-    "snap_dist_m": 15.0,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 2.2141,
     "tourism_amenity_density": 22.6796,
     "tri_facility_density": 0.8578,
     "usgs_mean_q_cfs": null,
@@ -437,8 +416,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.179525,
-     33.993316
+     -118.179505,
+     33.993339
     ],
     "type": "Point"
    },
@@ -451,10 +430,8 @@
     "catchment_area_km2": 64.1751,
     "channel_width_m": 14.52,
     "channel_width_score": 1.0,
-    "composite_score": 57.5583,
+    "composite_score": 58.5393,
     "cso_density": 0.0,
-    "dem_lat": 33.993339,
-    "dem_lon": -118.179505,
     "ej_index": 0.7584,
     "elevation_m": 40.7326,
     "estuary_dist_km": 26.52,
@@ -463,12 +440,13 @@
     "flow_score": 66.9842,
     "flow_velocity_ms": 0.5,
     "generation_score": 42.5916,
-    "impact_score": 66.1766,
+    "impact_score": 69.4464,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 33.9933,
     "litter_complaint_density": 0.0,
     "lon": -118.1795,
+    "navigable_dist_m": null,
     "npdes_points": 206,
     "pixel_col": 1753.0,
     "pixel_row": 1509.0,
@@ -476,18 +454,16 @@
     "position_along": 0.75,
     "protected_area_score": 0.0,
     "rank": 8,
-    "river_name": "Los Angeles River",
     "road_access_m": 237.1,
     "road_access_score": 0.8,
     "road_density_km_km2": 7.619,
-    "robustness_pct": 2.0,
+    "robustness_pct": 3.0,
     "runoff_coeff_C": null,
     "seasonal_cv": null,
     "segment_id": 63,
     "segment_length_m": 9120.0301,
-    "snap_dist_m": 3.2,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 2.6769,
     "tourism_amenity_density": 5.65,
     "tri_facility_density": 2.0101,
     "usgs_mean_q_cfs": null,
@@ -499,8 +475,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.224513,
-     34.069839
+     -118.224593,
+     34.069835
     ],
     "type": "Point"
    },
@@ -513,10 +489,8 @@
     "catchment_area_km2": 38.3566,
     "channel_width_m": 11.83,
     "channel_width_score": 1.0,
-    "composite_score": 55.9103,
+    "composite_score": 55.832,
     "cso_density": 0.0,
-    "dem_lat": 34.069835,
-    "dem_lon": -118.224593,
     "ej_index": 0.6552,
     "elevation_m": 84.2934,
     "estuary_dist_km": 35.15,
@@ -525,12 +499,13 @@
     "flow_score": 58.4765,
     "flow_velocity_ms": 0.5,
     "generation_score": 36.4884,
-    "impact_score": 51.1489,
+    "impact_score": 50.8879,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0698,
     "litter_complaint_density": 0.0,
     "lon": -118.2246,
+    "navigable_dist_m": null,
     "npdes_points": 58,
     "pixel_col": 1345.0,
     "pixel_row": 655.0,
@@ -538,7 +513,6 @@
     "position_along": 0.5,
     "protected_area_score": 0.0,
     "rank": 9,
-    "river_name": "Los Angeles River",
     "road_access_m": 75.1,
     "road_access_score": 1.0,
     "road_density_km_km2": 13.266,
@@ -547,9 +521,8 @@
     "seasonal_cv": null,
     "segment_id": 17,
     "segment_length_m": 2227.4542,
-    "snap_dist_m": 7.4,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 1.544,
     "tourism_amenity_density": 15.0401,
     "tri_facility_density": 0.6257,
     "usgs_mean_q_cfs": null,
@@ -561,70 +534,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.360794,
-     34.041462
-    ],
-    "type": "Point"
-   },
-   "properties": {
-    "accumulation": 657037.0,
-    "bank_slope_deg": 14.92,
-    "bank_slope_score": 1.0,
-    "beach_dist_km": 13.36,
-    "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 65.5639,
-    "channel_width_m": 14.65,
-    "channel_width_score": 1.0,
-    "composite_score": 54.7938,
-    "cso_density": 0.0,
-    "dem_lat": 34.041485,
-    "dem_lon": -118.360804,
-    "ej_index": 0.4743,
-    "elevation_m": 27.7398,
-    "estuary_dist_km": 35.54,
-    "feasibility_score": 84.4156,
-    "flood_q10_cfs": null,
-    "flow_score": 53.0077,
-    "flow_velocity_ms": 0.0637,
-    "generation_score": 49.8724,
-    "impact_score": 46.3926,
-    "impervious_pct": 58.73,
-    "land_ownership": 0.5,
-    "lat": 34.0415,
-    "litter_complaint_density": 0.0,
-    "lon": -118.3608,
-    "npdes_points": 26,
-    "pixel_col": 80.0,
-    "pixel_row": 953.0,
-    "population_density": 4732.0,
-    "position_along": 0.75,
-    "protected_area_score": 0.0,
-    "rank": 10,
-    "river_name": "Ballona Creek",
-    "road_access_m": 19.2,
-    "road_access_score": 1.0,
-    "road_density_km_km2": 8.053,
-    "robustness_pct": 0.0,
-    "runoff_coeff_C": 0.5786,
-    "seasonal_cv": 1.005,
-    "segment_id": 50,
-    "segment_length_m": 3298.6887,
-    "snap_dist_m": 2.7,
-    "stream_order": 3,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 4.9338,
-    "tri_facility_density": 0.061,
-    "usgs_mean_q_cfs": 5.098,
-    "velocity_feasibility": 0.7,
-    "water_intake_score": 0.0
-   },
-   "type": "Feature"
-  },
-  {
-   "geometry": {
-    "coordinates": [
-     -118.226732,
-     34.059272
+     -118.226822,
+     34.059263
     ],
     "type": "Point"
    },
@@ -637,10 +548,8 @@
     "catchment_area_km2": 43.5191,
     "channel_width_m": 12.44,
     "channel_width_score": 1.0,
-    "composite_score": 53.4748,
+    "composite_score": 54.3321,
     "cso_density": 0.0,
-    "dem_lat": 34.059263,
-    "dem_lon": -118.226822,
     "ej_index": 0.6714,
     "elevation_m": 78.7569,
     "estuary_dist_km": 34.0,
@@ -649,20 +558,20 @@
     "flow_score": 60.1777,
     "flow_velocity_ms": 0.5,
     "generation_score": 44.0742,
-    "impact_score": 56.7545,
+    "impact_score": 59.6119,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0593,
     "litter_complaint_density": 0.0,
     "lon": -118.2268,
+    "navigable_dist_m": null,
     "npdes_points": 77,
     "pixel_col": 1323.0,
     "pixel_row": 772.0,
     "population_density": 5110.7,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 11,
-    "river_name": "Los Angeles River",
+    "rank": 10,
     "road_access_m": 266.9,
     "road_access_score": 0.8,
     "road_density_km_km2": 13.874,
@@ -671,9 +580,8 @@
     "seasonal_cv": null,
     "segment_id": 38,
     "segment_length_m": 360.3268,
-    "snap_dist_m": 8.4,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 2.3397,
     "tourism_amenity_density": 19.6556,
     "tri_facility_density": 0.6894,
     "usgs_mean_q_cfs": null,
@@ -685,8 +593,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.170118,
-     33.983624
+     -118.170095,
+     33.98363
     ],
     "type": "Point"
    },
@@ -699,10 +607,8 @@
     "catchment_area_km2": 64.408,
     "channel_width_m": 14.54,
     "channel_width_score": 1.0,
-    "composite_score": 52.8451,
+    "composite_score": 54.1939,
     "cso_density": 0.0,
-    "dem_lat": 33.98363,
-    "dem_lon": -118.170095,
     "ej_index": 0.7458,
     "elevation_m": 38.4935,
     "estuary_dist_km": 25.49,
@@ -711,20 +617,20 @@
     "flow_score": 67.061,
     "flow_velocity_ms": 0.5,
     "generation_score": 27.836,
-    "impact_score": 65.1575,
+    "impact_score": 69.6533,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 33.9836,
     "litter_complaint_density": 0.0,
     "lon": -118.1701,
+    "navigable_dist_m": null,
     "npdes_points": 165,
     "pixel_col": 1838.0,
     "pixel_row": 1618.0,
     "population_density": 2744.6,
     "position_along": 0.9167,
     "protected_area_score": 0.0,
-    "rank": 12,
-    "river_name": "Los Angeles River",
+    "rank": 11,
     "road_access_m": 200.1,
     "road_access_score": 0.8,
     "road_density_km_km2": 5.638,
@@ -733,9 +639,8 @@
     "seasonal_cv": null,
     "segment_id": 63,
     "segment_length_m": 9120.0301,
-    "snap_dist_m": 2.3,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 2.9036,
     "tourism_amenity_density": 3.0239,
     "tri_facility_density": 1.4439,
     "usgs_mean_q_cfs": null,
@@ -747,8 +652,67 @@
   {
    "geometry": {
     "coordinates": [
-     -118.219617,
-     34.084295
+     -118.360804,
+     34.041485
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 657037.0,
+    "bank_slope_deg": 14.92,
+    "bank_slope_score": 1.0,
+    "beach_dist_km": 13.36,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 65.5639,
+    "channel_width_m": 14.65,
+    "channel_width_score": 1.0,
+    "composite_score": 52.9979,
+    "cso_density": 0.0,
+    "ej_index": 0.4743,
+    "elevation_m": 27.7398,
+    "estuary_dist_km": 35.54,
+    "feasibility_score": 84.4156,
+    "flood_q10_cfs": null,
+    "flow_score": 53.0077,
+    "flow_velocity_ms": 0.0637,
+    "generation_score": 49.8724,
+    "impact_score": 40.4065,
+    "impervious_pct": 58.73,
+    "land_ownership": 0.5,
+    "lat": 34.0415,
+    "litter_complaint_density": 0.0,
+    "lon": -118.3608,
+    "navigable_dist_m": null,
+    "npdes_points": 26,
+    "pixel_col": 80.0,
+    "pixel_row": 953.0,
+    "population_density": 4732.0,
+    "position_along": 0.75,
+    "protected_area_score": 0.0,
+    "rank": 12,
+    "road_access_m": 19.2,
+    "road_access_score": 1.0,
+    "road_density_km_km2": 8.053,
+    "robustness_pct": 0.0,
+    "runoff_coeff_C": 0.5786,
+    "seasonal_cv": 1.005,
+    "segment_id": 50,
+    "segment_length_m": 3298.6887,
+    "stream_order": 3,
+    "superfund_score": 0.2311,
+    "tourism_amenity_density": 4.9338,
+    "tri_facility_density": 0.061,
+    "usgs_mean_q_cfs": 5.098,
+    "velocity_feasibility": 0.7,
+    "water_intake_score": 0.0
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -118.219645,
+     34.084326
     ],
     "type": "Point"
    },
@@ -761,10 +725,8 @@
     "catchment_area_km2": 15.9734,
     "channel_width_m": 8.34,
     "channel_width_score": 1.0,
-    "composite_score": 47.1926,
+    "composite_score": 47.3566,
     "cso_density": 0.0,
-    "dem_lat": 34.084326,
-    "dem_lon": -118.219645,
     "ej_index": 0.6102,
     "elevation_m": 97.1666,
     "estuary_dist_km": 36.72,
@@ -773,12 +735,13 @@
     "flow_score": 50.7997,
     "flow_velocity_ms": 0.107,
     "generation_score": 28.3837,
-    "impact_score": 44.3842,
+    "impact_score": 44.9309,
     "impervious_pct": 16.6,
     "land_ownership": 0.5,
     "lat": 34.0843,
     "litter_complaint_density": 0.0,
     "lon": -118.2196,
+    "navigable_dist_m": null,
     "npdes_points": 18,
     "pixel_col": 1390.0,
     "pixel_row": 495.0,
@@ -786,7 +749,6 @@
     "position_along": 0.75,
     "protected_area_score": 0.0,
     "rank": 13,
-    "river_name": "Arroyo Seco",
     "road_access_m": 40.6,
     "road_access_score": 1.0,
     "road_density_km_km2": 11.98,
@@ -795,9 +757,8 @@
     "seasonal_cv": 1.0943,
     "segment_id": 3,
     "segment_length_m": 3390.1346,
-    "snap_dist_m": 4.3,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 1.5305,
     "tourism_amenity_density": 14.7218,
     "tri_facility_density": 0.313,
     "usgs_mean_q_cfs": 18.54,
@@ -809,71 +770,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.164812,
-     34.082744
-    ],
-    "type": "Point"
-   },
-   "properties": {
-    "accumulation": 25142.0,
-    "bank_slope_deg": 1.82,
-    "bank_slope_score": 1.0,
-    "beach_dist_km": 32.0,
-    "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 2.5089,
-    "channel_width_m": 3.98,
-    "channel_width_score": 1.0,
-    "composite_score": 47.0662,
-    "cso_density": 0.0,
-    "dem_lat": 34.083659,
-    "dem_lon": -118.164919,
-    "ej_index": 0.5969,
-    "elevation_m": 136.307,
-    "estuary_dist_km": 36.62,
-    "feasibility_score": 100.0,
-    "flood_q10_cfs": null,
-    "flow_score": 46.664,
-    "flow_velocity_ms": 0.5,
-    "generation_score": 32.4582,
-    "impact_score": 35.5424,
-    "impervious_pct": null,
-    "land_ownership": 0.5,
-    "lat": 34.0837,
-    "litter_complaint_density": 0.0,
-    "lon": -118.1649,
-    "npdes_points": 2,
-    "on_unnamed_waterway": true,
-    "pixel_col": 1898.0,
-    "pixel_row": 508.0,
-    "population_density": 4670.3,
-    "position_along": 0.5,
-    "protected_area_score": 0.0,
-    "rank": 14,
-    "river_name": null,
-    "road_access_m": 49.6,
-    "road_access_score": 1.0,
-    "road_density_km_km2": 12.934,
-    "robustness_pct": 0.0,
-    "runoff_coeff_C": null,
-    "seasonal_cv": null,
-    "segment_id": 23,
-    "segment_length_m": 1865.5354,
-    "snap_dist_m": 101.9,
-    "stream_order": 3,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 6.5254,
-    "tri_facility_density": 0.3986,
-    "usgs_mean_q_cfs": null,
-    "velocity_feasibility": 1.0,
-    "water_intake_score": 0.0
-   },
-   "type": "Feature"
-  },
-  {
-   "geometry": {
-    "coordinates": [
-     -118.228614,
-     34.088661
+     -118.228437,
+     34.088687
     ],
     "type": "Point"
    },
@@ -886,10 +784,8 @@
     "catchment_area_km2": 19.6277,
     "channel_width_m": 9.05,
     "channel_width_score": 1.0,
-    "composite_score": 46.5514,
+    "composite_score": 46.6978,
     "cso_density": 0.0,
-    "dem_lat": 34.088687,
-    "dem_lon": -118.228437,
     "ej_index": 0.5805,
     "elevation_m": 91.9528,
     "estuary_dist_km": 37.27,
@@ -898,20 +794,20 @@
     "flow_score": 52.305,
     "flow_velocity_ms": 0.5,
     "generation_score": 19.0357,
-    "impact_score": 42.548,
+    "impact_score": 43.0362,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0887,
     "litter_complaint_density": 0.0,
     "lon": -118.2284,
+    "navigable_dist_m": null,
     "npdes_points": 22,
     "pixel_col": 1312.0,
     "pixel_row": 445.0,
     "population_density": 3020.6,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 15,
-    "river_name": "Los Angeles River",
+    "rank": 14,
     "road_access_m": 76.6,
     "road_access_score": 1.0,
     "road_density_km_km2": 12.086,
@@ -920,9 +816,8 @@
     "seasonal_cv": null,
     "segment_id": 16,
     "segment_length_m": 2251.6925,
-    "snap_dist_m": 16.6,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 1.4693,
     "tourism_amenity_density": 15.9155,
     "tri_facility_density": 0.3057,
     "usgs_mean_q_cfs": null,
@@ -934,59 +829,56 @@
   {
    "geometry": {
     "coordinates": [
-     -118.162692,
-     34.069915
+     -118.164919,
+     34.083659
     ],
     "type": "Point"
    },
    "properties": {
-    "accumulation": 112292.0,
-    "bank_slope_deg": 0.96,
+    "accumulation": 25142.0,
+    "bank_slope_deg": 1.82,
     "bank_slope_score": 1.0,
-    "beach_dist_km": 31.82,
+    "beach_dist_km": 32.0,
     "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 11.2053,
-    "channel_width_m": 7.24,
+    "catchment_area_km2": 2.5089,
+    "channel_width_m": 3.98,
     "channel_width_score": 1.0,
-    "composite_score": 45.4151,
+    "composite_score": 46.1504,
     "cso_density": 0.0,
-    "dem_lat": 34.06904,
-    "dem_lon": -118.162576,
-    "ej_index": 0.5441,
-    "elevation_m": 119.2055,
-    "estuary_dist_km": 35.01,
+    "ej_index": 0.5969,
+    "elevation_m": 136.307,
+    "estuary_dist_km": 36.62,
     "feasibility_score": 100.0,
     "flood_q10_cfs": null,
-    "flow_score": 49.5297,
+    "flow_score": 46.664,
     "flow_velocity_ms": 0.5,
-    "generation_score": 23.1231,
-    "impact_score": 36.9859,
+    "generation_score": 32.4582,
+    "impact_score": 32.4897,
     "impervious_pct": null,
     "land_ownership": 0.5,
-    "lat": 34.069,
+    "lat": 34.0837,
     "litter_complaint_density": 0.0,
-    "lon": -118.1626,
-    "npdes_points": 8,
-    "pixel_col": 1917.0,
-    "pixel_row": 671.0,
-    "population_density": 2842.0,
+    "lon": -118.1649,
+    "navigable_dist_m": null,
+    "npdes_points": 2,
+    "pixel_col": 1898.0,
+    "pixel_row": 508.0,
+    "population_density": 4670.3,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 16,
-    "river_name": "Dorchester Channel",
-    "road_access_m": 165.8,
+    "rank": 15,
+    "road_access_m": 49.6,
     "road_access_score": 1.0,
-    "road_density_km_km2": 14.95,
+    "road_density_km_km2": 12.934,
     "robustness_pct": 0.0,
     "runoff_coeff_C": null,
     "seasonal_cv": null,
-    "segment_id": 29,
-    "segment_length_m": 2241.9972,
-    "snap_dist_m": 97.6,
+    "segment_id": 23,
+    "segment_length_m": 1865.5354,
     "stream_order": 3,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 10.743,
-    "tri_facility_density": 0.5355,
+    "superfund_score": 0.5487,
+    "tourism_amenity_density": 6.5254,
+    "tri_facility_density": 0.3986,
     "usgs_mean_q_cfs": null,
     "velocity_feasibility": 1.0,
     "water_intake_score": 0.0
@@ -996,132 +888,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.242364,
-     34.102198
-    ],
-    "type": "Point"
-   },
-   "properties": {
-    "accumulation": 64500.0,
-    "bank_slope_deg": 1.27,
-    "bank_slope_score": 1.0,
-    "beach_dist_km": 25.94,
-    "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 6.4363,
-    "channel_width_m": 5.8,
-    "channel_width_score": 1.0,
-    "composite_score": 45.0233,
-    "cso_density": 0.0,
-    "dem_lat": 34.1022,
-    "dem_lon": -118.242431,
-    "ej_index": 0.515,
-    "elevation_m": 99.4525,
-    "estuary_dist_km": 38.91,
-    "feasibility_score": 100.0,
-    "flood_q10_cfs": null,
-    "flow_score": 47.9582,
-    "flow_velocity_ms": 0.5,
-    "generation_score": 24.2022,
-    "impact_score": 35.9102,
-    "impervious_pct": null,
-    "land_ownership": 0.5,
-    "lat": 34.1022,
-    "litter_complaint_density": 0.0,
-    "lon": -118.2424,
-    "npdes_points": 15,
-    "pixel_col": 1184.0,
-    "pixel_row": 294.0,
-    "population_density": 2950.9,
-    "position_along": 0.75,
-    "protected_area_score": 0.0,
-    "rank": 17,
-    "river_name": "Los Angeles River",
-    "road_access_m": 60.5,
-    "road_access_score": 1.0,
-    "road_density_km_km2": 14.195,
-    "robustness_pct": 0.0,
-    "runoff_coeff_C": null,
-    "seasonal_cv": null,
-    "segment_id": 4,
-    "segment_length_m": 3462.6562,
-    "snap_dist_m": 6.2,
-    "stream_order": 3,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 15.9155,
-    "tri_facility_density": 0.6215,
-    "usgs_mean_q_cfs": null,
-    "velocity_feasibility": 1.0,
-    "water_intake_score": 0.0
-   },
-   "type": "Feature"
-  },
-  {
-   "geometry": {
-    "coordinates": [
-     -118.254867,
-     34.108382
-    ],
-    "type": "Point"
-   },
-   "properties": {
-    "accumulation": 52008.0,
-    "bank_slope_deg": 0.22,
-    "bank_slope_score": 1.0,
-    "beach_dist_km": 25.19,
-    "bridge_proximity_bonus": 0.0,
-    "catchment_area_km2": 5.1897,
-    "channel_width_m": 5.32,
-    "channel_width_score": 1.0,
-    "composite_score": 44.9558,
-    "cso_density": 0.0,
-    "dem_lat": 34.108328,
-    "dem_lon": -118.254867,
-    "ej_index": 0.397,
-    "elevation_m": 105.4681,
-    "estuary_dist_km": 39.74,
-    "feasibility_score": 100.0,
-    "flood_q10_cfs": null,
-    "flow_score": 47.5474,
-    "flow_velocity_ms": 0.5,
-    "generation_score": 27.1607,
-    "impact_score": 33.0691,
-    "impervious_pct": null,
-    "land_ownership": 0.5,
-    "lat": 34.1083,
-    "litter_complaint_density": 0.0,
-    "lon": -118.2549,
-    "npdes_points": 11,
-    "pixel_col": 1072.0,
-    "pixel_row": 223.0,
-    "population_density": 2714.9,
-    "position_along": 0.25,
-    "protected_area_score": 0.0,
-    "rank": 18,
-    "river_name": "Los Angeles River",
-    "road_access_m": 71.4,
-    "road_access_score": 1.0,
-    "road_density_km_km2": 15.262,
-    "robustness_pct": 0.0,
-    "runoff_coeff_C": null,
-    "seasonal_cv": null,
-    "segment_id": 4,
-    "segment_length_m": 3462.6562,
-    "snap_dist_m": 6.0,
-    "stream_order": 3,
-    "superfund_score": 0.0,
-    "tourism_amenity_density": 28.8866,
-    "tri_facility_density": 0.9634,
-    "usgs_mean_q_cfs": null,
-    "velocity_feasibility": 1.0,
-    "water_intake_score": 0.0
-   },
-   "type": "Feature"
-  },
-  {
-   "geometry": {
-    "coordinates": [
-     -118.238254,
-     34.094653
+     -118.238187,
+     34.094735
     ],
     "type": "Point"
    },
@@ -1134,10 +902,8 @@
     "catchment_area_km2": 9.1641,
     "channel_width_m": 6.68,
     "channel_width_score": 1.0,
-    "composite_score": 44.8818,
+    "composite_score": 45.0986,
     "cso_density": 0.0,
-    "dem_lat": 34.094735,
-    "dem_lon": -118.238187,
     "ej_index": 0.5579,
     "elevation_m": 96.9142,
     "estuary_dist_km": 38.04,
@@ -1146,20 +912,20 @@
     "flow_score": 48.857,
     "flow_velocity_ms": 0.5,
     "generation_score": 17.9786,
-    "impact_score": 40.913,
+    "impact_score": 41.6358,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0947,
     "litter_complaint_density": 0.0,
     "lon": -118.2382,
+    "navigable_dist_m": null,
     "npdes_points": 13,
     "pixel_col": 1224.0,
     "pixel_row": 376.0,
     "population_density": 2845.7,
     "position_along": 0.5,
     "protected_area_score": 0.0,
-    "rank": 19,
-    "river_name": "Los Angeles River",
+    "rank": 16,
     "road_access_m": 89.7,
     "road_access_score": 1.0,
     "road_density_km_km2": 12.477,
@@ -1168,9 +934,8 @@
     "seasonal_cv": null,
     "segment_id": 15,
     "segment_length_m": 315.9375,
-    "snap_dist_m": 10.9,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 1.4742,
     "tourism_amenity_density": 17.4275,
     "tri_facility_density": 0.3274,
     "usgs_mean_q_cfs": null,
@@ -1182,8 +947,185 @@
   {
    "geometry": {
     "coordinates": [
-     -118.180781,
-     34.110743
+     -118.254867,
+     34.108328
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 52008.0,
+    "bank_slope_deg": 0.22,
+    "bank_slope_score": 1.0,
+    "beach_dist_km": 25.19,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 5.1897,
+    "channel_width_m": 5.32,
+    "channel_width_score": 1.0,
+    "composite_score": 44.8534,
+    "cso_density": 0.0,
+    "ej_index": 0.397,
+    "elevation_m": 105.4681,
+    "estuary_dist_km": 39.74,
+    "feasibility_score": 100.0,
+    "flood_q10_cfs": null,
+    "flow_score": 47.5474,
+    "flow_velocity_ms": 0.5,
+    "generation_score": 27.1607,
+    "impact_score": 32.7279,
+    "impervious_pct": null,
+    "land_ownership": 0.5,
+    "lat": 34.1083,
+    "litter_complaint_density": 0.0,
+    "lon": -118.2549,
+    "navigable_dist_m": null,
+    "npdes_points": 11,
+    "pixel_col": 1072.0,
+    "pixel_row": 223.0,
+    "population_density": 2714.9,
+    "position_along": 0.25,
+    "protected_area_score": 0.0,
+    "rank": 17,
+    "road_access_m": 71.4,
+    "road_access_score": 1.0,
+    "road_density_km_km2": 15.262,
+    "robustness_pct": 0.0,
+    "runoff_coeff_C": null,
+    "seasonal_cv": null,
+    "segment_id": 4,
+    "segment_length_m": 3462.6562,
+    "stream_order": 3,
+    "superfund_score": 1.0442,
+    "tourism_amenity_density": 28.8866,
+    "tri_facility_density": 0.9634,
+    "usgs_mean_q_cfs": null,
+    "velocity_feasibility": 1.0,
+    "water_intake_score": 0.0
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -118.242431,
+     34.1022
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 64500.0,
+    "bank_slope_deg": 1.27,
+    "bank_slope_score": 1.0,
+    "beach_dist_km": 25.94,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 6.4363,
+    "channel_width_m": 5.8,
+    "channel_width_score": 1.0,
+    "composite_score": 44.4162,
+    "cso_density": 0.0,
+    "ej_index": 0.515,
+    "elevation_m": 99.4525,
+    "estuary_dist_km": 38.91,
+    "feasibility_score": 100.0,
+    "flood_q10_cfs": null,
+    "flow_score": 47.9582,
+    "flow_velocity_ms": 0.5,
+    "generation_score": 24.2022,
+    "impact_score": 33.8867,
+    "impervious_pct": null,
+    "land_ownership": 0.5,
+    "lat": 34.1022,
+    "litter_complaint_density": 0.0,
+    "lon": -118.2424,
+    "navigable_dist_m": null,
+    "npdes_points": 15,
+    "pixel_col": 1184.0,
+    "pixel_row": 294.0,
+    "population_density": 2950.9,
+    "position_along": 0.75,
+    "protected_area_score": 0.0,
+    "rank": 18,
+    "road_access_m": 60.5,
+    "road_access_score": 1.0,
+    "road_density_km_km2": 14.195,
+    "robustness_pct": 0.0,
+    "runoff_coeff_C": null,
+    "seasonal_cv": null,
+    "segment_id": 4,
+    "segment_length_m": 3462.6562,
+    "stream_order": 3,
+    "superfund_score": 0.7717,
+    "tourism_amenity_density": 15.9155,
+    "tri_facility_density": 0.6215,
+    "usgs_mean_q_cfs": null,
+    "velocity_feasibility": 1.0,
+    "water_intake_score": 0.0
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -118.162576,
+     34.06904
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 112292.0,
+    "bank_slope_deg": 0.96,
+    "bank_slope_score": 1.0,
+    "beach_dist_km": 31.82,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 11.2053,
+    "channel_width_m": 7.24,
+    "channel_width_score": 1.0,
+    "composite_score": 44.3955,
+    "cso_density": 0.0,
+    "ej_index": 0.5441,
+    "elevation_m": 119.2055,
+    "estuary_dist_km": 35.01,
+    "feasibility_score": 100.0,
+    "flood_q10_cfs": null,
+    "flow_score": 49.5297,
+    "flow_velocity_ms": 0.5,
+    "generation_score": 23.1231,
+    "impact_score": 33.5872,
+    "impervious_pct": null,
+    "land_ownership": 0.5,
+    "lat": 34.069,
+    "litter_complaint_density": 0.0,
+    "lon": -118.1626,
+    "navigable_dist_m": null,
+    "npdes_points": 8,
+    "pixel_col": 1917.0,
+    "pixel_row": 671.0,
+    "population_density": 2842.0,
+    "position_along": 0.5,
+    "protected_area_score": 0.0,
+    "rank": 19,
+    "road_access_m": 165.8,
+    "road_access_score": 1.0,
+    "road_density_km_km2": 14.95,
+    "robustness_pct": 0.0,
+    "runoff_coeff_C": null,
+    "seasonal_cv": null,
+    "segment_id": 29,
+    "segment_length_m": 2241.9972,
+    "stream_order": 3,
+    "superfund_score": 0.5156,
+    "tourism_amenity_density": 10.743,
+    "tri_facility_density": 0.5355,
+    "usgs_mean_q_cfs": null,
+    "velocity_feasibility": 1.0,
+    "water_intake_score": 0.0
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -118.180774,
+     34.110687
     ],
     "type": "Point"
    },
@@ -1196,10 +1138,8 @@
     "catchment_area_km2": 4.3552,
     "channel_width_m": 4.96,
     "channel_width_score": 1.0,
-    "composite_score": 43.7585,
+    "composite_score": 42.7473,
     "cso_density": 0.0,
-    "dem_lat": 34.110687,
-    "dem_lon": -118.180774,
     "ej_index": 0.4225,
     "elevation_m": 157.123,
     "estuary_dist_km": 39.56,
@@ -1208,12 +1148,13 @@
     "flow_score": 47.2724,
     "flow_velocity_ms": 0.5,
     "generation_score": 26.4498,
-    "impact_score": 30.0183,
+    "impact_score": 26.6476,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.1107,
     "litter_complaint_density": 0.0,
     "lon": -118.1808,
+    "navigable_dist_m": null,
     "npdes_points": 0,
     "pixel_col": 1753.0,
     "pixel_row": 205.0,
@@ -1221,7 +1162,6 @@
     "position_along": 0.25,
     "protected_area_score": 0.0,
     "rank": 20,
-    "river_name": "Arroyo Seco",
     "road_access_m": 65.7,
     "road_access_score": 1.0,
     "road_density_km_km2": 13.361,
@@ -1230,9 +1170,8 @@
     "seasonal_cv": null,
     "segment_id": 1,
     "segment_length_m": 3783.8572,
-    "snap_dist_m": 6.2,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 0.3352,
     "tourism_amenity_density": 31.1148,
     "tri_facility_density": 0.0,
     "usgs_mean_q_cfs": null,
@@ -1245,7 +1184,7 @@
    "geometry": {
     "coordinates": [
      -118.194946,
-     34.102569
+     34.102619
     ],
     "type": "Point"
    },
@@ -1258,10 +1197,8 @@
     "catchment_area_km2": 7.4131,
     "channel_width_m": 6.14,
     "channel_width_score": 1.0,
-    "composite_score": 42.6871,
+    "composite_score": 41.8674,
     "cso_density": 0.0,
-    "dem_lat": 34.102619,
-    "dem_lon": -118.194946,
     "ej_index": 0.4181,
     "elevation_m": 135.6986,
     "estuary_dist_km": 38.66,
@@ -1270,12 +1207,13 @@
     "flow_score": 48.2801,
     "flow_velocity_ms": 0.5,
     "generation_score": 23.8214,
-    "impact_score": 28.2355,
+    "impact_score": 25.5033,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.1026,
     "litter_complaint_density": 0.0,
     "lon": -118.1949,
+    "navigable_dist_m": null,
     "npdes_points": 0,
     "pixel_col": 1621.0,
     "pixel_row": 293.0,
@@ -1283,7 +1221,6 @@
     "position_along": 0.75,
     "protected_area_score": 0.0,
     "rank": 21,
-    "river_name": "Arroyo Seco",
     "road_access_m": 29.0,
     "road_access_score": 1.0,
     "road_density_km_km2": 11.406,
@@ -1292,9 +1229,8 @@
     "seasonal_cv": null,
     "segment_id": 1,
     "segment_length_m": 3783.8572,
-    "snap_dist_m": 5.6,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 0.4198,
     "tourism_amenity_density": 20.6901,
     "tri_facility_density": 0.0,
     "usgs_mean_q_cfs": null,
@@ -1306,8 +1242,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.164709,
-     34.053528
+     -118.164832,
+     34.053533
     ],
     "type": "Point"
    },
@@ -1320,10 +1256,8 @@
     "catchment_area_km2": 15.9199,
     "channel_width_m": 8.33,
     "channel_width_score": 1.0,
-    "composite_score": 41.8425,
+    "composite_score": 40.7602,
     "cso_density": 0.0,
-    "dem_lat": 34.053533,
-    "dem_lon": -118.164832,
     "ej_index": 0.6012,
     "elevation_m": 95.6225,
     "estuary_dist_km": 33.28,
@@ -1332,21 +1266,20 @@
     "flow_score": 51.0832,
     "flow_velocity_ms": 0.5,
     "generation_score": 24.3586,
-    "impact_score": 45.2744,
+    "impact_score": 41.6665,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0535,
     "litter_complaint_density": 0.0,
     "lon": -118.1648,
+    "navigable_dist_m": null,
     "npdes_points": 13,
-    "on_unnamed_waterway": true,
     "pixel_col": 1895.0,
     "pixel_row": 843.0,
     "population_density": 3175.9,
     "position_along": 0.1,
     "protected_area_score": 0.0,
     "rank": 22,
-    "river_name": null,
     "road_access_m": 228.8,
     "road_access_score": 0.8,
     "road_density_km_km2": 14.531,
@@ -1355,9 +1288,8 @@
     "seasonal_cv": null,
     "segment_id": 44,
     "segment_length_m": 8638.8776,
-    "snap_dist_m": 11.3,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 0.6938,
     "tourism_amenity_density": 12.8916,
     "tri_facility_density": 0.4397,
     "usgs_mean_q_cfs": null,
@@ -1369,7 +1301,7 @@
   {
    "geometry": {
     "coordinates": [
-     -118.206047,
+     -118.206073,
      34.092076
     ],
     "type": "Point"
@@ -1383,10 +1315,8 @@
     "catchment_area_km2": 13.5631,
     "channel_width_m": 7.81,
     "channel_width_score": 1.0,
-    "composite_score": 41.4235,
+    "composite_score": 40.7206,
     "cso_density": 0.0,
-    "dem_lat": 34.092076,
-    "dem_lon": -118.206073,
     "ej_index": 0.4868,
     "elevation_m": 111.8576,
     "estuary_dist_km": 37.51,
@@ -1395,12 +1325,13 @@
     "flow_score": 49.7039,
     "flow_velocity_ms": 0.0958,
     "generation_score": 29.2221,
-    "impact_score": 34.3195,
+    "impact_score": 31.9765,
     "impervious_pct": 16.6,
     "land_ownership": 0.5,
     "lat": 34.0921,
     "litter_complaint_density": 0.0,
     "lon": -118.2061,
+    "navigable_dist_m": null,
     "npdes_points": 5,
     "pixel_col": 1518.0,
     "pixel_row": 410.0,
@@ -1408,7 +1339,6 @@
     "position_along": 0.25,
     "protected_area_score": 0.0,
     "rank": 23,
-    "river_name": "Arroyo Seco",
     "road_access_m": 23.2,
     "road_access_score": 1.0,
     "road_density_km_km2": 12.081,
@@ -1417,9 +1347,8 @@
     "seasonal_cv": 1.0943,
     "segment_id": 3,
     "segment_length_m": 3390.1346,
-    "snap_dist_m": 2.4,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 0.663,
     "tourism_amenity_density": 16.6317,
     "tri_facility_density": 0.1475,
     "usgs_mean_q_cfs": 18.54,
@@ -1431,8 +1360,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.328426,
-     34.076702
+     -118.328564,
+     34.076609
     ],
     "type": "Point"
    },
@@ -1445,10 +1374,8 @@
     "catchment_area_km2": 6.626,
     "channel_width_m": 5.87,
     "channel_width_score": 1.0,
-    "composite_score": 40.7715,
+    "composite_score": 39.9902,
     "cso_density": 0.0,
-    "dem_lat": 34.076609,
-    "dem_lon": -118.328564,
     "ej_index": 0.2506,
     "elevation_m": 71.9255,
     "estuary_dist_km": 37.98,
@@ -1457,21 +1384,20 @@
     "flow_score": 48.0207,
     "flow_velocity_ms": 0.5,
     "generation_score": 20.3922,
-    "impact_score": 25.4954,
+    "impact_score": 22.8913,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.0766,
     "litter_complaint_density": 0.0,
     "lon": -118.3286,
+    "navigable_dist_m": null,
     "npdes_points": 3,
-    "on_unnamed_waterway": true,
     "pixel_col": 385.0,
     "pixel_row": 568.0,
     "population_density": 3469.3,
     "position_along": 0.5,
     "protected_area_score": 0.0,
     "rank": 24,
-    "river_name": null,
     "road_access_m": 116.2,
     "road_access_score": 1.0,
     "road_density_km_km2": 12.539,
@@ -1480,9 +1406,8 @@
     "seasonal_cv": null,
     "segment_id": 9,
     "segment_length_m": 7727.7668,
-    "snap_dist_m": 16.4,
     "stream_order": 3,
-    "superfund_score": 0.0,
+    "superfund_score": 0.3731,
     "tourism_amenity_density": 9.788,
     "tri_facility_density": 0.1509,
     "usgs_mean_q_cfs": null,
@@ -1494,8 +1419,8 @@
   {
    "geometry": {
     "coordinates": [
-     -118.12059,
-     34.094556
+     -118.120565,
+     34.094571
     ],
     "type": "Point"
    },
@@ -1508,10 +1433,8 @@
     "catchment_area_km2": 2.0953,
     "channel_width_m": 3.71,
     "channel_width_score": 1.0,
-    "composite_score": 35.1255,
+    "composite_score": 35.1203,
     "cso_density": 0.0,
-    "dem_lat": 34.094571,
-    "dem_lon": -118.120565,
     "ej_index": 0.5631,
     "elevation_m": 132.4174,
     "estuary_dist_km": 38.3,
@@ -1520,12 +1443,13 @@
     "flow_score": 7.7221,
     "flow_velocity_ms": 0.026,
     "generation_score": 44.5037,
-    "impact_score": 34.3281,
+    "impact_score": 34.3106,
     "impervious_pct": 51.45,
     "land_ownership": 0.5,
     "lat": 34.0946,
     "litter_complaint_density": 0.0,
     "lon": -118.1206,
+    "navigable_dist_m": null,
     "npdes_points": 0,
     "pixel_col": 2310.0,
     "pixel_row": 392.0,
@@ -1533,7 +1457,6 @@
     "position_along": 0.5,
     "protected_area_score": 0.0,
     "rank": 25,
-    "river_name": "Alhambra Wash",
     "road_access_m": 139.9,
     "road_access_score": 1.0,
     "road_density_km_km2": 7.356,
@@ -1542,9 +1465,8 @@
     "seasonal_cv": 0.9603,
     "segment_id": 22,
     "segment_length_m": 489.6003,
-    "snap_dist_m": 2.8,
     "stream_order": 1,
-    "superfund_score": 0.0,
+    "superfund_score": 1.1449,
     "tourism_amenity_density": 24.9077,
     "tri_facility_density": 0.0,
     "usgs_mean_q_cfs": 0.069,
@@ -1570,10 +1492,8 @@
     "catchment_area_km2": 2.0464,
     "channel_width_m": 3.67,
     "channel_width_score": 1.0,
-    "composite_score": 29.9085,
+    "composite_score": 29.298,
     "cso_density": 0.0,
-    "dem_lat": 34.109276,
-    "dem_lon": -118.119459,
     "ej_index": 0.3225,
     "elevation_m": 144.032,
     "estuary_dist_km": 39.93,
@@ -1582,12 +1502,13 @@
     "flow_score": 30.2326,
     "flow_velocity_ms": 0.5,
     "generation_score": 1.2629,
-    "impact_score": 23.2382,
+    "impact_score": 21.2034,
     "impervious_pct": null,
     "land_ownership": 0.5,
     "lat": 34.1093,
     "litter_complaint_density": 0.0,
     "lon": -118.1195,
+    "navigable_dist_m": null,
     "npdes_points": 0,
     "pixel_col": 2323.0,
     "pixel_row": 228.0,
@@ -1595,7 +1516,6 @@
     "position_along": 0.5,
     "protected_area_score": 0.0,
     "rank": 26,
-    "river_name": "Alhambra Wash",
     "road_access_m": 130.6,
     "road_access_score": 1.0,
     "road_density_km_km2": 6.586,
@@ -1604,9 +1524,8 @@
     "seasonal_cv": null,
     "segment_id": 8,
     "segment_length_m": 144.6986,
-    "snap_dist_m": 0.0,
     "stream_order": 1,
-    "superfund_score": 0.0,
+    "superfund_score": 0.4307,
     "tourism_amenity_density": 43.5289,
     "tri_facility_density": 0.0,
     "usgs_mean_q_cfs": null,
@@ -1627,9 +1546,9 @@
    "land_ownership",
    "litter_complaint_density",
    "protected_area_score",
-   "superfund_score",
    "water_intake_score"
   ],
+  "gated_navigable": 0,
   "hard_gate_removed": 0,
   "n_parameters": 27,
   "parameters": {
@@ -1703,13 +1622,19 @@
     "kind": "fallback",
     "n_real": 0,
     "n_sites": 26,
-    "source": "no parcel integration for this region (Durham only) \u2014 unknown 0.5"
+    "source": "no parcel integration outside NC (statewide layer is NC OneMap) \u2014 unknown 0.5"
    },
    "litter_complaint_density": {
     "kind": "fallback",
     "n_real": 0,
     "n_sites": 26,
     "source": "no machine-readable 311/litter source for this region"
+   },
+   "navigable_dist_m": {
+    "kind": "real",
+    "n_real": 26,
+    "n_sites": 26,
+    "source": "USACE/BTS NWN (NTAD): no navigable segment within this bbox (+2 km) \u2014 computed absence, gate passes all sites"
    },
    "npdes_points": {
     "kind": "real",
@@ -1727,7 +1652,7 @@
     "kind": "fallback",
     "n_real": 0,
     "n_sites": 26,
-    "source": "PAD-US services unreachable; OSM proxy saturates \u2014 documented fallback"
+    "source": "no local PAD-US 4.1 clip for this state (NC-only download)"
    },
    "road_access_score": {
     "kind": "real",
@@ -1760,10 +1685,10 @@
     "source": "DEM stream-network confluence heuristic (pipeline)"
    },
    "superfund_score": {
-    "kind": "fallback",
-    "n_real": 0,
+    "kind": "real",
+    "n_real": 26,
     "n_sites": 26,
-    "source": "not wired (low weight; roadmap)"
+    "source": "EPA Envirofacts SEMS state=CA (sign-fixed, georeferenced sites), shipped 500 m inverse-distance curve"
    },
    "tourism_amenity_density": {
     "kind": "real",
@@ -1789,11 +1714,17 @@
     "n_sites": 26,
     "source": "shipped step curve on the computed velocity"
    },
+   "velocity_transport_favorability": {
+    "kind": "derived",
+    "n_real": 4,
+    "n_sites": 26,
+    "source": "scored form of flow_velocity_ms inside the Flow family \u2014 peaked Gaussian exp(-((v-0.9)/0.6)^2), model.json curves.velocity_transport_favorability; construct: transport/delivery favorability, deliberately distinct from velocity_feasibility (device operability)"
+   },
    "water_intake_score": {
     "kind": "fallback",
     "n_real": 0,
     "n_sites": 26,
-    "source": "no public surface-intake point layer (NC OneMap is wells-only and NC-only)"
+    "source": "no public surface-intake layer wired outside NC (SWAP layer is NC-only)"
    }
   },
   "stream_mask": {
@@ -1820,6 +1751,7 @@
    "runoff_coeff_C",
    "seasonal_cv",
    "stream_order",
+   "superfund_score",
    "tourism_amenity_density",
    "tri_facility_density",
    "usgs_mean_q_cfs",
@@ -1859,4838 +1791,6 @@
    "code": "PMS",
    "source": "Bieger et al. 2015 JAWRA Table 3, Pacific Mountain System"
   }
- },
- "streams": {
-  "features": [
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.123993,
-        34.110456
-       ],
-       [
-        -118.123229,
-        34.11025
-       ],
-       [
-        -118.122654,
-        34.109831
-       ],
-       [
-        -118.122277,
-        34.109447
-       ],
-       [
-        -118.122019,
-        34.109348
-       ],
-       [
-        -118.120191,
-        34.109469
-       ],
-       [
-        -118.119298,
-        34.109234
-       ],
-       [
-        -118.117127,
-        34.108026
-       ],
-       [
-        -118.116054,
-        34.107259
-       ],
-       [
-        -118.115831,
-        34.106996
-       ],
-       [
-        -118.1139,
-        34.103044
-       ],
-       [
-        -118.113105,
-        34.101748
-       ],
-       [
-        -118.112876,
-        34.101195
-       ],
-       [
-        -118.112884,
-        34.100298
-       ],
-       [
-        -118.11296,
-        34.099859
-       ],
-       [
-        -118.113298,
-        34.098935
-       ],
-       [
-        -118.113354,
-        34.098197
-       ],
-       [
-        -118.112816,
-        34.094753
-       ],
-       [
-        -118.112475,
-        34.09385
-       ]
-      ],
-      [
-       [
-        -118.110237,
-        34.08898
-       ],
-       [
-        -118.10869,
-        34.08566
-       ],
-       [
-        -118.10788,
-        34.084636
-       ],
-       [
-        -118.107362,
-        34.084208
-       ],
-       [
-        -118.10675,
-        34.083881
-       ],
-       [
-        -118.105789,
-        34.083576
-       ],
-       [
-        -118.104587,
-        34.083341
-       ],
-       [
-        -118.103471,
-        34.082907
-       ],
-       [
-        -118.10281,
-        34.082367
-       ],
-       [
-        -118.102544,
-        34.082054
-       ],
-       [
-        -118.102269,
-        34.081519
-       ]
-      ],
-      [
-       [
-        -118.099748,
-        34.077499
-       ],
-       [
-        -118.099205,
-        34.076737
-       ],
-       [
-        -118.098373,
-        34.074156
-       ],
-       [
-        -118.096107,
-        34.07127
-       ],
-       [
-        -118.09541,
-        34.070726
-       ],
-       [
-        -118.094969,
-        34.070238
-       ],
-       [
-        -118.094734,
-        34.069734
-       ],
-       [
-        -118.094534,
-        34.068951
-       ],
-       [
-        -118.093416,
-        34.067465
-       ],
-       [
-        -118.091308,
-        34.063147
-       ],
-       [
-        -118.089395,
-        34.060128
-       ],
-       [
-        -118.087255,
-        34.055498
-       ],
-       [
-        -118.08538,
-        34.052891
-       ],
-       [
-        -118.084559,
-        34.052187
-       ],
-       [
-        -118.075593,
-        34.047413
-       ],
-       [
-        -118.075027,
-        34.046923
-       ],
-       [
-        -118.074457,
-        34.046015
-       ]
-      ],
-      [
-       [
-        -118.143501,
-        34.120902
-       ],
-       [
-        -118.143253,
-        34.120857
-       ],
-       [
-        -118.142757,
-        34.120559
-       ],
-       [
-        -118.142206,
-        34.119712
-       ],
-       [
-        -118.142206,
-        34.119506
-       ],
-       [
-        -118.141242,
-        34.117055
-       ],
-       [
-        -118.140966,
-        34.11662
-       ],
-       [
-        -118.140966,
-        34.116482
-       ],
-       [
-        -118.140636,
-        34.115887
-       ],
-       [
-        -118.140636,
-        34.115681
-       ],
-       [
-        -118.139782,
-        34.113871
-       ],
-       [
-        -118.135265,
-        34.110276
-       ],
-       [
-        -118.134576,
-        34.109497
-       ],
-       [
-        -118.130115,
-        34.1051
-       ],
-       [
-        -118.12805,
-        34.103336
-       ],
-       [
-        -118.126095,
-        34.101435
-       ],
-       [
-        -118.126067,
-        34.101275
-       ],
-       [
-        -118.125902,
-        34.101252
-       ],
-       [
-        -118.124828,
-        34.100084
-       ],
-       [
-        -118.124718,
-        34.099832
-       ],
-       [
-        -118.123231,
-        34.098069
-       ],
-       [
-        -118.122653,
-        34.097152
-       ],
-       [
-        -118.121496,
-        34.095686
-       ],
-       [
-        -118.121386,
-        34.095434
-       ],
-       [
-        -118.120037,
-        34.093946
-       ],
-       [
-        -118.11833,
-        34.092594
-       ],
-       [
-        -118.117257,
-        34.091541
-       ],
-       [
-        -118.116706,
-        34.091128
-       ],
-       [
-        -118.116266,
-        34.090945
-       ],
-       [
-        -118.111723,
-        34.090074
-       ],
-       [
-        -118.110622,
-        34.089639
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 12.72,
-     "n_sites": 2,
-     "name": "Alhambra Wash",
-     "order": 2,
-     "riverKey": "alhambra wash",
-     "underground": 0,
-     "waterway": "drain"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.102269,
-       34.081519
-      ],
-      [
-       -118.10172,
-       34.080014
-      ],
-      [
-       -118.099748,
-       34.077499
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.51,
-     "n_sites": 2,
-     "name": "Alhambra Wash",
-     "order": 2,
-     "riverKey": "alhambra wash",
-     "underground": 1,
-     "waterway": "drain"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.175057,
-       34.184817
-      ],
-      [
-       -118.174999,
-       34.1846
-      ],
-      [
-       -118.174794,
-       34.184405
-      ],
-      [
-       -118.173762,
-       34.184041
-      ],
-      [
-       -118.173491,
-       34.183576
-      ],
-      [
-       -118.172958,
-       34.181838
-      ],
-      [
-       -118.172244,
-       34.178692
-      ],
-      [
-       -118.170892,
-       34.175574
-      ],
-      [
-       -118.170589,
-       34.174254
-      ],
-      [
-       -118.170467,
-       34.172968
-      ],
-      [
-       -118.170432,
-       34.164249
-      ],
-      [
-       -118.170187,
-       34.162743
-      ],
-      [
-       -118.167218,
-       34.153624
-      ],
-      [
-       -118.165791,
-       34.150461
-      ],
-      [
-       -118.165613,
-       34.149244
-      ],
-      [
-       -118.165748,
-       34.147441
-      ],
-      [
-       -118.165675,
-       34.147074
-      ],
-      [
-       -118.165442,
-       34.1468
-      ],
-      [
-       -118.164814,
-       34.146548
-      ],
-      [
-       -118.164634,
-       34.14628
-      ],
-      [
-       -118.164647,
-       34.145559
-      ],
-      [
-       -118.164762,
-       34.145309
-      ],
-      [
-       -118.165132,
-       34.144984
-      ],
-      [
-       -118.165754,
-       34.144868
-      ],
-      [
-       -118.166104,
-       34.144714
-      ],
-      [
-       -118.167457,
-       34.142395
-      ],
-      [
-       -118.16774,
-       34.141738
-      ],
-      [
-       -118.167837,
-       34.141235
-      ],
-      [
-       -118.167689,
-       34.136078
-      ],
-      [
-       -118.16747,
-       34.135225
-      ],
-      [
-       -118.166473,
-       34.133144
-      ],
-      [
-       -118.166235,
-       34.132457
-      ],
-      [
-       -118.165239,
-       34.126843
-      ],
-      [
-       -118.165313,
-       34.126148
-      ],
-      [
-       -118.165693,
-       34.125563
-      ],
-      [
-       -118.166059,
-       34.125234
-      ],
-      [
-       -118.16738,
-       34.124494
-      ],
-      [
-       -118.167796,
-       34.124183
-      ],
-      [
-       -118.16822,
-       34.123663
-      ],
-      [
-       -118.168434,
-       34.123133
-      ],
-      [
-       -118.168483,
-       34.122487
-      ],
-      [
-       -118.168373,
-       34.121994
-      ],
-      [
-       -118.167903,
-       34.120832
-      ],
-      [
-       -118.167212,
-       34.119584
-      ],
-      [
-       -118.167138,
-       34.119147
-      ],
-      [
-       -118.167311,
-       34.118561
-      ],
-      [
-       -118.167595,
-       34.118212
-      ],
-      [
-       -118.17122,
-       34.11542
-      ],
-      [
-       -118.1724,
-       34.113945
-      ],
-      [
-       -118.172977,
-       34.113554
-      ],
-      [
-       -118.173819,
-       34.113352
-      ],
-      [
-       -118.175573,
-       34.113321
-      ],
-      [
-       -118.176255,
-       34.113101
-      ],
-      [
-       -118.176695,
-       34.112828
-      ],
-      [
-       -118.177513,
-       34.112058
-      ],
-      [
-       -118.180453,
-       34.110772
-      ],
-      [
-       -118.181233,
-       34.110703
-      ],
-      [
-       -118.183046,
-       34.111123
-      ],
-      [
-       -118.183369,
-       34.111119
-      ],
-      [
-       -118.183619,
-       34.11103
-      ],
-      [
-       -118.184385,
-       34.110206
-      ],
-      [
-       -118.184711,
-       34.108923
-      ],
-      [
-       -118.184953,
-       34.108392
-      ],
-      [
-       -118.185377,
-       34.107895
-      ],
-      [
-       -118.186323,
-       34.107153
-      ],
-      [
-       -118.186755,
-       34.106423
-      ],
-      [
-       -118.187387,
-       34.105711
-      ],
-      [
-       -118.188696,
-       34.104834
-      ],
-      [
-       -118.190116,
-       34.104253
-      ],
-      [
-       -118.191578,
-       34.103124
-      ],
-      [
-       -118.192117,
-       34.10282
-      ],
-      [
-       -118.192694,
-       34.102621
-      ],
-      [
-       -118.193299,
-       34.102562
-      ],
-      [
-       -118.197243,
-       34.102577
-      ],
-      [
-       -118.197623,
-       34.102488
-      ],
-      [
-       -118.19951,
-       34.10174
-      ],
-      [
-       -118.200104,
-       34.101407
-      ],
-      [
-       -118.202701,
-       34.099019
-      ],
-      [
-       -118.204652,
-       34.09611
-      ],
-      [
-       -118.205237,
-       34.095404
-      ],
-      [
-       -118.205747,
-       34.094624
-      ],
-      [
-       -118.206037,
-       34.093767
-      ],
-      [
-       -118.206047,
-       34.092055
-      ],
-      [
-       -118.207419,
-       34.089797
-      ],
-      [
-       -118.208282,
-       34.088799
-      ],
-      [
-       -118.210447,
-       34.08702
-      ],
-      [
-       -118.211419,
-       34.086521
-      ],
-      [
-       -118.212255,
-       34.086325
-      ],
-      [
-       -118.214078,
-       34.086145
-      ],
-      [
-       -118.214815,
-       34.08599
-      ],
-      [
-       -118.218681,
-       34.084737
-      ],
-      [
-       -118.219394,
-       34.084435
-      ],
-      [
-       -118.221698,
-       34.082994
-      ],
-      [
-       -118.224874,
-       34.080509
-      ],
-      [
-       -118.226056,
-       34.079401
-      ],
-      [
-       -118.226368,
-       34.079248
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 15.38,
-     "n_sites": 4,
-     "name": "Arroyo Seco",
-     "order": 2,
-     "riverKey": "arroyo seco",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.368202,
-        34.038581
-       ],
-       [
-        -118.371947,
-        34.036786
-       ],
-       [
-        -118.37515,
-        34.033182
-       ],
-       [
-        -118.375294,
-        34.032894
-       ],
-       [
-        -118.375344,
-        34.032509
-       ],
-       [
-        -118.37521,
-        34.03122
-       ],
-       [
-        -118.375256,
-        34.030387
-       ],
-       [
-        -118.376567,
-        34.027045
-       ],
-       [
-        -118.377263,
-        34.023341
-       ],
-       [
-        -118.377797,
-        34.022408
-       ],
-       [
-        -118.37811,
-        34.022088
-       ],
-       [
-        -118.378678,
-        34.021707
-       ],
-       [
-        -118.379618,
-        34.021352
-       ],
-       [
-        -118.386205,
-        34.02028
-       ],
-       [
-        -118.387174,
-        34.019855
-       ],
-       [
-        -118.387759,
-        34.019359
-       ],
-       [
-        -118.388734,
-        34.018045
-       ],
-       [
-        -118.390759,
-        34.01465
-       ],
-       [
-        -118.391291,
-        34.013575
-       ],
-       [
-        -118.391597,
-        34.012379
-       ],
-       [
-        -118.39169,
-        34.009783
-       ],
-       [
-        -118.391899,
-        34.009246
-       ],
-       [
-        -118.392141,
-        34.008882
-       ],
-       [
-        -118.39278,
-        34.008289
-       ],
-       [
-        -118.393608,
-        34.007848
-       ],
-       [
-        -118.397593,
-        34.006688
-       ],
-       [
-        -118.398246,
-        34.006289
-       ],
-       [
-        -118.39878,
-        34.005739
-       ],
-       [
-        -118.399098,
-        34.005212
-       ],
-       [
-        -118.400454,
-        34.00105
-       ],
-       [
-        -118.403288,
-        33.995948
-       ],
-       [
-        -118.403702,
-        33.995399
-       ],
-       [
-        -118.405873,
-        33.993253
-       ],
-       [
-        -118.406325,
-        33.992915
-       ],
-       [
-        -118.411773,
-        33.989741
-       ],
-       [
-        -118.425615,
-        33.979348
-       ],
-       [
-        -118.430651,
-        33.975889
-       ],
-       [
-        -118.452227,
-        33.963804
-       ],
-       [
-        -118.457944,
-        33.961045
-       ]
-      ],
-      [
-       [
-        -118.35519,
-        34.043733
-       ],
-       [
-        -118.35587,
-        34.043415
-       ],
-       [
-        -118.356817,
-        34.042825
-       ],
-       [
-        -118.358204,
-        34.042256
-       ],
-       [
-        -118.364286,
-        34.040391
-       ],
-       [
-        -118.368202,
-        34.038581
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 14.01,
-     "n_sites": 1,
-     "name": "Ballona Creek",
-     "order": 2,
-     "riverKey": "ballona creek",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.355404,
-        34.043557
-       ],
-       [
-        -118.356841,
-        34.042694
-       ],
-       [
-        -118.357979,
-        34.042224
-       ],
-       [
-        -118.364054,
-        34.040352
-       ],
-       [
-        -118.367581,
-        34.038751
-       ],
-       [
-        -118.367972,
-        34.038631
-       ]
-      ],
-      [
-       [
-        -118.340625,
-        34.046476
-       ],
-       [
-        -118.352934,
-        34.044724
-       ],
-       [
-        -118.353894,
-        34.044297
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 2.54,
-     "n_sites": 1,
-     "name": "Ballona Creek",
-     "order": 2,
-     "riverKey": "ballona creek",
-     "underground": 1,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.388083,
-       34.007823
-      ],
-      [
-       -118.390551,
-       34.002477
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.64,
-     "n_sites": 0,
-     "name": "BI 0424 - UNIT 2 - LINE A",
-     "order": 2,
-     "riverKey": "bi 0424 - unit 2 - line a",
-     "underground": 0,
-     "waterway": "drain"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.369775,
-        34.147276
-       ],
-       [
-        -118.369288,
-        34.146973
-       ],
-       [
-        -118.36845,
-        34.146248
-       ],
-       [
-        -118.367133,
-        34.143979
-       ],
-       [
-        -118.366744,
-        34.143801
-       ],
-       [
-        -118.365092,
-        34.143649
-       ],
-       [
-        -118.36462,
-        34.143516
-       ]
-      ],
-      [
-       [
-        -118.398432,
-        34.183975
-       ],
-       [
-        -118.39584,
-        34.181525
-       ],
-       [
-        -118.394793,
-        34.179991
-       ],
-       [
-        -118.393965,
-        34.178502
-       ],
-       [
-        -118.392807,
-        34.175983
-       ],
-       [
-        -118.391539,
-        34.174586
-       ],
-       [
-        -118.390354,
-        34.173785
-       ],
-       [
-        -118.389197,
-        34.173304
-       ],
-       [
-        -118.388177,
-        34.172686
-       ],
-       [
-        -118.386661,
-        34.171427
-       ],
-       [
-        -118.38374,
-        34.168702
-       ],
-       [
-        -118.383244,
-        34.168129
-       ],
-       [
-        -118.381645,
-        34.164808
-       ],
-       [
-        -118.381617,
-        34.164396
-       ],
-       [
-        -118.381535,
-        34.164327
-       ],
-       [
-        -118.381149,
-        34.162999
-       ],
-       [
-        -118.381066,
-        34.162953
-       ],
-       [
-        -118.380239,
-        34.160457
-       ],
-       [
-        -118.379688,
-        34.159129
-       ],
-       [
-        -118.37922,
-        34.158442
-       ],
-       [
-        -118.379082,
-        34.157777
-       ],
-       [
-        -118.378503,
-        34.156678
-       ],
-       [
-        -118.377924,
-        34.155854
-       ],
-       [
-        -118.377291,
-        34.155212
-       ],
-       [
-        -118.37561,
-        34.153106
-       ],
-       [
-        -118.373819,
-        34.151273
-       ],
-       [
-        -118.373323,
-        34.150472
-       ],
-       [
-        -118.373296,
-        34.150174
-       ],
-       [
-        -118.37302,
-        34.149693
-       ],
-       [
-        -118.372056,
-        34.148685
-       ],
-       [
-        -118.371202,
-        34.148067
-       ],
-       [
-        -118.369108,
-        34.146807
-       ],
-       [
-        -118.368475,
-        34.146235
-       ],
-       [
-        -118.368007,
-        34.145685
-       ],
-       [
-        -118.366739,
-        34.143647
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 6.16,
-     "n_sites": 0,
-     "name": "Central Branch Tujunga Wash",
-     "order": 2,
-     "riverKey": "central branch tujunga wash",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.1617,
-       34.07354
-      ],
-      [
-       -118.161631,
-       34.072876
-      ],
-      [
-       -118.161805,
-       34.072183
-      ],
-      [
-       -118.161749,
-       34.071268
-      ],
-      [
-       -118.162365,
-       34.070137
-      ],
-      [
-       -118.162692,
-       34.069915
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.43,
-     "n_sites": 1,
-     "name": "Dorchester Channel",
-     "order": 2,
-     "riverKey": "dorchester channel",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.200182,
-       34.060417
-      ],
-      [
-       -118.201745,
-       34.058835
-      ],
-      [
-       -118.202813,
-       34.05758
-      ],
-      [
-       -118.204053,
-       34.055595
-      ],
-      [
-       -118.204306,
-       34.055083
-      ],
-      [
-       -118.204269,
-       34.054961
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.72,
-     "n_sites": 0,
-     "name": "Hazard Creek",
-     "order": 2,
-     "riverKey": "hazard creek",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.469779,
-        34.163011
-       ],
-       [
-        -118.468545,
-        34.162414
-       ],
-       [
-        -118.46639,
-        34.161735
-       ],
-       [
-        -118.465195,
-        34.16141
-       ],
-       [
-        -118.463602,
-        34.161288
-       ],
-       [
-        -118.462099,
-        34.160709
-       ],
-       [
-        -118.461557,
-        34.160661
-       ],
-       [
-        -118.459906,
-        34.1608
-       ],
-       [
-        -118.459294,
-        34.160686
-       ],
-       [
-        -118.458876,
-        34.160441
-       ],
-       [
-        -118.458057,
-        34.159536
-       ],
-       [
-        -118.45759,
-        34.159202
-       ],
-       [
-        -118.455467,
-        34.158398
-       ],
-       [
-        -118.454593,
-        34.158252
-       ],
-       [
-        -118.45053,
-        34.158106
-       ],
-       [
-        -118.448226,
-        34.157724
-       ],
-       [
-        -118.447124,
-        34.157296
-       ],
-       [
-        -118.445282,
-        34.156117
-       ],
-       [
-        -118.444494,
-        34.155814
-       ],
-       [
-        -118.443685,
-        34.155738
-       ],
-       [
-        -118.442185,
-        34.155796
-       ],
-       [
-        -118.440322,
-        34.155253
-       ],
-       [
-        -118.439559,
-        34.155129
-       ],
-       [
-        -118.437707,
-        34.155032
-       ],
-       [
-        -118.435435,
-        34.155255
-       ],
-       [
-        -118.434808,
-        34.155248
-       ],
-       [
-        -118.433587,
-        34.155106
-       ],
-       [
-        -118.432898,
-        34.154929
-       ],
-       [
-        -118.431461,
-        34.154348
-       ],
-       [
-        -118.43068,
-        34.153921
-       ],
-       [
-        -118.427706,
-        34.151701
-       ],
-       [
-        -118.423382,
-        34.150055
-       ],
-       [
-        -118.421384,
-        34.148371
-       ],
-       [
-        -118.421042,
-        34.148178
-       ],
-       [
-        -118.420519,
-        34.148053
-       ],
-       [
-        -118.419356,
-        34.148106
-       ],
-       [
-        -118.418913,
-        34.148041
-       ],
-       [
-        -118.418472,
-        34.147847
-       ],
-       [
-        -118.417544,
-        34.147153
-       ],
-       [
-        -118.417034,
-        34.146995
-       ],
-       [
-        -118.415543,
-        34.147009
-       ],
-       [
-        -118.414491,
-        34.146704
-       ],
-       [
-        -118.412671,
-        34.146758
-       ],
-       [
-        -118.411488,
-        34.146556
-       ],
-       [
-        -118.408922,
-        34.145479
-       ],
-       [
-        -118.406095,
-        34.143816
-       ],
-       [
-        -118.40543,
-        34.14359
-       ],
-       [
-        -118.404592,
-        34.143606
-       ],
-       [
-        -118.401184,
-        34.143942
-       ],
-       [
-        -118.400665,
-        34.144127
-       ],
-       [
-        -118.399858,
-        34.144589
-       ],
-       [
-        -118.399284,
-        34.144728
-       ],
-       [
-        -118.398228,
-        34.144639
-       ],
-       [
-        -118.397518,
-        34.144691
-       ],
-       [
-        -118.396962,
-        34.144944
-       ],
-       [
-        -118.396753,
-        34.145129
-       ],
-       [
-        -118.395514,
-        34.146574
-       ],
-       [
-        -118.394754,
-        34.147055
-       ],
-       [
-        -118.394382,
-        34.147201
-       ],
-       [
-        -118.393492,
-        34.147285
-       ],
-       [
-        -118.391027,
-        34.146764
-       ],
-       [
-        -118.390065,
-        34.146385
-       ],
-       [
-        -118.389342,
-        34.145776
-       ],
-       [
-        -118.388906,
-        34.145079
-       ],
-       [
-        -118.388692,
-        34.144892
-       ],
-       [
-        -118.388198,
-        34.143578
-       ],
-       [
-        -118.387808,
-        34.142849
-       ],
-       [
-        -118.387343,
-        34.142309
-       ],
-       [
-        -118.386888,
-        34.141933
-       ],
-       [
-        -118.386064,
-        34.141479
-       ],
-       [
-        -118.384222,
-        34.140846
-       ],
-       [
-        -118.383271,
-        34.140606
-       ],
-       [
-        -118.382196,
-        34.140508
-       ],
-       [
-        -118.380846,
-        34.140643
-       ],
-       [
-        -118.377518,
-        34.141459
-       ],
-       [
-        -118.376544,
-        34.141841
-       ],
-       [
-        -118.374896,
-        34.142839
-       ],
-       [
-        -118.374309,
-        34.143119
-       ],
-       [
-        -118.372035,
-        34.14364
-       ],
-       [
-        -118.371362,
-        34.143719
-       ],
-       [
-        -118.353196,
-        34.143145
-       ],
-       [
-        -118.351952,
-        34.143
-       ],
-       [
-        -118.348074,
-        34.142204
-       ],
-       [
-        -118.347078,
-        34.142165
-       ],
-       [
-        -118.346407,
-        34.142231
-       ],
-       [
-        -118.345438,
-        34.142462
-       ],
-       [
-        -118.344878,
-        34.142693
-       ],
-       [
-        -118.342315,
-        34.144292
-       ],
-       [
-        -118.340347,
-        34.145239
-       ],
-       [
-        -118.336896,
-        34.14606
-       ],
-       [
-        -118.332115,
-        34.147665
-       ],
-       [
-        -118.331236,
-        34.148181
-       ],
-       [
-        -118.330747,
-        34.148568
-       ],
-       [
-        -118.328349,
-        34.151289
-       ],
-       [
-        -118.327292,
-        34.152112
-       ],
-       [
-        -118.32603,
-        34.152787
-       ],
-       [
-        -118.324423,
-        34.153337
-       ],
-       [
-        -118.304692,
-        34.156914
-       ],
-       [
-        -118.303943,
-        34.157001
-       ],
-       [
-        -118.302272,
-        34.157028
-       ],
-       [
-        -118.298686,
-        34.156745
-       ]
-      ],
-      [
-       [
-        -118.27922,
-        34.152769
-       ],
-       [
-        -118.278879,
-        34.151178
-       ],
-       [
-        -118.27847,
-        34.147721
-       ],
-       [
-        -118.273578,
-        34.130791
-       ],
-       [
-        -118.273339,
-        34.129648
-       ],
-       [
-        -118.27276,
-        34.127665
-       ],
-       [
-        -118.272285,
-        34.126292
-       ],
-       [
-        -118.271234,
-        34.123823
-       ],
-       [
-        -118.268494,
-        34.117838
-       ],
-       [
-        -118.267724,
-        34.116463
-       ],
-       [
-        -118.267054,
-        34.115501
-       ],
-       [
-        -118.265994,
-        34.114255
-       ],
-       [
-        -118.263879,
-        34.112162
-       ],
-       [
-        -118.263083,
-        34.111491
-       ],
-       [
-        -118.261385,
-        34.110381
-       ],
-       [
-        -118.260061,
-        34.109694
-       ],
-       [
-        -118.258766,
-        34.109163
-       ],
-       [
-        -118.2567,
-        34.108548
-       ],
-       [
-        -118.25574,
-        34.108382
-       ],
-       [
-        -118.252849,
-        34.108384
-       ],
-       [
-        -118.250084,
-        34.108614
-       ],
-       [
-        -118.249189,
-        34.108598
-       ],
-       [
-        -118.24853,
-        34.108502
-       ],
-       [
-        -118.246193,
-        34.107854
-       ],
-       [
-        -118.244742,
-        34.107113
-       ],
-       [
-        -118.243852,
-        34.106393
-       ],
-       [
-        -118.243156,
-        34.105625
-       ],
-       [
-        -118.242617,
-        34.104807
-       ],
-       [
-        -118.242345,
-        34.103987
-       ],
-       [
-        -118.242303,
-        34.103499
-       ],
-       [
-        -118.242432,
-        34.100745
-       ],
-       [
-        -118.242363,
-        34.099814
-       ],
-       [
-        -118.241877,
-        34.098811
-       ],
-       [
-        -118.240243,
-        34.09631
-       ],
-       [
-        -118.239749,
-        34.095696
-       ],
-       [
-        -118.2389,
-        34.095019
-       ],
-       [
-        -118.237944,
-        34.094478
-       ],
-       [
-        -118.237382,
-        34.094258
-       ],
-       [
-        -118.236058,
-        34.093924
-       ],
-       [
-        -118.233977,
-        34.093721
-       ],
-       [
-        -118.233078,
-        34.093534
-       ],
-       [
-        -118.232398,
-        34.093298
-       ],
-       [
-        -118.231792,
-        34.092992
-       ],
-       [
-        -118.230876,
-        34.092236
-       ],
-       [
-        -118.230021,
-        34.091236
-       ],
-       [
-        -118.229282,
-        34.090322
-       ],
-       [
-        -118.228895,
-        34.089597
-       ],
-       [
-        -118.228698,
-        34.089054
-       ],
-       [
-        -118.22807,
-        34.086106
-       ],
-       [
-        -118.227507,
-        34.081763
-       ],
-       [
-        -118.227382,
-        34.081324
-       ],
-       [
-        -118.22615,
-        34.078662
-       ],
-       [
-        -118.226167,
-        34.078331
-       ],
-       [
-        -118.225579,
-        34.075229
-       ],
-       [
-        -118.224561,
-        34.070548
-       ],
-       [
-        -118.224406,
-        34.068252
-       ],
-       [
-        -118.224501,
-        34.067461
-       ],
-       [
-        -118.224652,
-        34.066977
-       ],
-       [
-        -118.226929,
-        34.061627
-       ],
-       [
-        -118.226957,
-        34.060762
-       ],
-       [
-        -118.226364,
-        34.056844
-       ],
-       [
-        -118.226448,
-        34.055946
-       ],
-       [
-        -118.226916,
-        34.055017
-       ],
-       [
-        -118.2285,
-        34.053247
-       ],
-       [
-        -118.228823,
-        34.052688
-       ],
-       [
-        -118.229976,
-        34.048235
-       ],
-       [
-        -118.230056,
-        34.047425
-       ],
-       [
-        -118.228123,
-        34.038909
-       ],
-       [
-        -118.227951,
-        34.03858
-       ],
-       [
-        -118.227948,
-        34.03808
-       ],
-       [
-        -118.222743,
-        34.015165
-       ],
-       [
-        -118.222031,
-        34.013498
-       ],
-       [
-        -118.22106,
-        34.011924
-       ],
-       [
-        -118.219899,
-        34.010685
-       ],
-       [
-        -118.21878,
-        34.009781
-       ],
-       [
-        -118.216236,
-        34.008072
-       ],
-       [
-        -118.214601,
-        34.007459
-       ],
-       [
-        -118.212864,
-        34.007085
-       ],
-       [
-        -118.21179,
-        34.007028
-       ],
-       [
-        -118.205112,
-        34.00709
-       ],
-       [
-        -118.203896,
-        34.00704
-       ],
-       [
-        -118.202676,
-        34.006739
-       ],
-       [
-        -118.201698,
-        34.006356
-       ],
-       [
-        -118.182384,
-        33.994987
-       ],
-       [
-        -118.181956,
-        33.994807
-       ],
-       [
-        -118.176339,
-        33.99136
-       ],
-       [
-        -118.174615,
-        33.989999
-       ],
-       [
-        -118.173022,
-        33.988402
-       ],
-       [
-        -118.171895,
-        33.987005
-       ],
-       [
-        -118.171161,
-        33.985835
-       ],
-       [
-        -118.170438,
-        33.984464
-       ],
-       [
-        -118.169875,
-        33.982984
-       ],
-       [
-        -118.169284,
-        33.980813
-       ],
-       [
-        -118.169066,
-        33.979645
-       ],
-       [
-        -118.169125,
-        33.977275
-       ],
-       [
-        -118.169234,
-        33.976298
-       ],
-       [
-        -118.170809,
-        33.965203
-       ],
-       [
-        -118.175699,
-        33.932695
-       ],
-       [
-        -118.177926,
-        33.913146
-       ],
-       [
-        -118.178107,
-        33.912823
-       ],
-       [
-        -118.178487,
-        33.911424
-       ],
-       [
-        -118.178454,
-        33.911212
-       ],
-       [
-        -118.179596,
-        33.907574
-       ],
-       [
-        -118.180259,
-        33.906065
-       ],
-       [
-        -118.180744,
-        33.905292
-       ],
-       [
-        -118.181515,
-        33.904403
-       ],
-       [
-        -118.181844,
-        33.904092
-       ],
-       [
-        -118.182081,
-        33.903992
-       ],
-       [
-        -118.184479,
-        33.901688
-       ],
-       [
-        -118.185241,
-        33.900638
-       ],
-       [
-        -118.185803,
-        33.899405
-       ],
-       [
-        -118.185989,
-        33.898677
-       ],
-       [
-        -118.188769,
-        33.880944
-       ],
-       [
-        -118.190431,
-        33.873632
-       ],
-       [
-        -118.190813,
-        33.87248
-       ],
-       [
-        -118.191411,
-        33.871307
-       ],
-       [
-        -118.201482,
-        33.855238
-       ],
-       [
-        -118.202294,
-        33.853611
-       ],
-       [
-        -118.202626,
-        33.852484
-       ],
-       [
-        -118.202843,
-        33.851292
-       ],
-       [
-        -118.203718,
-        33.839639
-       ],
-       [
-        -118.205246,
-        33.827319
-       ],
-       [
-        -118.205478,
-        33.824766
-       ],
-       [
-        -118.205467,
-        33.765217
-       ],
-       [
-        -118.205317,
-        33.764566
-       ],
-       [
-        -118.205059,
-        33.763977
-       ],
-       [
-        -118.204469,
-        33.76321
-       ],
-       [
-        -118.203675,
-        33.762434
-       ],
-       [
-        -118.202323,
-        33.761382
-       ],
-       [
-        -118.200564,
-        33.760311
-       ],
-       [
-        -118.187199,
-        33.754597
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 68.5,
-     "n_sites": 15,
-     "name": "Los Angeles River",
-     "order": 4,
-     "riverKey": "los angeles river",
-     "underground": 0,
-     "waterway": "river"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.112475,
-       34.09385
-      ],
-      [
-       -118.110237,
-       34.08898
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.58,
-     "n_sites": 0,
-     "name": "Mill Creek",
-     "order": 2,
-     "riverKey": "mill creek",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.332582,
-       34.117626
-      ],
-      [
-       -118.332476,
-       34.117805
-      ],
-      [
-       -118.332206,
-       34.117914
-      ],
-      [
-       -118.331728,
-       34.118006
-      ],
-      [
-       -118.331327,
-       34.117992
-      ],
-      [
-       -118.330946,
-       34.117911
-      ],
-      [
-       -118.330514,
-       34.117708
-      ],
-      [
-       -118.330115,
-       34.117342
-      ],
-      [
-       -118.330126,
-       34.117227
-      ],
-      [
-       -118.329939,
-       34.117329
-      ],
-      [
-       -118.330464,
-       34.117762
-      ],
-      [
-       -118.331156,
-       34.118073
-      ],
-      [
-       -118.33194,
-       34.11805
-      ],
-      [
-       -118.332564,
-       34.117873
-      ],
-      [
-       -118.333391,
-       34.118021
-      ],
-      [
-       -118.333406,
-       34.117954
-      ],
-      [
-       -118.332781,
-       34.117829
-      ],
-      [
-       -118.332735,
-       34.117644
-      ],
-      [
-       -118.332582,
-       34.117626
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.76,
-     "n_sites": 0,
-     "name": "Mulholland Dam",
-     "order": 2,
-     "riverKey": "mulholland dam",
-     "underground": 0,
-     "waterway": "dam"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.387657,
-       34.008537
-      ],
-      [
-       -118.388083,
-       34.007823
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.09,
-     "n_sites": 0,
-     "name": "PD 0757 - Line A & Lateral H & I",
-     "order": 2,
-     "riverKey": "pd 0757 - line a & lateral h & i",
-     "underground": 0,
-     "waterway": "drain"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.383695,
-       34.003482
-      ],
-      [
-       -118.383644,
-       34.005395
-      ],
-      [
-       -118.384389,
-       34.006362
-      ],
-      [
-       -118.384932,
-       34.007034
-      ],
-      [
-       -118.385402,
-       34.007347
-      ],
-      [
-       -118.385804,
-       34.007785
-      ],
-      [
-       -118.385806,
-       34.008018
-      ],
-      [
-       -118.38615,
-       34.008112
-      ],
-      [
-       -118.386573,
-       34.008372
-      ],
-      [
-       -118.387657,
-       34.008537
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.76,
-     "n_sites": 0,
-     "name": "PD 0757 - Line A & Lateral H & I",
-     "order": 2,
-     "riverKey": "pd 0757 - line a & lateral h & i",
-     "underground": 1,
-     "waterway": "drain"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.08285,
-       34.020414
-      ],
-      [
-       -118.092725,
-       34.0135
-      ],
-      [
-       -118.094182,
-       34.012103
-      ],
-      [
-       -118.094347,
-       34.011714
-      ],
-      [
-       -118.095997,
-       34.009882
-      ],
-      [
-       -118.103395,
-       34.000023
-      ],
-      [
-       -118.103972,
-       33.999112
-      ],
-      [
-       -118.106003,
-       33.996364
-      ],
-      [
-       -118.113123,
-       33.987913
-      ],
-      [
-       -118.11381,
-       33.986813
-      ],
-      [
-       -118.11414,
-       33.985966
-      ],
-      [
-       -118.114305,
-       33.985004
-      ],
-      [
-       -118.114443,
-       33.983286
-      ],
-      [
-       -118.114965,
-       33.98127
-      ],
-      [
-       -118.115268,
-       33.980583
-      ],
-      [
-       -118.118402,
-       33.975475
-      ],
-      [
-       -118.118897,
-       33.974788
-      ],
-      [
-       -118.119529,
-       33.974101
-      ],
-      [
-       -118.120436,
-       33.973368
-      ],
-      [
-       -118.124615,
-       33.970367
-      ],
-      [
-       -118.137892,
-       33.964067
-      ],
-      [
-       -118.147402,
-       33.95898
-      ],
-      [
-       -118.152266,
-       33.956299
-      ],
-      [
-       -118.152651,
-       33.956024
-      ],
-      [
-       -118.154602,
-       33.955062
-      ],
-      [
-       -118.156855,
-       33.953481
-      ],
-      [
-       -118.158998,
-       33.951579
-      ],
-      [
-       -118.175339,
-       33.931874
-      ],
-      [
-       -118.175724,
-       33.931691
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 13.4,
-     "n_sites": 0,
-     "name": "Rio Hondo",
-     "order": 2,
-     "riverKey": "rio hondo",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.08362,
-       34.019942
-      ],
-      [
-       -118.091648,
-       34.014426
-      ],
-      [
-       -118.093769,
-       34.012593
-      ],
-      [
-       -118.095078,
-       34.011048
-      ],
-      [
-       -118.097735,
-       34.007555
-      ],
-      [
-       -118.099654,
-       34.004878
-      ],
-      [
-       -118.104492,
-       33.998533
-      ],
-      [
-       -118.113102,
-       33.988048
-      ],
-      [
-       -118.113722,
-       33.987026
-      ],
-      [
-       -118.113986,
-       33.986407
-      ],
-      [
-       -118.114263,
-       33.985339
-      ],
-      [
-       -118.114733,
-       33.982368
-      ],
-      [
-       -118.114995,
-       33.981495
-      ],
-      [
-       -118.115546,
-       33.980371
-      ],
-      [
-       -118.115991,
-       33.979538
-      ],
-      [
-       -118.118646,
-       33.975387
-      ],
-      [
-       -118.120269,
-       33.973633
-      ],
-      [
-       -118.125032,
-       33.970263
-      ],
-      [
-       -118.129477,
-       33.968061
-      ],
-      [
-       -118.138598,
-       33.963704
-      ],
-      [
-       -118.154849,
-       33.954912
-      ],
-      [
-       -118.156174,
-       33.954083
-      ],
-      [
-       -118.157218,
-       33.953277
-      ],
-      [
-       -118.158206,
-       33.95236
-      ],
-      [
-       -118.158837,
-       33.951626
-      ],
-      [
-       -118.174769,
-       33.932533
-      ],
-      [
-       -118.175918,
-       33.930916
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 13.38,
-     "n_sites": 0,
-     "name": "Rio Hondo Channel",
-     "order": 4,
-     "riverKey": "rio hondo channel",
-     "underground": 0,
-     "waterway": "river"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.100388,
-        34.128816
-       ],
-       [
-        -118.100424,
-        34.126878
-       ],
-       [
-        -118.100138,
-        34.124814
-       ]
-      ],
-      [
-       [
-        -118.09966,
-        34.123872
-       ],
-       [
-        -118.099017,
-        34.122295
-       ],
-       [
-        -118.098708,
-        34.120575
-       ],
-       [
-        -118.098187,
-        34.118905
-       ]
-      ],
-      [
-       [
-        -118.100288,
-        34.12814
-       ],
-       [
-        -118.100179,
-        34.1253
-       ],
-       [
-        -118.099463,
-        34.123536
-       ],
-       [
-        -118.098803,
-        34.121429
-       ],
-       [
-        -118.09861,
-        34.120375
-       ],
-       [
-        -118.097867,
-        34.118428
-       ],
-       [
-        -118.097757,
-        34.117947
-       ],
-       [
-        -118.097675,
-        34.114923
-       ],
-       [
-        -118.097538,
-        34.114328
-       ],
-       [
-        -118.097511,
-        34.112244
-       ],
-       [
-        -118.097236,
-        34.111648
-       ],
-       [
-        -118.096355,
-        34.111007
-       ],
-       [
-        -118.095364,
-        34.110044
-       ],
-       [
-        -118.094841,
-        34.10883
-       ],
-       [
-        -118.093712,
-        34.106654
-       ],
-       [
-        -118.093713,
-        34.106402
-       ],
-       [
-        -118.093547,
-        34.106196
-       ],
-       [
-        -118.093162,
-        34.10457
-       ],
-       [
-        -118.09231,
-        34.102302
-       ],
-       [
-        -118.092227,
-        34.101844
-       ],
-       [
-        -118.092117,
-        34.101775
-       ],
-       [
-        -118.09187,
-        34.101134
-       ],
-       [
-        -118.091622,
-        34.100721
-       ],
-       [
-        -118.089998,
-        34.099301
-       ],
-       [
-        -118.08964,
-        34.098499
-       ],
-       [
-        -118.089172,
-        34.097835
-       ],
-       [
-        -118.08876,
-        34.097033
-       ],
-       [
-        -118.087852,
-        34.095864
-       ],
-       [
-        -118.087577,
-        34.09504
-       ],
-       [
-        -118.087715,
-        34.093299
-       ],
-       [
-        -118.087798,
-        34.093162
-       ],
-       [
-        -118.087826,
-        34.090092
-       ],
-       [
-        -118.087689,
-        34.089153
-       ],
-       [
-        -118.087525,
-        34.08574
-       ],
-       [
-        -118.087058,
-        34.08487
-       ],
-       [
-        -118.084059,
-        34.081227
-       ],
-       [
-        -118.082215,
-        34.079165
-       ],
-       [
-        -118.082188,
-        34.079028
-       ],
-       [
-        -118.079574,
-        34.076255
-       ],
-       [
-        -118.071404,
-        34.068075
-       ],
-       [
-        -118.069121,
-        34.065944
-       ],
-       [
-        -118.067966,
-        34.06434
-       ],
-       [
-        -118.067857,
-        34.06324
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 9.12,
-     "n_sites": 0,
-     "name": "Rubio Wash",
-     "order": 2,
-     "riverKey": "rubio wash",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.100138,
-       34.124814
-      ],
-      [
-       -118.09966,
-       34.123872
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.11,
-     "n_sites": 0,
-     "name": "Rubio Wash",
-     "order": 2,
-     "riverKey": "rubio wash",
-     "underground": 1,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.070641,
-       34.000029
-      ],
-      [
-       -118.070778,
-       33.999401
-      ],
-      [
-       -118.072616,
-       33.994294
-      ],
-      [
-       -118.072836,
-       33.993928
-      ],
-      [
-       -118.072863,
-       33.993676
-      ],
-      [
-       -118.076001,
-       33.986485
-      ],
-      [
-       -118.077405,
-       33.983691
-      ],
-      [
-       -118.080569,
-       33.978928
-      ],
-      [
-       -118.089234,
-       33.968325
-      ],
-      [
-       -118.089509,
-       33.967477
-      ],
-      [
-       -118.089399,
-       33.966424
-      ],
-      [
-       -118.089097,
-       33.965439
-      ],
-      [
-       -118.087998,
-       33.963216
-      ],
-      [
-       -118.088026,
-       33.963125
-      ],
-      [
-       -118.087861,
-       33.962919
-      ],
-      [
-       -118.087092,
-       33.960994
-      ],
-      [
-       -118.087092,
-       33.960651
-      ],
-      [
-       -118.087257,
-       33.960055
-      ],
-      [
-       -118.08866,
-       33.957284
-      ],
-      [
-       -118.08932,
-       33.956093
-      ],
-      [
-       -118.092043,
-       33.952314
-      ],
-      [
-       -118.09394,
-       33.950482
-      ],
-      [
-       -118.095232,
-       33.948994
-      ],
-      [
-       -118.097871,
-       33.9462
-      ],
-      [
-       -118.098504,
-       33.945215
-      ],
-      [
-       -118.098916,
-       33.944276
-      ],
-      [
-       -118.099631,
-       33.940932
-      ],
-      [
-       -118.100154,
-       33.939741
-      ],
-      [
-       -118.100594,
-       33.939099
-      ],
-      [
-       -118.106531,
-       33.932137
-      ],
-      [
-       -118.107823,
-       33.929778
-      ],
-      [
-       -118.110021,
-       33.925151
-      ],
-      [
-       -118.111506,
-       33.922471
-      ],
-      [
-       -118.111478,
-       33.920639
-      ],
-      [
-       -118.111341,
-       33.919127
-      ],
-      [
-       -118.111341,
-       33.916447
-      ],
-      [
-       -118.111149,
-       33.914958
-      ],
-      [
-       -118.110215,
-       33.910881
-      ],
-      [
-       -118.110133,
-       33.910835
-      ],
-      [
-       -118.108925,
-       33.907422
-      ],
-      [
-       -118.108815,
-       33.907308
-      ],
-      [
-       -118.108623,
-       33.905842
-      ],
-      [
-       -118.108544,
-       33.879889
-      ],
-      [
-       -118.10805,
-       33.877713
-      ],
-      [
-       -118.106211,
-       33.871024
-      ],
-      [
-       -118.105936,
-       33.870314
-      ],
-      [
-       -118.105415,
-       33.868092
-      ],
-      [
-       -118.105333,
-       33.868024
-      ],
-      [
-       -118.101793,
-       33.854875
-      ],
-      [
-       -118.101711,
-       33.854829
-      ],
-      [
-       -118.101492,
-       33.853707
-      ],
-      [
-       -118.100532,
-       33.850339
-      ],
-      [
-       -118.100504,
-       33.849881
-      ],
-      [
-       -118.100202,
-       33.848827
-      ],
-      [
-       -118.099462,
-       33.846857
-      ],
-      [
-       -118.099242,
-       33.846628
-      ],
-      [
-       -118.095209,
-       33.839297
-      ],
-      [
-       -118.095127,
-       33.838908
-      ],
-      [
-       -118.094304,
-       33.837007
-      ],
-      [
-       -118.094276,
-       33.836732
-      ],
-      [
-       -118.094194,
-       33.836686
-      ],
-      [
-       -118.0937,
-       33.835128
-      ],
-      [
-       -118.091291,
-       33.818773
-      ],
-      [
-       -118.091018,
-       33.815497
-      ],
-      [
-       -118.09001,
-       33.795064
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 24.08,
-     "n_sites": 0,
-     "name": "San Gabriel River",
-     "order": 4,
-     "riverKey": "san gabriel river",
-     "underground": 0,
-     "waterway": "river"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.134619,
-        34.109679
-       ],
-       [
-        -118.132553,
-        34.107745
-       ],
-       [
-        -118.130168,
-        34.105203
-       ],
-       [
-        -118.126903,
-        34.102356
-       ],
-       [
-        -118.124549,
-        34.099796
-       ]
-      ],
-      [
-       [
-        -118.122201,
-        34.096753
-       ],
-       [
-        -118.120089,
-        34.094072
-       ],
-       [
-        -118.118184,
-        34.09249
-       ],
-       [
-        -118.117818,
-        34.092075
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 2.1,
-     "n_sites": 0,
-     "name": "San Pasqual Creek",
-     "order": 2,
-     "riverKey": "san pasqual creek",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.123729,
-        34.09875
-       ],
-       [
-        -118.122201,
-        34.096753
-       ]
-      ],
-      [
-       [
-        -118.117818,
-        34.092075
-       ],
-       [
-        -118.116808,
-        34.091209
-       ],
-       [
-        -118.110978,
-        34.089684
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 0.96,
-     "n_sites": 0,
-     "name": "San Pasqual Creek",
-     "order": 2,
-     "riverKey": "san pasqual creek",
-     "underground": 1,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.171567,
-       34.127964
-      ],
-      [
-       -118.169301,
-       34.12706
-      ],
-      [
-       -118.168063,
-       34.126331
-      ],
-      [
-       -118.167467,
-       34.126185
-      ],
-      [
-       -118.167021,
-       34.125973
-      ],
-      [
-       -118.166749,
-       34.125586
-      ],
-      [
-       -118.166719,
-       34.1254
-      ],
-      [
-       -118.16675,
-       34.125098
-      ],
-      [
-       -118.16697,
-       34.124728
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.63,
-     "n_sites": 0,
-     "name": "San Rafael Creek",
-     "order": 2,
-     "riverKey": "san rafael creek",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.173836,
-       34.129283
-      ],
-      [
-       -118.171567,
-       34.127964
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.26,
-     "n_sites": 0,
-     "name": "San Rafael Creek",
-     "order": 2,
-     "riverKey": "san rafael creek",
-     "underground": 1,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       [
-        -118.308926,
-        34.141376
-       ],
-       [
-        -118.309031,
-        34.141698
-       ],
-       [
-        -118.309854,
-        34.14215
-       ],
-       [
-        -118.31084,
-        34.142023
-       ],
-       [
-        -118.311581,
-        34.141799
-       ],
-       [
-        -118.312568,
-        34.141685
-       ],
-       [
-        -118.312946,
-        34.141736
-       ],
-       [
-        -118.314521,
-        34.142251
-       ],
-       [
-        -118.314761,
-        34.142705
-       ],
-       [
-        -118.314811,
-        34.142975
-       ],
-       [
-        -118.31475,
-        34.144235
-       ],
-       [
-        -118.314873,
-        34.144785
-       ],
-       [
-        -118.315833,
-        34.146101
-       ],
-       [
-        -118.316247,
-        34.146469
-       ],
-       [
-        -118.316835,
-        34.146803
-       ],
-       [
-        -118.318424,
-        34.147171
-       ],
-       [
-        -118.318666,
-        34.147317
-       ]
-      ],
-      [
-       [
-        -118.30938,
-        34.138638
-       ],
-       [
-        -118.309874,
-        34.139369
-       ],
-       [
-        -118.309883,
-        34.139759
-       ],
-       [
-        -118.309728,
-        34.140161
-       ],
-       [
-        -118.309226,
-        34.140731
-       ],
-       [
-        -118.308926,
-        34.141376
-       ]
-      ],
-      [
-       [
-        -118.305933,
-        34.140803
-       ],
-       [
-        -118.305987,
-        34.141079
-       ],
-       [
-        -118.306149,
-        34.141244
-       ],
-       [
-        -118.307396,
-        34.141289
-       ],
-       [
-        -118.308252,
-        34.141413
-       ],
-       [
-        -118.308926,
-        34.141376
-       ]
-      ]
-     ],
-     "type": "MultiLineString"
-    },
-    "properties": {
-     "length_km": 1.99,
-     "n_sites": 0,
-     "name": "Sennet Creek",
-     "order": 2,
-     "riverKey": "sennet creek",
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.385655,
-       34.260294
-      ],
-      [
-       -118.387502,
-       34.25647
-      ],
-      [
-       -118.390593,
-       34.251505
-      ],
-      [
-       -118.391541,
-       34.250144
-      ],
-      [
-       -118.392342,
-       34.249266
-      ],
-      [
-       -118.396093,
-       34.245812
-      ],
-      [
-       -118.399034,
-       34.243571
-      ],
-      [
-       -118.399929,
-       34.242793
-      ],
-      [
-       -118.402422,
-       34.239361
-      ],
-      [
-       -118.40383,
-       34.237744
-      ],
-      [
-       -118.407576,
-       34.234923
-      ],
-      [
-       -118.418343,
-       34.227149
-      ],
-      [
-       -118.420743,
-       34.225274
-      ],
-      [
-       -118.421544,
-       34.224399
-      ],
-      [
-       -118.421863,
-       34.223921
-      ],
-      [
-       -118.422197,
-       34.223148
-      ],
-      [
-       -118.427148,
-       34.205924
-      ],
-      [
-       -118.427274,
-       34.204677
-      ],
-      [
-       -118.42721,
-       34.203475
-      ],
-      [
-       -118.426862,
-       34.201468
-      ],
-      [
-       -118.426415,
-       34.19997
-      ],
-      [
-       -118.426046,
-       34.199197
-      ],
-      [
-       -118.415095,
-       34.18296
-      ],
-      [
-       -118.414559,
-       34.181948
-      ],
-      [
-       -118.414297,
-       34.181108
-      ],
-      [
-       -118.41422,
-       34.180441
-      ],
-      [
-       -118.414168,
-       34.175569
-      ],
-      [
-       -118.41374,
-       34.171936
-      ],
-      [
-       -118.412447,
-       34.16265
-      ],
-      [
-       -118.412275,
-       34.161925
-      ],
-      [
-       -118.411683,
-       34.160746
-      ],
-      [
-       -118.411142,
-       34.1601
-      ],
-      [
-       -118.410653,
-       34.159659
-      ],
-      [
-       -118.409374,
-       34.158864
-      ],
-      [
-       -118.408113,
-       34.158417
-      ],
-      [
-       -118.405837,
-       34.157876
-      ],
-      [
-       -118.404353,
-       34.157172
-      ],
-      [
-       -118.403848,
-       34.15684
-      ],
-      [
-       -118.399109,
-       34.152952
-      ],
-      [
-       -118.397879,
-       34.152142
-      ],
-      [
-       -118.396117,
-       34.151368
-      ],
-      [
-       -118.393116,
-       34.150501
-      ],
-      [
-       -118.391868,
-       34.149819
-      ],
-      [
-       -118.390667,
-       34.148845
-      ],
-      [
-       -118.389975,
-       34.148053
-      ],
-      [
-       -118.389449,
-       34.147111
-      ],
-      [
-       -118.388711,
-       34.145168
-      ],
-      [
-       -118.388692,
-       34.144892
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 15.56,
-     "n_sites": 0,
-     "name": "Tujunga Wash",
-     "order": 2,
-     "riverKey": "tujunga wash",
-     "underground": 1,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.391879,
-       33.979341
-      ],
-      [
-       -118.390874,
-       33.978712
-      ],
-      [
-       -118.383246,
-       33.97516
-      ],
-      [
-       -118.381216,
-       33.974386
-      ],
-      [
-       -118.379308,
-       33.973364
-      ],
-      [
-       -118.372918,
-       33.96966
-      ],
-      [
-       -118.370597,
-       33.967784
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 2.36,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.388309,
-       34.123429
-      ],
-      [
-       -118.388323,
-       34.123697
-      ],
-      [
-       -118.388601,
-       34.123862
-      ],
-      [
-       -118.389307,
-       34.124857
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.19,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.386036,
-       34.121975
-      ],
-      [
-       -118.386109,
-       34.122865
-      ],
-      [
-       -118.385606,
-       34.124353
-      ],
-      [
-       -118.386102,
-       34.125499
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.41,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.372486,
-       34.030168
-      ],
-      [
-       -118.373805,
-       34.030427
-      ],
-      [
-       -118.37575,
-       34.029081
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.36,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.369806,
-       34.006963
-      ],
-      [
-       -118.36975,
-       34.007587
-      ],
-      [
-       -118.370271,
-       34.008499
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.18,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.361211,
-       34.109615
-      ],
-      [
-       -118.361609,
-       34.10802
-      ],
-      [
-       -118.361047,
-       34.107293
-      ],
-      [
-       -118.360595,
-       34.107029
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.33,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.332425,
-       34.081523
-      ],
-      [
-       -118.332655,
-       34.080556
-      ],
-      [
-       -118.332182,
-       34.079783
-      ],
-      [
-       -118.331997,
-       34.079122
-      ],
-      [
-       -118.331282,
-       34.078781
-      ],
-      [
-       -118.331145,
-       34.078177
-      ],
-      [
-       -118.330383,
-       34.078042
-      ],
-      [
-       -118.329849,
-       34.077517
-      ],
-      [
-       -118.32868,
-       34.076962
-      ],
-      [
-       -118.328166,
-       34.076436
-      ],
-      [
-       -118.32833,
-       34.076173
-      ],
-      [
-       -118.328569,
-       34.076399
-      ],
-      [
-       -118.328886,
-       34.076281
-      ],
-      [
-       -118.328834,
-       34.075322
-      ],
-      [
-       -118.329389,
-       34.075284
-      ],
-      [
-       -118.329733,
-       34.074718
-      ],
-      [
-       -118.329176,
-       34.074607
-      ],
-      [
-       -118.329134,
-       34.074444
-      ],
-      [
-       -118.329257,
-       34.074246
-      ],
-      [
-       -118.32978,
-       34.074066
-      ],
-      [
-       -118.329977,
-       34.073072
-      ],
-      [
-       -118.329917,
-       34.072828
-      ],
-      [
-       -118.329273,
-       34.072297
-      ],
-      [
-       -118.329487,
-       34.071753
-      ],
-      [
-       -118.329888,
-       34.071466
-      ],
-      [
-       -118.329722,
-       34.070913
-      ],
-      [
-       -118.330291,
-       34.070747
-      ],
-      [
-       -118.330782,
-       34.070413
-      ],
-      [
-       -118.331008,
-       34.070038
-      ],
-      [
-       -118.331842,
-       34.069624
-      ],
-      [
-       -118.332034,
-       34.069042
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 1.96,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.311144,
-       34.127154
-      ],
-      [
-       -118.312013,
-       34.125737
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.18,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.307202,
-       34.113777
-      ],
-      [
-       -118.307332,
-       34.113139
-      ],
-      [
-       -118.307106,
-       34.112873
-      ],
-      [
-       -118.307136,
-       34.112498
-      ],
-      [
-       -118.307546,
-       34.11219
-      ],
-      [
-       -118.307442,
-       34.110778
-      ],
-      [
-       -118.307621,
-       34.109446
-      ],
-      [
-       -118.307401,
-       34.109304
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.53,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.306048,
-       34.114531
-      ],
-      [
-       -118.307202,
-       34.113777
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.14,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.306404,
-       34.116278
-      ],
-      [
-       -118.306636,
-       34.116045
-      ],
-      [
-       -118.307202,
-       34.113777
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.29,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.306039,
-       34.120645
-      ],
-      [
-       -118.306522,
-       34.120109
-      ],
-      [
-       -118.306427,
-       34.119214
-      ],
-      [
-       -118.306734,
-       34.118552
-      ],
-      [
-       -118.306681,
-       34.117737
-      ],
-      [
-       -118.306246,
-       34.11726
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.41,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.30019,
-       34.137141
-      ],
-      [
-       -118.299663,
-       34.137468
-      ],
-      [
-       -118.298823,
-       34.13716
-      ],
-      [
-       -118.298023,
-       34.137269
-      ],
-      [
-       -118.297978,
-       34.137682
-      ],
-      [
-       -118.297119,
-       34.138657
-      ],
-      [
-       -118.296831,
-       34.139733
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.52,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.298194,
-       34.117475
-      ],
-      [
-       -118.297984,
-       34.117631
-      ],
-      [
-       -118.296301,
-       34.117131
-      ],
-      [
-       -118.296077,
-       34.117182
-      ],
-      [
-       -118.295997,
-       34.117449
-      ],
-      [
-       -118.295548,
-       34.117721
-      ],
-      [
-       -118.294999,
-       34.11767
-      ],
-      [
-       -118.293987,
-       34.118022
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.45,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.297927,
-       34.146571
-      ],
-      [
-       -118.297123,
-       34.146921
-      ],
-      [
-       -118.296625,
-       34.146913
-      ],
-      [
-       -118.295843,
-       34.146589
-      ],
-      [
-       -118.295566,
-       34.146291
-      ],
-      [
-       -118.294013,
-       34.145343
-      ],
-      [
-       -118.293614,
-       34.145299
-      ],
-      [
-       -118.293209,
-       34.144937
-      ],
-      [
-       -118.291465,
-       34.144653
-      ],
-      [
-       -118.290612,
-       34.144858
-      ],
-      [
-       -118.28905,
-       34.144788
-      ],
-      [
-       -118.287656,
-       34.146637
-      ],
-      [
-       -118.287003,
-       34.14665
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 1.21,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.294588,
-       34.135009
-      ],
-      [
-       -118.294232,
-       34.135098
-      ],
-      [
-       -118.293791,
-       34.134969
-      ],
-      [
-       -118.293406,
-       34.135314
-      ],
-      [
-       -118.292856,
-       34.135451
-      ],
-      [
-       -118.292461,
-       34.135906
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.24,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.29289,
-       34.123893
-      ],
-      [
-       -118.292598,
-       34.123338
-      ],
-      [
-       -118.292682,
-       34.122483
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.16,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.287683,
-       34.128658
-      ],
-      [
-       -118.287093,
-       34.128469
-      ],
-      [
-       -118.285493,
-       34.128954
-      ],
-      [
-       -118.284332,
-       34.130318
-      ],
-      [
-       -118.283574,
-       34.130817
-      ],
-      [
-       -118.283451,
-       34.131119
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.53,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.280939,
-       34.119339
-      ],
-      [
-       -118.279308,
-       34.120012
-      ],
-      [
-       -118.278434,
-       34.120109
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.25,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.279314,
-       34.132334
-      ],
-      [
-       -118.277208,
-       34.131871
-      ],
-      [
-       -118.276507,
-       34.131905
-      ],
-      [
-       -118.275072,
-       34.130688
-      ],
-      [
-       -118.274787,
-       34.130591
-      ],
-      [
-       -118.274063,
-       34.130763
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.55,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.277938,
-       34.134104
-      ],
-      [
-       -118.277319,
-       34.133738
-      ],
-      [
-       -118.277009,
-       34.133304
-      ],
-      [
-       -118.277631,
-       34.132168
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.26,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.166948,
-       34.047669
-      ],
-      [
-       -118.168264,
-       34.046057
-      ],
-      [
-       -118.168263,
-       34.045526
-      ],
-      [
-       -118.168704,
-       34.04537
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.32,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.164635,
-       34.054691
-      ],
-      [
-       -118.164719,
-       34.053377
-      ],
-      [
-       -118.165197,
-       34.051877
-      ],
-      [
-       -118.166969,
-       34.049442
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.63,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.164812,
-       34.082744
-      ],
-      [
-       -118.165362,
-       34.081497
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.15,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.16247,
-       34.067902
-      ],
-      [
-       -118.162662,
-       34.066558
-      ],
-      [
-       -118.16289,
-       34.065903
-      ],
-      [
-       -118.16324,
-       34.065465
-      ],
-      [
-       -118.163531,
-       34.064244
-      ],
-      [
-       -118.163411,
-       34.063426
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.51,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   },
-   {
-    "geometry": {
-     "coordinates": [
-      [
-       -118.099414,
-       34.004747
-      ],
-      [
-       -118.099151,
-       34.004499
-      ],
-      [
-       -118.100906,
-       34.002089
-      ]
-     ],
-     "type": "LineString"
-    },
-    "properties": {
-     "length_km": 0.35,
-     "n_sites": 0,
-     "name": null,
-     "order": 2,
-     "riverKey": null,
-     "underground": 0,
-     "waterway": "stream"
-    },
-    "type": "Feature"
-   }
-  ],
-  "type": "FeatureCollection"
  },
  "type": "FeatureCollection"
 }
