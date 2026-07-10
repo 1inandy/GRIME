@@ -239,6 +239,31 @@ def fetch_and_wire(gdf, do_fetch=True):
     for c, vals in new.items():
         enriched[c] = vals
 
+    # Navigability gate input (fix-pass-2 Phase 3) — same semantics as the
+    # region runner: NaN (gate inert) when the NWN clip is missing or when no
+    # navigable segment exists near the bbox.
+    nwn = rs.nwn_navigable_union(BBOX, UTM_CRS)
+    if nwn is None or nwn.is_empty:
+        enriched["navigable_dist_m"] = np.nan
+        prov["navigable_dist_m"] = {
+            "kind": "real" if nwn is not None else "fallback",
+            "source": ("USACE/BTS NWN (NTAD): no navigable segment near the "
+                       "Durham bbox — computed absence, gate passes all sites"
+                       if nwn is not None else
+                       "USACE NWN clip not on disk — navigability gate inert"),
+            "n_sites": n,
+        }
+    else:
+        enriched["navigable_dist_m"] = [round(float(d), 1)
+                                        for d in enriched.geometry.distance(nwn)]
+        prov["navigable_dist_m"] = {
+            "kind": "real",
+            "source": ("USACE/BTS National Waterway Network lines (NTAD, "
+                       "retrieved 2026-07-10), distance to nearest navigable "
+                       "segment"),
+            "n_real": n, "n_sites": n,
+        }
+
     for k, src in REAL_SOURCES.items():
         prov[k] = {"kind": "real", "source": src, "n_real": real_counts[k], "n_sites": n}
     for k, reason in FALLBACK_REASONS.items():

@@ -141,6 +141,13 @@ def apply_hard_gates(df):
         df = df[(df["channel_width_m"] >= 0.5) & (df["channel_width_m"] <= 50.0)]
     if "land_ownership" in df.columns:
         df = df[df["land_ownership"] > 0]
+    if "navigable_dist_m" in df.columns:
+        # Navigability gate (fix-pass-2 Phase 3): exclude sites within
+        # NAVIGABLE_GATE_M of a USACE NWN navigable segment — a stationary net
+        # on legally navigable water (Section 10) is unsafe/illegal. NaN
+        # (no NWN data supplied) passes: gates only fire on real values.
+        from core.feasibility import NAVIGABLE_GATE_M
+        df = df[~(df["navigable_dist_m"] <= NAVIGABLE_GATE_M)]
 
     removed = n_before - len(df)
     if removed > 0:

@@ -187,7 +187,11 @@ def bridge_proximity_bonus(candidate_point_utm, nbi_bridges_gdf=None, threshold_
 
 # ── Hard Gates ───────────────────────────────────────────────────────
 
-def passes_hard_gates(velocity_ms=None, width_m=None, land_ownership=None):
+NAVIGABLE_GATE_M = 100.0  # min distance (m) to a USACE NWN navigable segment
+
+
+def passes_hard_gates(velocity_ms=None, width_m=None, land_ownership=None,
+                      navigable_dist_m=None):
     """Check if a candidate passes all hard feasibility gates."""
     if velocity_ms is not None and velocity_ms > 3.0:
         return False  # too fast
@@ -195,6 +199,10 @@ def passes_hard_gates(velocity_ms=None, width_m=None, land_ownership=None):
         return False  # too wide or too narrow
     if land_ownership is not None and land_ownership == 0.0:
         return False  # confirmed private
+    if navigable_dist_m is not None and navigable_dist_m <= NAVIGABLE_GATE_M:
+        # On legally navigable water (USACE Section 10): a stationary net is
+        # unsafe/illegal in a shipping channel (fix-pass-2 Phase 3 gate).
+        return False
     return True
 
 

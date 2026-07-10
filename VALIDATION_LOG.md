@@ -62,6 +62,7 @@ top-10 rank shifts vs `paper-2026` are recorded every row.
 | paper-2026 baseline (published) | 11/27 (committed Durham file) | 8/10 | 22/27 | 94.7% | — |
 | phase-0 harness baseline (pre-change re-run, 2026-07-10) | 21/27 statewide (Durham file unchanged: 11/27) | n/a (not re-runnable) | **21/27** primary (0/27 at the ≥70 diagnostic — see protocol) | 94.7% (exact) | 0 (data untouched) || phase 1 — SEMS + PAD-US + SWAP wired (2026-07-10) | 24/27 statewide NC | n/a | **21/27** primary (= baseline; identical miss list — impact params feed scores, not gates) | 94.7% (committed file untouched) | 0 (data untouched until the regen) |
 | phase 2 — parcels statewide + HR4 flood + velocity provenance (2026-07-10) | 26/27 statewide NC | n/a | **21/27** primary (= baseline; ownership never emits gate-tripping 0.0, flood feeds scores only) | 94.7% (committed file untouched) | 0 (regen pending) |
+| phase 3 — USACE-NWN navigability gate (2026-07-10) | 26/27 statewide NC | n/a | **21/27** primary (= baseline) — gate ACTIVE with zero recall cost: removed 19–55 near-navigable candidates in 5 coastal trap areas (Washington, Kinston, 3× Wilmington), no inland site touched | 94.7% (committed file untouched) | 0 (regen pending) |
 
 **Phase-0 baseline reading.** The reconstruction lands within ONE trap of the
 published 22/27 despite a different candidate generator (Python pipeline at
