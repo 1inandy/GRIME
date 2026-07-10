@@ -49,7 +49,8 @@
     "channel_width_m_min": 0.5,
     "channel_width_m_max": 50.0,
     "land_ownership_min_exclusive": 0.0,
-    "note": "apply_hard_gates (core/scoring.py) is the gate in use: velocity strictly < 3.0 m/s, width inclusive [0.5, 50.0], ownership strictly > 0. A second helper, passes_hard_gates (core/feasibility.py), is defined but called by no entry point and differs only at exactly 3.0 m/s."
+    "note": "apply_hard_gates (core/scoring.py) is the gate in use: velocity strictly < 3.0 m/s, width inclusive [0.5, 50.0], ownership strictly > 0. A second helper, passes_hard_gates (core/feasibility.py), is defined but called by no entry point and differs only at exactly 3.0 m/s. Fix-pass-2 Phase 3 adds the navigability gate: candidates within navigable_waterway_min_distance_m of a USACE National Waterway Network segment are excluded (a stationary net on legally navigable water \u2014 Section 10 \u2014 is unsafe/illegal); rows with no NWN data (NaN) pass, matching the gates-fire-only-on-real-values convention.",
+    "navigable_waterway_min_distance_m": 100.0
   },
   "spacing_m": {
     "pipeline_along_stream": 200,
