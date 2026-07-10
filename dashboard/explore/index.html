@@ -59,6 +59,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t)}
 .pchip{background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px}
 .pchip-l{font-size:8px;text-transform:uppercase;letter-spacing:.5px;color:var(--td)}
 .pchip-v{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tb)}
+/* per-chip data-source tags: EST = deterministic demo estimate, OSM = real
+   OpenStreetMap tag, LIVE = real pipeline value, FB = documented fallback */
+.src{float:right;font-size:7.5px;font-weight:700;letter-spacing:.5px;padding:1px 4px;border-radius:3px;background:rgba(245,158,11,.15);color:#f59e0b;cursor:help}
+.src.osm{background:rgba(34,197,94,.15);color:#22c55e}
+.src.live{background:rgba(34,211,238,.15);color:#22d3ee}
+.src.fb{background:rgba(148,163,184,.18);color:#94a3b8}
+.est-banner{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);border-radius:6px;padding:6px 9px;font-size:10px;line-height:1.45;color:#f59e0b;margin-bottom:10px}
+.real-banner{background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.35);border-radius:6px;padding:6px 9px;font-size:10px;line-height:1.45;color:#22d3ee;margin-bottom:10px}
 .close{background:var(--card);border:1px solid var(--bdr);color:var(--td);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
 .close:hover{background:var(--hover);color:var(--t)}
 .site-detail{position:absolute;top:16px;left:16px;width:min(340px,calc(100% - 32px));max-height:calc(100% - 32px);overflow-y:auto;background:rgba(42,37,24,.94);border:1px solid var(--bdr);border-radius:8px;padding:14px 16px;box-shadow:0 16px 44px rgba(0,0,0,.42);z-index:4;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-18px);backdrop-filter:blur(8px);transition:opacity .44s ease,transform .44s ease,visibility 0s linear .44s}
@@ -162,7 +170,7 @@ let map,places=[],activeCityIdx=-1,activeCandidates=[],activeStreams=[],selected
 // falls inside a scored region's bbox, its REAL scored sites are shown instead
 // of client-side generation. Cities outside every region keep the exact
 // existing behavior. activeRegionSlug is non-null only while such a city is open.
-let regionsIndex=null,regionsIndexTried=false,regionCandCache={},activeRegionSlug=null,regionLatBuckets=null;
+let regionsIndex=null,regionsIndexTried=false,regionCandCache={},activeRegionSlug=null,activeRegionProv=null,regionLatBuckets=null;
 // True while the open region city renders BAKED waterway geometry (the `streams`
 // FeatureCollection baked into the region file by scripts/add_river_names.py).
 // When set, the city's rivers render with zero live-Overpass dependency (no
@@ -513,10 +521,13 @@ async function fetchRealStreams(lat,lon,pop){
     const r=await fetchStreamsInBbox(bb.s,bb.w,bb.n,bb.e,{timeout:6,types:'^(river|stream)$',allowTidal:true});
     if(r){raw=r;bboxUsed=bb}
   }
-  if(!raw)return null;
+  if(!raw)return null;   // every attempt failed at the network layer
   const portals=raw._portals||[];
   const surface=raw.filter(s=>!s.underground);
-  if(surface.length===0&&portals.length===0)return null;
+  // Successful fetch, genuinely nothing mapped: return an EMPTY result object,
+  // not null — callers must be able to tell "no rivers exist" from "the fetch
+  // failed" (fix-pass-2 Phase 4; the arid panel vs the retry panel).
+  if(surface.length===0&&portals.length===0)return {cands:[],draw:raw._full||[],empty:true};
   if(bboxUsed)coveredBboxes.push([bboxUsed.w,bboxUsed.s,bboxUsed.e,bboxUsed.n]);
   if(portals.length>0)console.log(`Found ${portals.length} culvert portals`);
 
@@ -741,11 +752,17 @@ function generateCandidates(streams,pop,cc,seed){
   // not a single RNG consumed sequentially across all candidates. So a site's
   // values are identical across re-renders; loading more streams only ADDS sites,
   // it never reshuffles existing ones. No Math.random() for any named quantity.
+  // Population anchoring (fix-pass-2 Phase 4, from the withdrawn 33d65e9):
+  // the displayed density's central tendency now scales with the city's REAL
+  // places.json population (log-scaled, clamped to plausible urban densities)
+  // instead of a population-independent constant — the one real input a viewer
+  // is most likely to assume drives this number actually does.
+  const popBase=Math.min(9000,Math.max(200,55*Math.pow(Math.log10(Math.max(pop||1000,1000)),2.2)));
   const scored=allPositions.map(pos=>{
     const uf=pos.upstreamFrac;
     const pr=seededRand(Math.floor(hash01(pos.lat.toFixed(5)+','+pos.lon.toFixed(5))*2147483647)+1+seed);
     const rg=()=>pr()-.5;
-    const popD=(800+uf*400)*dev+rg()*200;
+    const popD=popBase*(0.8+uf*0.4)*dev+rg()*0.25*popBase;
     const imp=30+uf*15+rg()*8;
     const vel=.4+uf*.6+rg()*.15;
     const mq=(2+uf*25)*(isDev?1.5:1);
@@ -1312,7 +1329,7 @@ function withWritableStyle(fn,stillValid){
 }
 
 function loadWorldView(){
-  activeCityIdx=-1;activeCandidates=[];activeStreams=[];drawStreams=[];selectedCand=null;activeRegionSlug=null;
+  activeCityIdx=-1;activeCandidates=[];activeStreams=[];drawStreams=[];selectedCand=null;activeRegionSlug=null;activeRegionProv=null;
   renderSelectedCandPanel();
   resetExploreState();
   // Sidebar/world-view chrome is map-independent — update it now even if we have to
@@ -1412,7 +1429,8 @@ function updateCityInfo(name){
   }
   const surfaceInfo=nSurface>0?` · ${nSurface} surface rivers`:'';
   const portalInfo=nUnderground>0?` · ${nUnderground} culverts · ${nPortals} portals`:'';
-  document.getElementById('info').textContent=`${name||'Unknown'} · ${activeCandidates.length} nets${surfaceInfo}${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%`;
+  const modeInfo=activeRegionSlug?' · LIVE data':' · demo estimates';
+  document.getElementById('info').textContent=`${name||'Unknown'} · ${activeCandidates.length} nets${surfaceInfo}${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%${modeInfo}`;
 }
 
 // Frame the map to the current candidate set (used by the region fast path so
@@ -1497,7 +1515,7 @@ async function openCity(idx){
   // hang or rate-limit, which previously left the page stuck on the spinner
   // even though the real data was ready. OSM rivers then load in the background
   // to draw the waterways and give each site its real river name.
-  activeRegionSlug=null;
+  activeRegionSlug=null;activeRegionProv=null;
   await loadRegionsIndex();
   if(myToken!==openCityToken)return;
   const cityRegion=regionForPoint(p.lo,p.la);
@@ -1516,6 +1534,7 @@ async function openCity(idx){
     if(myToken!==openCityToken)return;
     if(doc&&doc.features&&doc.features.length){
       activeRegionSlug=cityRegion.slug;
+      activeRegionProv=doc.provenance||null;   // per-parameter live/fallback for the chips
       activeCandidates=doc.features.map(regionFeatureToCandidate);
       activeStreams=[];
       pipelineStats={total:doc.features.length,scored:doc.features.length,deployed:doc.features.length,
@@ -1556,7 +1575,7 @@ async function openCity(idx){
       });
       return;
     }
-    activeRegionSlug=null;                     // region unavailable → unscored path below
+    activeRegionSlug=null;activeRegionProv=null;   // region unavailable → unscored path below
   }
 
   // ── UNSCORED CITY: original Overpass-first path (unchanged behavior) ─────
@@ -1577,7 +1596,28 @@ async function openCity(idx){
   // clobber city B's drawn geometry (same protection activeStreams gets).
   if(fetched&&fetched.draw)mergeDraw(fetched.draw);
 
-  // No waterway data available for this location
+  // Fetch FAILURE is not the same as "no rivers exist" (fix-pass-2 Phase 4,
+  // adapted from the withdrawn 33d65e9/b5a1ca7): a rate-limited or timed-out
+  // Overpass call gets an honest error panel with a Retry, and only a
+  // successful-but-empty result shows the arid panel.
+  if(!fetched){
+    activeCandidates=[];
+    activeStreams=[];
+    renderSelectedCandPanel();
+    document.getElementById('info').textContent=`${p.n||'Unknown'} · river fetch failed`;
+    document.getElementById('city-view').innerHTML=`
+      <div style="padding:24px 16px;text-align:center">
+        <div style="font-size:28px;margin-bottom:12px">📡</div>
+        <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:8px">Couldn't reach OpenStreetMap</div>
+        <div style="font-size:12px;color:var(--td);line-height:1.6">
+          The Overpass river query failed or was rate-limited — this is a network
+          condition, <strong>not</strong> evidence that ${esc(p.n||'this location')} has no rivers.<br><br>
+          <button onclick="openCity(${activeCityIdx})" style="background:var(--acc);color:#04121f;border:0;border-radius:6px;padding:7px 18px;font-weight:600;cursor:pointer">Retry</button>
+        </div>
+      </div>`;
+    return;
+  }
+  // Genuinely empty result → honest arid/coverage panel
   if(!activeStreams||activeStreams.length===0){
     activeCandidates=[];
     activeStreams=[];
@@ -1715,11 +1755,43 @@ function placeItem(idx,p){
 
 // Build the chip-grid + score detail panel for a single selected candidate.
 // Used by both the city view and the river focus panel.
+// Per-chip provenance (fix-pass-2 Phase 4, adapted from the withdrawn 33d65e9):
+// a value can no longer be read as a measurement — every chip names its source.
+const SRC_TAGS={
+  est:'<span class="src" title="Deterministic demo estimate from OSM geometry — not a measurement">EST</span>',
+  osm:'<span class="src osm" title="Real OpenStreetMap tag">OSM</span>',
+  mix:'<span class="src" title="OSM-derived, adjusted by the demo heuristic">OSM+EST</span>',
+  live:'<span class="src live" title="Real pipeline value (see the region provenance for its source)">LIVE</span>',
+  fb:'<span class="src fb" title="Documented fallback — no live source wired for this parameter here">FB</span>',
+  der:'<span class="src live" title="Derived from another live value">DER</span>',
+};
+// chip label → pipeline parameter (for region provenance lookup)
+const CHIP_PARAM={Pop:'population_density',Imperv:'impervious_pct',Velocity:'flow_velocity_ms',
+  'Mean Q':'usgs_mean_q_cfs','Stream order':'stream_order',Catchment:'catchment_area_km2',
+  'EJ Index':'ej_index',Road:'road_access_score',Width:'channel_width_score',Slope:'bank_slope_score'};
+function chipTag(label){
+  if(activeRegionSlug){
+    const prm=CHIP_PARAM[label];
+    const p=prm&&activeRegionProv&&activeRegionProv.parameters&&activeRegionProv.parameters[prm];
+    if(!p)return SRC_TAGS.live;
+    return p.kind==='fallback'?SRC_TAGS.fb:p.kind==='derived'?SRC_TAGS.der:SRC_TAGS.live;
+  }
+  const syn={Pop:'est',Imperv:'est',Velocity:'est','Mean Q':'est','Stream order':'mix',
+    Catchment:'est','EJ Index':'est',Road:'est',Width:'mix',Slope:'est',
+    Waterway:'osm','Site type':'osm'};
+  return SRC_TAGS[syn[label]||'est'];
+}
 function renderSelectedCandHtml(){
   if(selectedCand===null||!activeCandidates[selectedCand])return'';
   const c=activeCandidates[selectedCand];
+  const isRegion=!!activeRegionSlug;
+  const tilde=isRegion?'':'~';   // estimated numerics read as approximations
   const ss=[{l:'Generation',v:c.gen,c:'var(--gen)',w:'30%'},{l:'Flow',v:c.flow,c:'var(--flow)',w:'25%'},{l:'Impact',v:c.impact,c:'var(--imp)',w:'30%'},{l:'Feasibility',v:c.feas,c:'var(--feas)',w:'15%'}];
+  const banner=isRegion
+    ?`<div class="real-banner"><strong>REAL PIPELINE OUTPUT</strong> — region “${esc(activeRegionSlug)}” scored by the Python 27-parameter model on USGS 3DEP terrain + region-appropriate live sources. Chips are tagged LIVE / FB per parameter from the run's provenance.</div>`
+    :`<div class="est-banner"><strong>MODELED ILLUSTRATION</strong> — deterministic heuristic values derived from real OSM river geometry, <strong>not measurements</strong>. Chips tagged EST are synthetic; OSM are real map tags.</div>`;
   return`<div>
+    ${banner}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--td)">Score</div>
       <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--acc)">${c.composite}</div></div>
@@ -1729,10 +1801,12 @@ function renderSelectedCandHtml(){
     <div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div>
     ${ss.map(s=>`<div class="ss-row"><div style="font-size:11px;font-weight:500;color:${s.c}">${s.l} <span style="font-size:9px;color:var(--td)">${s.w}</span></div><div class="ss-bar"><div class="ss-fill" style="width:${s.v}%;background:${s.c}"></div></div><div style="font-family:var(--mono);font-size:11px;text-align:right">${s.v}</div></div>`).join('')}
     <div class="pgrid">
-      ${[['Pop',c.pop_d+'/km²'],['Imperv',c.imp_pct+'%'],['Velocity',c.vel+' m/s'],['Mean Q',c.mq+' cfs'],['Stream order',c.stream_order],['Catchment',c.catch_km2+' km²'],['EJ Index',c.ej],['Road',c.road_m+'m'],['Width',c.width_m+'m'],['Slope',c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':esc(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l}</div><div class="pchip-v">${v}</div></div>`).join('')}
+      ${[['Pop',tilde+c.pop_d+'/km²'],['Imperv',tilde+c.imp_pct+'%'],['Velocity',tilde+c.vel+' m/s'],['Mean Q',tilde+c.mq+' cfs'],['Stream order',c.stream_order],['Catchment',tilde+c.catch_km2+' km²'],['EJ Index',tilde+c.ej],['Road',tilde+c.road_m+'m'],['Width',tilde+c.width_m+'m'],['Slope',tilde+c.slope_deg+'°'],['Waterway',c.waterway==='culvert_portal'?'⚠ Culvert portal':esc(c.waterway||'stream')],['Site type',c.isPortal?'Tunnel entrance':'Surface']].map(([l,v])=>`<div class="pchip"><div class="pchip-l">${l} ${chipTag(l)}</div><div class="pchip-v">${v}</div></div>`).join('')}
     </div>
     <div style="margin-top:10px;font-size:9.5px;line-height:1.5;color:var(--td);border-top:1px solid var(--bdr);padding-top:8px">
-      ⓘ Explorer values are computed from <strong>OSM waterway geometry</strong> with GRIME's scoring model. The full 27-parameter pipeline is detailed in the <a href="../docs/" style="color:var(--acc)">Docs</a>.
+      ${isRegion
+        ?'ⓘ Scored by the full 27-parameter Python pipeline; per-parameter sources and fallbacks are recorded in the region file\'s provenance block. Details in the <a href="../docs/" style="color:var(--acc)">Docs</a>.'
+        :'ⓘ Demo values are model estimates from <strong>OSM waterway geometry</strong>, deterministic per location — not live gauge/Census measurements. The Python pipeline runs the full 27-parameter model; see <a href="../docs/" style="color:var(--acc)">Docs</a>.'}
     </div>
   </div>`;
 }
@@ -1803,6 +1877,11 @@ function renderCityView(){
   if(!p)return;
   if(focusedRiverKey){el.innerHTML=renderRiverFocusHtml();renderSelectedCandPanel();return}
   let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${esc(p.n||'Unknown')} · Top ${activeCandidates.length} sites</h3>`;
+  // Honesty banner (fix-pass-2 Phase 4): the two modes are visually distinct —
+  // LIVE region output vs the client-side modeled illustration.
+  html+=activeRegionSlug
+    ?`<div class="real-banner"><strong>LIVE</strong> — real pipeline output for this region (Python 27-parameter model, per-parameter provenance on each site).</div>`
+    :`<div class="est-banner">Scores are <strong>deterministic model estimates</strong> from OSM geometry — a modeled illustration, not measurements. Click a site for per-value provenance.</div>`;
   if(pipelineStats){
     html+=`<div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px;line-height:1.6">
       ${pipelineStats.scored} evaluated → ${pipelineStats.deployed} deployed (top ${Math.round(pipelineStats.pctile*100)}%)<br>
