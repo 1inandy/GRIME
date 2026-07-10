@@ -71,9 +71,10 @@ def test_flood_regression_gated_to_nc_piedmont(config):
 
 
 def test_town_science_consistent_with_province(config):
-    """Statewide NC towns: Coastal Plain must use the APL width curve and NOT the
-    HR1 flood regression (SIR HR1 is Piedmont-only); Piedmont/Blue Ridge use AHI.
-    Flood may only be 'on' for Piedmont towns."""
+    """Statewide NC towns: Coastal Plain must use the APL width curve and the
+    HR4 flood regression (with its NOAA Atlas 14 I24H50Y constant) — never the
+    Piedmont-only HR1; Piedmont/Blue Ridge use AHI, and Blue Ridge stays
+    flood 'none' (SIR 2014-5030 has no urban Blue Ridge equation)."""
     towns = [r for r in config["regions"] if r.get("tier") == "town"]
     if not towns:
         pytest.skip("no town regions in config")
@@ -82,13 +83,23 @@ def test_town_science_consistent_with_province(config):
         code = t["width_curve"]["code"]
         if "coastal plain" in note:
             assert code == "APL", f"{t['slug']}: coastal plain must use APL curve"
-            assert t["flood_method"] == "none", f"{t['slug']}: HR1 flood on a coastal-plain town"
+            # HR4 since fix-pass-2 Phase 2; 'none' only for a documented
+            # I24H50Y fetch failure (e.g. a center over open water).
+            assert t["flood_method"] in ("sir2014_hr4", "none"), \
+                f"{t['slug']}: coastal-plain town must use HR4 (or documented none)"
+            if t["flood_method"] == "sir2014_hr4":
+                assert t.get("i24h50y_in"), \
+                    f"{t['slug']}: HR4 without its I24H50Y constant"
+                assert 5.0 < t["i24h50y_in"] < 15.0, \
+                    f"{t['slug']}: implausible I24H50Y {t['i24h50y_in']}"
         elif "blue ridge" in note:
             assert code == "AHI" and t["flood_method"] == "none", t["slug"]
         elif "piedmont" in note:
             assert code == "AHI", t["slug"]
         if t["flood_method"] == "sir2014_hr1":
             assert "piedmont" in note, f"{t['slug']}: HR1 flood but not classified Piedmont"
+        if t["flood_method"] == "sir2014_hr4":
+            assert "coastal plain" in note, f"{t['slug']}: HR4 flood but not Coastal Plain"
 
 
 def test_town_bboxes_bounded_and_in_nc(config):

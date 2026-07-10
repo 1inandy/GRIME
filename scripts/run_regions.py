@@ -242,7 +242,12 @@ def wire_region_parameters(cands, region):
     fdir = region["_fdir"]
     px = abs(transform[0])
     curve = region["width_curve"]["code"]
-    flood_on = region["flood_method"] == "sir2014_hr1"
+    flood_method = region["flood_method"]
+    # HR4 additionally needs the region's NOAA Atlas 14 24-h/50-y depth; a
+    # coastal config without it stays a documented fallback, never a guess.
+    flood_on = (flood_method == "sir2014_hr1"
+                or (flood_method == "sir2014_hr4"
+                    and region.get("i24h50y_in") is not None))
     est, bch = region["estuary_ref"], region["beach_ref"]
 
     cols = {p: [np.nan] * n for p in ALL_PARAMS}
@@ -250,7 +255,11 @@ def wire_region_parameters(cands, region):
               ("channel_width_m", "road_access_m", "bank_slope_deg")}
     counts = {p: 0 for p in ALL_PARAMS}
 
-    parcels_on = region.get("parcels") == "durham"
+    # Parcels: Durham keeps its dedicated county endpoint (original wiring);
+    # every other NC region uses the NC OneMap statewide layer (fix-pass-2
+    # Phase 2, P1.4). Out-of-state regions stay on the documented fallback.
+    parcels_durham = region.get("parcels") == "durham"
+    parcels_on = parcels_durham or region["state"] == "NC"
 
     for i in range(n):
         row = cands.iloc[i]
@@ -308,7 +317,11 @@ def wire_region_parameters(cands, region):
         cols["stream_order"][i] = int(row.get("stream_order", 2)); counts["stream_order"] += 1
         cols["catchment_area_km2"][i] = round(da, 4); counts["catchment_area_km2"] += 1
         if flood_on:
-            q10 = rg.flood_q10_hr1(da, imp if imp is not None else 0.0)
+            if flood_method == "sir2014_hr1":
+                q10 = rg.flood_q10_hr1(da, imp if imp is not None else 0.0)
+            else:
+                q10 = rg.flood_q10_hr4(da, imp if imp is not None else 0.0,
+                                       region["i24h50y_in"])
             if q10 is not None:
                 cols["flood_q10_cfs"][i] = round(q10, 2); counts["flood_q10_cfs"] += 1
 
@@ -375,7 +388,8 @@ def wire_region_parameters(cands, region):
             cols["bridge_proximity_bonus"][i] = bridge_proximity_bonus(pt, nbi_gdf)
             counts["bridge_proximity_bonus"] += 1
         if parcels_on:
-            owner = rs.parcel_owner_at(lat, lon)
+            owner = (rs.parcel_owner_at(lat, lon) if parcels_durham
+                     else rs.nc_parcel_owner_at(lat, lon))
             if owner is not None:
                 cols["land_ownership"][i] = rs.land_ownership_from_owner(owner)
                 counts["land_ownership"] += 1
@@ -417,7 +431,8 @@ def wire_region_parameters(cands, region):
         mark(p, "fallback", why)
     if not parcels_on:
         cols["land_ownership"] = [0.5] * n
-        mark("land_ownership", "fallback", "no parcel integration for this region (Durham only) — unknown 0.5")
+        mark("land_ownership", "fallback",
+             "no parcel integration outside NC (statewide layer is NC OneMap) — unknown 0.5")
     if not flood_on:
         mark("flood_q10_cfs", "fallback",
              f"flood regression not valid here ({region['notes'][:60]}...) — NaN, dropped by constant-column handling")
@@ -440,7 +455,12 @@ def wire_region_parameters(cands, region):
         "cso_density": "EPA ECHO CSO inventory (national bulk), Cauchy proximity",
         "usgs_mean_q_cfs": "NHDPlus EROM qe_ma per COMID (snap-guarded)",
         "seasonal_cv": "CV of NHDPlus EROM monthly flows per COMID",
-        "flood_q10_cfs": "USGS SIR 2014-5030 Table 7 HR1 (NC Piedmont only)" if flood_on else None,
+        "flood_q10_cfs": (
+            None if not flood_on else
+            "USGS SIR 2014-5030 Table 7 HR1 (NC Piedmont)"
+            if flood_method == "sir2014_hr1" else
+            "USGS SIR 2014-5030 Table 7 HR4 (NC Coastal Plain; I24H50Y from "
+            "NOAA Atlas 14 at region center)"),
         "channel_width_score": f"Bieger 2015 {curve} width curve on DEM drainage area → shipped width curve",
         "flow_velocity_ms": "Manning (region DEM/D8) blended with EROM continuity (shipped M4 logic)",
         "velocity_feasibility": "shipped step curve on the computed velocity",
@@ -463,11 +483,30 @@ def wire_region_parameters(cands, region):
                                "curve") if intakes_gdf is not None else None,
     }
     if parcels_on:
-        real_sources_doc["land_ownership"] = "Durham County parcels PROPERTY_OWNER"
+        real_sources_doc["land_ownership"] = (
+            "Durham County parcels PROPERTY_OWNER" if parcels_durham
+            else "NC OneMap statewide parcels (NC Parcels Transformer) ownname")
     for p, src in real_sources_doc.items():
         if src is None or p in prov:
             continue
         mark(p, "real", src, n_real=counts.get(p, 0))
+
+    # P0 Option A (owner-confirmed 2026-07-09): name the SCORED form of velocity
+    # in provenance so the two velocity constructs are distinguishable. The Flow
+    # family consumes flow_velocity_ms through the peaked transport-favorability
+    # Gaussian; the raw value feeds velocity_feasibility and the 3.0 m/s gate.
+    # Documented in model.json curves.* and dashboard/docs/documentation.md
+    # ("Why velocity appears twice"); both curves are drift-guarded.
+    prov["velocity_transport_favorability"] = {
+        "kind": "derived",
+        "source": ("scored form of flow_velocity_ms inside the Flow family — "
+                   "peaked Gaussian exp(-((v-0.9)/0.6)^2), "
+                   "model.json curves.velocity_transport_favorability; "
+                   "construct: transport/delivery favorability, deliberately "
+                   "distinct from velocity_feasibility (device operability)"),
+        "n_real": counts.get("flow_velocity_ms", 0),
+        "n_sites": n,
+    }
     return gdf, prov
 
 
@@ -597,7 +636,7 @@ def run_region(region, defaults):
                  f"stream mask (sites confined to ±{STREAM_MASK_BUFFER_M:.0f} m of mapped OSM/NHD "
                  f"waterways)→region-appropriate real parameters→shipped scoring, math unchanged). "
                  f"Width curve: {region['width_curve']['source']}. Flood: "
-                 f"{'SIR 2014-5030 HR1' if region['flood_method']=='sir2014_hr1' else 'not applicable here (documented fallback)'}. "
+                 f"{'SIR 2014-5030 HR1' if region['flood_method'] == 'sir2014_hr1' else 'SIR 2014-5030 HR4 (I24H50Y: NOAA Atlas 14)' if region['flood_method'] == 'sir2014_hr4' and region.get('i24h50y_in') is not None else 'not applicable here (documented fallback)'}. "
                  f"{region['notes']}"),
         "region": {k: region[k] for k in
                    ("slug", "name", "state", "bbox", "center", "utm_epsg",
