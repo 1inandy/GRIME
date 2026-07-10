@@ -692,3 +692,43 @@ def padus_protected_gdf(bbox, utm_crs, pad_km=20.0):
     clip = clip_wgs.to_crs(full.crs).buffer(pad_km * 1000.0).iloc[0]
     sub = full[full.intersects(clip)]
     return sub.to_crs(utm_crs)
+
+
+# ── 13. USACE/BTS National Waterway Network — navigable-water gate ────
+
+# One-time bulk download (FIX_PROMPT_2 rule 8): cache/nwn/nwn_lines_nc.geojson
+# from https://services7.arcgis.com/n1YM8pTrFmm7L4hs/ArcGIS/rest/services/
+# Waterway_Networks/FeatureServer/1 (USDOT BTS NTAD "National Waterway Network
+# Lines", compiled from USACE; retrieved 2026-07-10 — cache/nwn/PROVENANCE.txt).
+_NWN_GEOJSON = Path(os.environ.get("GRIME_NWN_GEOJSON",
+                                   "cache/nwn/nwn_lines_nc.geojson"))
+_nwn_cache = {"gdf": None, "loaded": False}
+
+
+def nwn_navigable_union(bbox, utm_crs, pad_km=2.0):
+    """Union of USACE NWN navigable-waterway line segments intersecting
+    ``bbox`` (WGS84, padded by ``pad_km``), reprojected to ``utm_crs``.
+    Feeds the navigability hard gate: candidates within
+    core.feasibility.NAVIGABLE_GATE_M of this geometry are excluded.
+    Returns shapely geometry (possibly empty — an honest 'no navigable water
+    here'), or None when the local NWN clip is not on disk (gate stays
+    inert — documented, never guessed)."""
+    import geopandas as gpd
+
+    if not _nwn_cache["loaded"]:
+        _nwn_cache["loaded"] = True
+        if _NWN_GEOJSON.exists():
+            _nwn_cache["gdf"] = gpd.read_file(_NWN_GEOJSON)   # WGS84
+    full = _nwn_cache["gdf"]
+    if full is None:
+        return None
+    from shapely.geometry import box
+    from shapely.ops import unary_union
+    pad_deg = pad_km / 111.0
+    w, s, e, n = bbox
+    clip = box(w - pad_deg, s - pad_deg, e + pad_deg, n + pad_deg)
+    sub = full[full.intersects(clip)]
+    if sub.empty:
+        from shapely.geometry import GeometryCollection
+        return GeometryCollection()
+    return unary_union(list(sub.to_crs(utm_crs).geometry))
