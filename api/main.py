@@ -149,6 +149,12 @@ async def get_candidates(
             "id_field": "rank",
             "detail_endpoint": "/api/candidates/{rank}",
         },
+        # Dataset-level honesty passthrough (fix-pass-2 Phase 4 / plan P3.5):
+        # the source file's note + per-parameter live/fallback provenance block
+        # travel with the data, so an integrator can always tell which of the
+        # 27 parameters were live in the run that produced these scores.
+        "note": data.get("note"),
+        "provenance": data.get("provenance"),
     }
 
 
