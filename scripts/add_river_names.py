@@ -122,6 +122,8 @@ def named_waterways(bbox):
          f'(way["waterway"]["name"]({s},{w},{n},{e}););out geom;')
     for url in OVERPASS:
         j = cached_get_json(url, {"data": q}, kind="rivername", timeout=120)
+        if j and "remark" in j:
+            continue   # Overpass 200-with-remark = truncated/timed out — not usable
         if j and "elements" in j:
             out = []
             for el in j["elements"]:
@@ -147,6 +149,8 @@ def all_waterways(bbox):
          f'({s},{w},{n},{e}););out geom;')
     for url in OVERPASS:
         j = cached_get_json(url, {"data": q}, kind="riverall", timeout=150)
+        if j and "remark" in j:
+            continue   # truncated/timed-out response — not usable
         if j and "elements" in j:
             out = []
             for el in j["elements"]:
@@ -169,7 +173,6 @@ def named_flowlines_nhd(bbox):
     total fetch failure."""
     w, s, e, n = bbox
     out, start, PAGE, MAX_PAGES = [], 0, 1000, 8
-    got_any = False
     for _ in range(MAX_PAGES):
         params = {
             "service": "WFS", "version": "2.0.0", "request": "GetFeature",
@@ -180,8 +183,7 @@ def named_flowlines_nhd(bbox):
         }
         j = cached_get_json(NHD_WFS, params, kind="nhdname", timeout=120)
         if j is None:
-            return out if got_any else None
-        got_any = True
+            return None   # partial pagination = failure; never a truncated pool
         feats = j.get("features", []) or []
         for f in feats:
             nm = ((f.get("properties", {}) or {}).get("gnis_name") or "").strip()
@@ -189,9 +191,12 @@ def named_flowlines_nhd(bbox):
             if g:
                 out.append((nm, g))
         if len(feats) < PAGE:
-            break
+            return out          # short page = complete result set
         start += PAGE
-    return out
+    # MAX_PAGES full pages without a short one → the result set may extend
+    # beyond the cap. A truncated pool must never feed the naming or the
+    # stream mask — fail loudly instead.
+    return None
 
 
 def _match(pt, gdf, sindex):

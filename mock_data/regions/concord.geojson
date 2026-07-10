@@ -7315,7 +7315,7 @@
    "type": "Feature"
   }
  ],
- "note": "GRIME region 'Concord, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands. Flood: SIR 2014-5030 HR1. NC Piedmont",
+ "note": "GRIME region 'Concord, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192stream mask (sites confined to \u00b1150 m of mapped OSM/NHD waterways)\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands. Flood: SIR 2014-5030 HR1. NC Piedmont",
  "provenance": {
   "candidates_pre_gate": 119,
   "constant": [
@@ -7492,6 +7492,15 @@
     "n_sites": 119,
     "source": "no public surface-intake point layer (NC OneMap is wells-only and NC-only)"
    }
+  },
+  "stream_mask": {
+   "buffer_m": 150.0,
+   "pre_mask": 119,
+   "removed": 0,
+   "sources": [
+    "osm-overpass (all waterway ways)",
+    "usgs-nhdplus flowlines"
+   ]
   },
   "varying": [
    "beach_dist_km",

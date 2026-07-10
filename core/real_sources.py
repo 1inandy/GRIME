@@ -81,6 +81,13 @@ def cached_get_json(url, params=None, kind="get", retries=4, timeout=45,
                 last = f"200-wrapped error: {str(data['error'])[:80]}"
                 time.sleep(backoff * (2 ** attempt))
                 continue
+            # Overpass signals truncation/timeouts as HTTP 200 + a "remark"
+            # alongside elements — retry and NEVER cache the partial body, or
+            # one bad response poisons every later naming/mask run for the key.
+            if isinstance(data, dict) and "remark" in data and "elements" in data:
+                last = f"overpass remark: {str(data['remark'])[:80]}"
+                time.sleep(backoff * (2 ** attempt))
+                continue
             cp.write_text(json.dumps(data))
             return data
         except Exception as e:  # network / JSON error
