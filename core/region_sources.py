@@ -70,6 +70,18 @@ def flood_q10_hr1(drainage_km2, impervious_pct):
     return 484.0 * min(da_mi2, 436.0) ** 0.5539 * 10 ** (0.0060 * imp)
 
 
+# ── SIR 2014-5030 HR4 flood (NC Coastal Plain ONLY — gated by config) ──
+
+def flood_q10_hr4(drainage_km2, impervious_pct, i24h50y_in):
+    """10% AEP flood (cfs), USGS SIR 2014-5030 Table 7, Hydrologic Region 4
+    (Coastal Plain). Callers must only invoke this for regions whose config
+    says flood_method == 'sir2014_hr4' AND carries an i24h50y_in constant
+    (NOAA Atlas 14 24-h/50-y depth at the region center); the runner enforces
+    that. Delegates to the guarded core implementation."""
+    from core.real_sources import flood_q10_cfs_sir2014_hr4
+    return flood_q10_cfs_sir2014_hr4(drainage_km2, impervious_pct, i24h50y_in)
+
+
 # ── haversine (same formula the shipped model uses) ──────────────────
 
 def haversine_km(lat1, lon1, lat2, lon2):

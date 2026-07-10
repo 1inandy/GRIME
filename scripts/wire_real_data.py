@@ -57,16 +57,17 @@ REAL_SOURCES = {
     "cso_density": "EPA ECHO CSO inventory (truthful 0 — Durham separated sewers)",
     "land_ownership": "Durham County parcels PROPERTY_OWNER (public 1.0 / unknown 0.5)",
     "bridge_proximity_bonus": "FHWA/BTS National Bridge Inventory (NTAD) proximity",
+    # fix-pass-2 Phase 1/2 additions (same shipped curves as the region runner):
+    "superfund_score": "EPA Envirofacts SEMS state=NC (sign-fixed, georeferenced sites), "
+                       "shipped 500 m inverse-distance curve",
+    "protected_area_score": "USGS PAD-US 4.1 NC state clip (local GDB, retrieved 2026-07-10), "
+                            "shipped designation-weighted proximity curve",
+    "water_intake_score": "NC OneMap / NC DEQ SWAP public water supply sources "
+                          "(source_typ='Surface Water'), shipped exp(-d/10km) curve",
 }
 # Documented, honest fallbacks (not made real this pass) with the reason.
 FALLBACK_REASONS = {
     "litter_complaint_density": "Durham One Call 311 endpoint dead / not machine-readable",
-    "water_intake_score": "NC OneMap water sources are all GROUNDWATER wells in-bbox; "
-                          "no downstream surface intake layer (relevant Falls Lake intake "
-                          "is distant + uniform across the clustered sites)",
-    "protected_area_score": "PAD-US ArcGIS services unreachable 2026-07-06; OSM 20 km "
-                            "radius saturates to 1.0 for every Durham site",
-    "superfund_score": "not in this pass's scope (low weight 0.08; likely truthful ~0)",
     "bank_slope_score": "real DEM-derived but non-discriminating (<15° across the Piedmont "
                         "sites); needs a finer cross-section metric, not a new source",
 }
@@ -130,6 +131,20 @@ def fetch_and_wire(gdf, do_fetch=True):
     npdes_utm = to_utm_points(npdes_pts)
     cso_utm = to_utm_points(cso_pts or [])
     nbi_utm = to_utm_points(nbi_pts)
+
+    # fix-pass-2 Phase 1/2 impact layers (same fetchers as the region runner)
+    print("Fetching SEMS / PAD-US / SWAP intake layers (cached)...")
+    pad = 0.05
+    sems_pts = rs.sems_superfund_points(
+        "NC", (BBOX[0] - pad, BBOX[1] - pad, BBOX[2] + pad, BBOX[3] + pad))
+    sems_utm = to_utm_points(sems_pts or [])
+    padus = rs.padus_protected_gdf(BBOX, UTM_CRS)
+    intake_pts = rs.nc_surface_intake_points(BBOX_WIDE)
+    intakes_gdf = (gpd.GeoDataFrame(geometry=to_utm_points(intake_pts), crs=UTM_CRS)
+                   if intake_pts is not None else None)
+    print(f"  SEMS={'dl-fail' if sems_pts is None else len(sems_utm)} · "
+          f"PAD-US={'none' if padus is None else len(padus)} · "
+          f"intakes={'dl-fail' if intake_pts is None else len(intake_pts)}")
 
     # New columns (start as copies so fallbacks keep the v1 value)
     new = {c: list(gdf[c]) for c in ALL_PARAMS if c in gdf.columns}
@@ -203,6 +218,22 @@ def fetch_and_wire(gdf, do_fetch=True):
             new["land_ownership"][i] = rs.land_ownership_from_owner(owner)
             real_counts["land_ownership"] += 1
 
+        # impact: superfund / protected areas / drinking-water intakes
+        # (fix-pass-2 — shipped curves, real layers; 0.0 = computed zero)
+        if sems_pts is not None:
+            new["superfund_score"][i] = round(inverse_distance_score(pt, sems_utm, 500), 4)
+            real_counts["superfund_score"] += 1
+        if padus is not None:
+            from core.impact import protected_area_score_from_gdf
+            new["protected_area_score"][i] = round(
+                float(protected_area_score_from_gdf(pt, padus)), 4)
+            real_counts["protected_area_score"] += 1
+        if intakes_gdf is not None:
+            from core.impact import water_intake_score
+            new["water_intake_score"][i] = round(
+                float(water_intake_score(pt, intakes_gdf)), 4)
+            real_counts["water_intake_score"] += 1
+
     # write columns back
     enriched = utm.copy()
     for c, vals in new.items():
@@ -212,6 +243,17 @@ def fetch_and_wire(gdf, do_fetch=True):
         prov[k] = {"kind": "real", "source": src, "n_real": real_counts[k], "n_sites": n}
     for k, reason in FALLBACK_REASONS.items():
         prov[k] = {"kind": "fallback", "reason": reason, "n_sites": n}
+    # P0 Option A: name the SCORED form of velocity so the two velocity
+    # constructs are distinguishable (see model.json curves.* and
+    # documentation.md "Why velocity appears twice").
+    prov["velocity_transport_favorability"] = {
+        "kind": "derived",
+        "source": ("scored form of flow_velocity_ms inside the Flow family — "
+                   "peaked Gaussian exp(-((v-0.9)/0.6)^2), model.json "
+                   "curves.velocity_transport_favorability; the raw velocity "
+                   "feeds velocity_feasibility and the 3.0 m/s hard gate"),
+        "n_sites": n,
+    }
     return enriched, prov
 
 
@@ -258,7 +300,9 @@ def main():
             "Scoring math is unchanged from candidates.geojson — same weights, curves, "
             "gates, MinMax. Sources: NHDPlus EROM, EPA StreamCat, USGS SIR 2014-5030 "
             "flood regression, Bieger 2015 width curve, EPA TRI/ECHO, FHWA NBI, Durham "
-            "parcels. Parameters that could not be made real remain documented fallbacks.")
+            "parcels, EPA SEMS (Superfund), USGS PAD-US 4.1 (local NC clip), NC DEQ "
+            "SWAP surface intakes. Parameters that could not be made real remain "
+            "documented fallbacks.")
     fc = {
         "type": "FeatureCollection",
         "note": note,
