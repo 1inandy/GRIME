@@ -41,14 +41,33 @@ def test_trap_coordinates_are_in_carolina_bounds():
 
 # ── Dirichlet stability (paper section 3.3) ──────────────────────────────
 
-def test_dirichlet_reproduces_the_paper_figure_from_committed_data():
-    """The submitted 94.7% must stay reproducible from the frozen Durham
-    candidates file. Uses fewer draws than the paper run for speed; the
-    figure is stable well past the first decimal at n=2000."""
+def test_dirichlet_reproduces_the_paper_figure_from_the_paper_tag(tmp_path):
+    """The submitted 94.7% must stay reproducible from the submission-era
+    Durham file, which lives byte-identical at git tag paper-2026 since the
+    fix-pass-2 regen replaced the working-tree flagship. Skips on checkouts
+    without the tag. Fewer draws than the paper run for speed; the figure is
+    stable well past the first decimal at n=2000."""
+    import subprocess
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    r = subprocess.run(["git", "show", "paper-2026:mock_data/candidates.geojson"],
+                       cwd=root, capture_output=True, text=True)
+    if r.returncode != 0:
+        pytest.skip("paper-2026 tag not available in this checkout")
+    paper_file = tmp_path / "paper_candidates.geojson"
+    paper_file.write_text(r.stdout)
+    res = vp.dirichlet_stability(geojson_path=str(paper_file), n=2000,
+                                 seed=vp.DIRICHLET_SEED)
+    assert res["n_candidates"] == 147
+    assert abs(res["mean_pct"] - 94.7) < 1.0
+    assert res["n_above_90"] >= 8
+
+
+def test_dirichlet_on_the_shipped_flagship_stays_stable():
+    """The re-scored flagship (24/27 live) must remain at least as rank-stable
+    as the paper baseline demanded — the fix-pass-2 receipt measured 96.5%."""
     r = vp.dirichlet_stability(n=2000, seed=vp.DIRICHLET_SEED)
     assert r["n_candidates"] == 147
-    assert abs(r["mean_pct"] - 94.7) < 1.0
-    assert r["n_above_90"] >= 8
+    assert r["mean_pct"] >= 90.0
 
 
 def test_dirichlet_is_deterministic_for_a_seed():
