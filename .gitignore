@@ -8,9 +8,8 @@ dashboard/config.js
 data/
 *.gpkg
 
-# Pipeline runtime cache + byproducts (osmnx/py3dep HTTP cache, raw stream network)
+# Pipeline runtime cache + byproducts (osmnx/py3dep HTTP cache)
 cache/
-mock_data/streams.geojson
 
 # Python
 __pycache__/
@@ -44,3 +43,6 @@ FIX_PROMPT_2.md
 FIX2_REPORT.md
 LENS_RESEARCH.md
 MISSION_LENSES_RESEARCH.md
+
+# Internal fix-pass-2 report — kept locally like its siblings above
+FIX2_REPORT.md

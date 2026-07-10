@@ -275,15 +275,10 @@ def run_pipeline(bbox=ELLERBE_BBOX, resolution=10, threshold=500,
 
     # Step 3: Extract stream network
     streams = extract_streams(grid, fdir, acc, threshold=threshold)
-
-    # Save the raw stream network as a pipeline INTERMEDIATE for debugging:
-    # coordinates are raw UTM metres (not web-map WGS84) and properties are
-    # empty — nothing downstream (API, dashboards) reads this file. The
-    # explorer's rivers come from live OSM/Overpass instead.
-    stream_path = output_path / "streams.geojson"
-    with open(stream_path, "w") as f:
-        json.dump(streams, f)
-    print(f"Saved stream network (raw UTM intermediate, no consumer) to {stream_path}")
+    # (fix-pass-2 Phase 5) The raw stream network is no longer dumped to
+    # streams.geojson: it was a write-only intermediate — raw UTM metres,
+    # empty properties, no reader anywhere (API, dashboards, scripts) — that
+    # accumulated 600 KB per run dir. The drawn rivers come from OSM/NHD.
 
     # Step 4: Convert to GeoDataFrame and compute stream order (H3 heuristic).
     # The pysheds grid is UTM, so the extracted stream coords are UTM metres.
