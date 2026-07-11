@@ -132,3 +132,24 @@ def test_buffer_boundary_is_inclusive():
     trap = Point(0, 0)
     edge = vp.evaluate_match(_scored([(80, 0, 70.0)]), trap)
     assert edge["recovered"]  # exactly 80 m, exactly score 70 → recovered
+
+
+# ── served-data JSON strictness ──────────────────────────────────────────
+
+def test_served_geojson_is_rfc_compliant():
+    """NaN/Infinity tokens are not RFC-JSON; FastAPI's serializer 500s on
+    them (production incident 2026-07-11). Every committed file the API can
+    serve must parse under a strict decoder."""
+    import glob
+    import json as _json
+
+    def reject(name):
+        raise AssertionError(f"non-RFC JSON constant {name!r}")
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    files = ([os.path.join(root, "mock_data", "candidates.geojson")]
+             + glob.glob(os.path.join(root, "mock_data", "regions", "*.geojson")))
+    assert len(files) > 70
+    for path in files:
+        with open(path) as f:
+            _json.load(f, parse_constant=reject)
