@@ -89,6 +89,20 @@ INDEX = OUT_DIR / "index.json"
 PROTECTED = {"candidates.geojson", "candidates_v2.geojson", "places.json"}
 
 
+
+def _json_safe(obj):
+    """NaN/Inf are not RFC-JSON and FastAPI's serializer refuses them (prod
+    500 on /api/candidates, 2026-07-11). Missing-value floats become null;
+    pandas reads null back as NaN so gate/scoring semantics are unchanged."""
+    import math
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_json_safe(v) for v in obj]
+    return obj
+
 def log(slug, msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] [{slug}] {msg}", flush=True)
 
@@ -559,7 +573,7 @@ def write_zero_region(region, pre_gate, reason):
                        "candidates_pre_gate": pre_gate, "zero_reason": reason},
         "features": [],
     }
-    (OUT_DIR / f"{slug}.geojson").write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n")
+    (OUT_DIR / f"{slug}.geojson").write_text(json.dumps(_json_safe(doc), indent=1, sort_keys=True, allow_nan=False) + "\n")
     log(slug, f"ZERO candidates — {reason}")
     return {
         "slug": slug, "name": region["name"], "state": region.get("state"),
@@ -687,7 +701,7 @@ def run_region(region, defaults):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     out_path = OUT_DIR / f"{slug}.geojson"
     assert out_path.name not in PROTECTED
-    out_path.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n")
+    out_path.write_text(json.dumps(_json_safe(doc), indent=1, sort_keys=True, allow_nan=False) + "\n")
     dt = time.time() - t0
     log(slug, f"WROTE {out_path} ({len(feats)} sites, {len(varying)}/27 varying) in {dt/60:.1f} min")
 
@@ -719,7 +733,7 @@ def load_index():
 def save_index(idx):
     idx["generated"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    INDEX.write_text(json.dumps(idx, indent=1, sort_keys=True) + "\n")
+    INDEX.write_text(json.dumps(_json_safe(idx), indent=1, sort_keys=True, allow_nan=False) + "\n")
 
 
 def upsert(idx, entry):
