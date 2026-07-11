@@ -339,7 +339,8 @@ def main():
         "features": feats,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(fc, indent=1, sort_keys=True) + "\n")
+    from scripts.run_regions import _json_safe
+    OUT.write_text(json.dumps(_json_safe(fc), indent=1, sort_keys=True, allow_nan=False) + "\n")
     print(f"Wrote {len(feats)} re-scored candidates → {OUT}")
     real_now = [k for k, v in prov.items() if v["kind"] == "real"]
     print(f"  made real: {len(real_now)} parameters ({sum(1 for k in real_now if k in varying)} of them vary)")
