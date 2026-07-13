@@ -41,6 +41,7 @@
     "label": "Wrightsville Beach (shipped NC reference)"
    },
    "parcels": null,
+   "litter_source": "charlotte_311",
    "notes": "NC Piedmont"
   },
   {
@@ -76,6 +77,7 @@
     "label": "Wrightsville Beach (shipped NC reference)"
    },
    "parcels": null,
+   "litter_source": "raleigh_ask",
    "notes": "NC Piedmont"
   },
   {
@@ -111,6 +113,7 @@
     "label": "Wrightsville Beach (shipped NC reference)"
    },
    "parcels": null,
+   "litter_source": "greensboro_trash_archive",
    "notes": "NC Piedmont"
   },
   {

@@ -186,6 +186,16 @@
       "half_decay_m": 500.0,
       "source": "EPA ECHO CSO inventory (national bulk) \u2014 same shared inverse-distance curve"
     },
+    "litter_complaint_density": {
+      "formula": "sum over complaints of 1 / (1 + (distance_to_catchment_m / half_decay_m)^2) / catchment_area_km2",
+      "half_decay_m": 500.0,
+      "sources": [
+        "Charlotte ServiceRequests311: LITTER/DEBRIS IN STREET + DUMPING IN STREET/ROW",
+        "Ask Raleigh Requests: REQUEST_TYPE=Litter",
+        "Greensboro OpenData_CC_DS: 17-1 TW complaint-case archive joined to geocoded violations"
+      ],
+      "fallback": "0.0 where no public machine-readable litter/illegal-dumping feed exists or a configured feed is unavailable"
+    },
     "protected_area_score": {
       "formula": "sum over intersecting areas of weight(designation) * 1/(1 + d_km/decay_km)",
       "buffer_km": 20.0,
