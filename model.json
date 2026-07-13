@@ -120,7 +120,40 @@
       {
         "else": 0.0
       }
+    ],
+    "bank_slope_score": [
+      {
+        "slope_deg_lt": 15.0,
+        "score": 1.0
+      },
+      {
+        "slope_deg_lt": 30.0,
+        "score": 0.5
+      },
+      {
+        "slope_deg_lt": 45.0,
+        "score": 0.2
+      },
+      {
+        "else": 0.1
+      }
     ]
+  },
+  "bank_slope_input": {
+    "source": "NC OneMap / NC DPS DEM03 statewide lidar-derived elevation ImageServer",
+    "source_url": "https://services.nconemap.gov/secure/rest/services/Elevation/DEM03/ImageServer",
+    "source_resolution_ft": 3.125,
+    "source_resolution_m": 0.9525,
+    "source_crs_epsg": 6543,
+    "profile_half_width_m": 25.0,
+    "flow_direction_reach_m": 30.0,
+    "center_search_m": 3.0,
+    "rolling_run_m": 5.0,
+    "bank_search_m": 20.0,
+    "start_offset_m": 1.0,
+    "side_aggregation": "mean of the steepest positive 5 m rise on each bank",
+    "fallback": "Existing 10 m USGS 3DEP 3x3 DEM gradient when NC DEM03 samples are unavailable; non-NC regions retain this fallback.",
+    "provenance_note": "USGS Seamless 1-m DEM coverage was verified incomplete in NC on 2026-07-12. DEM03 is the documented official-state-source fallback; it must not be labeled USGS 3DEP."
   },
   "width_order_fallback": {
     "formula": "min(40, 3.0 * order**1.1)"
