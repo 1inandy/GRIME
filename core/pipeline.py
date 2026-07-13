@@ -5,14 +5,121 @@ DEM → fill → flow direction → accumulation → stream network → candidat
 This is the foundation. Get this working FIRST before anything else.
 """
 
+import hashlib
 import json
 import argparse
+import math
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import LineString, Point, shape
 from pathlib import Path
 
 from core import ELLERBE_BBOX, UTM_CRS, WGS84
+
+
+USGS_3DEP_IMAGE_EXPORT = (
+    "https://elevation.nationalmap.gov/arcgis/rest/services/"
+    "3DEPElevation/ImageServer/exportImage"
+)
+
+
+def _image_server_export_params(bbox, resolution, utm_crs):
+    """Build an exact 1/3-arc-second 3DEP export request in target UTM.
+
+    The ImageServer is the same official USGS 3DEP dynamic service as the WMS,
+    but avoids py3dep's separate GetCapabilities precheck.  Explicitly filter
+    the mosaic to the 1/3-arc-second product so an unfiltered dynamic mosaic
+    cannot silently select a legacy higher/lower-resolution layer.
+    """
+    from pyproj import CRS, Transformer
+
+    west, south, east, north = map(float, bbox)
+    transformer = Transformer.from_crs(WGS84, utm_crs, always_xy=True)
+    corners = [
+        transformer.transform(west, south),
+        transformer.transform(west, north),
+        transformer.transform(east, south),
+        transformer.transform(east, north),
+    ]
+    xs, ys = zip(*corners)
+    minx, maxx, miny, maxy = min(xs), max(xs), min(ys), max(ys)
+    width = max(1, math.ceil((maxx - minx) / float(resolution)))
+    height = max(1, math.ceil((maxy - miny) / float(resolution)))
+    if width > 8000 or height > 8000:
+        raise ValueError(f"3DEP ImageServer request exceeds 8000 px: {width}x{height}")
+    epsg = CRS.from_user_input(utm_crs).to_epsg()
+    if epsg is None:
+        raise ValueError(f"3DEP ImageServer fallback requires an EPSG CRS, got {utm_crs}")
+    return {
+        "bbox": f"{minx:.3f},{miny:.3f},{maxx:.3f},{maxy:.3f}",
+        "bboxSR": str(epsg),
+        "imageSR": str(epsg),
+        "size": f"{width},{height}",
+        "format": "tiff",
+        "pixelType": "F32",
+        "interpolation": "RSP_BilinearInterpolation",
+        "noData": "-9999",
+        "noDataInterpretation": "esriNoDataMatchAny",
+        "renderingRule": json.dumps({"rasterFunction": "None"}, separators=(",", ":")),
+        "mosaicRule": json.dumps({
+            "mosaicMethod": "esriMosaicAttribute",
+            "where": "title LIKE 'USGS 1/3 Arc Second%'",
+            "sortField": "Best",
+            "sortValue": "0",
+            "ascending": True,
+            "mosaicOperation": "MT_FIRST",
+        }, separators=(",", ":")),
+        "returnSquarePixels": "false",
+        "f": "image",
+    }
+
+
+def fetch_dem_image_server(bbox, resolution=10, retries=3, backoff=5.0,
+                           utm_crs=UTM_CRS):
+    """Fetch a cached official 3DEP 1/3-arc-second GeoTIFF export."""
+    import time
+    import requests
+    import rioxarray
+    from rasterio.io import MemoryFile
+
+    params = _image_server_export_params(bbox, resolution, utm_crs)
+    cache_dir = Path(__file__).resolve().parents[1] / "cache" / "3dep" / "image-server"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    key = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()[:24]
+    cache_path = cache_dir / f"{key}.tif"
+
+    payload = cache_path.read_bytes() if cache_path.exists() else None
+    last_err = None
+    for attempt in range(1, retries + 1):
+        if payload is not None:
+            break
+        try:
+            response = requests.get(
+                USGS_3DEP_IMAGE_EXPORT, params=params, timeout=(15, 180)
+            )
+            response.raise_for_status()
+            payload = response.content
+            if len(payload) < 1024 or payload[:4] not in (b"II*\x00", b"MM\x00*"):
+                raise RuntimeError(
+                    f"3DEP ImageServer returned non-TIFF payload ({len(payload)} bytes)"
+                )
+            cache_path.write_bytes(payload)
+        except Exception as exc:
+            payload = None
+            last_err = exc
+            print(f"  [retry] 3DEP ImageServer attempt {attempt}/{retries} failed: {exc}")
+            if attempt < retries:
+                time.sleep(backoff * attempt)
+    if payload is None:
+        raise RuntimeError(
+            f"3DEP ImageServer export failed after {retries} attempts"
+        ) from last_err
+
+    with MemoryFile(payload) as memfile, memfile.open() as dataset:
+        dem = rioxarray.open_rasterio(dataset, masked=False).squeeze("band", drop=True).load()
+    dem.name = "DEM"
+    print(f"  3DEP fallback: official filtered ImageServer export ({cache_path.name})")
+    return dem
 
 
 def fetch_dem(bbox, resolution=10, retries=4, backoff=5.0, utm_crs=UTM_CRS):
@@ -44,9 +151,16 @@ def fetch_dem(bbox, resolution=10, retries=4, backoff=5.0, utm_crs=UTM_CRS):
             if attempt < retries:
                 time.sleep(backoff * attempt)
     if dem is None:
-        raise RuntimeError(
-            f"3DEP DEM fetch failed after {retries} attempts"
-        ) from last_err
+        print("  3DEP WMS unavailable; trying official filtered ImageServer export...")
+        try:
+            dem = fetch_dem_image_server(
+                bbox, resolution=resolution, utm_crs=utm_crs
+            )
+        except Exception as image_err:
+            raise RuntimeError(
+                f"3DEP DEM fetch failed after {retries} WMS attempts and "
+                "the official ImageServer fallback"
+            ) from image_err
     # Reproject to UTM so downstream pixel maths are in metres. The zone must match
     # the region (zone-17 metres are badly distorted on the west coast), so callers
     # outside the Durham default pass their own utm_crs.
