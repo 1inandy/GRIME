@@ -255,7 +255,7 @@ def run_trap(trap, regions):
     dem = fetch_dem(bbox, resolution=10, utm_crs=utm)
     hydrology = process_hydrology(dem, bbox)
     grid, fdir, acc, elevation, transform = hydrology
-    _, cands, _ = run_pipeline(
+    stream_gdf, cands, _ = run_pipeline(
         bbox=bbox, hydrology=hydrology, return_hydrology=True,
         threshold=PAPER_THRESHOLD_CELLS, spacing_m=PAPER_SPACING_M,
         output_dir=str(work), utm_crs=utm)
@@ -283,6 +283,7 @@ def run_trap(trap, regions):
         return result
 
     region["_dem"], region["_transform"], region["_fdir"] = elevation, transform, fdir
+    region["_streams"] = stream_gdf
     wired, _prov = wire_region_parameters(cands, region)
     scored = compute_composite_score(wired)
     result["n_scored"] = int(len(scored))

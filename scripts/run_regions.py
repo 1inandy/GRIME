@@ -71,7 +71,7 @@ from core.flow import (
 )
 from core.feasibility import (
     road_access_score, channel_width_score, bank_slope_score, compute_bank_slope,
-    bridge_proximity_bonus, NAVIGABLE_GATE_M,
+    compute_bank_slopes_nc_lidar, bridge_proximity_bonus, NAVIGABLE_GATE_M,
 )
 from core.generation import get_road_density
 from core.impact import (get_tourism_amenity_density,
@@ -273,8 +273,20 @@ def wire_region_parameters(cands, region):
 
     cols = {p: [np.nan] * n for p in ALL_PARAMS}
     extras = {k: [np.nan] * n for k in
-              ("channel_width_m", "road_access_m", "bank_slope_deg")}
+              ("channel_width_m", "road_access_m", "bank_slope_deg",
+               "bank_slope_source")}
     counts = {p: 0 for p in ALL_PARAMS}
+
+    # Candidate-only perpendicular cross sections avoid downloading a region-
+    # wide ~1 m raster. The official NC service provides statewide lidar DEM
+    # coverage; outside NC, and for any unavailable profile, keep the documented
+    # 10 m 3DEP gradient rather than pretending a high-resolution measurement.
+    bank_lidar = [None] * n
+    if region["state"] == "NC":
+        log(slug, "NC OneMap/DPS 3.125-ft lidar bank cross-sections (batched, cached)...")
+        bank_lidar = compute_bank_slopes_nc_lidar(cands, region["_streams"])
+        log(slug, f"  high-resolution bank profiles: "
+                  f"{sum(v is not None for v in bank_lidar)}/{n}")
 
     # Parcels: Durham keeps its dedicated county endpoint (original wiring);
     # every other NC region uses the NC OneMap statewide layer (fix-pass-2
@@ -400,11 +412,18 @@ def wire_region_parameters(cands, region):
             dist = float(drive["nodes_utm"].geometry.distance(pt).min())
             extras["road_access_m"][i] = round(dist, 1)
             cols["road_access_score"][i] = road_access_score(dist); counts["road_access_score"] += 1
-        slope = safe_call(compute_bank_slope, int(row["pixel_row"]), int(row["pixel_col"]),
-                          dem_arr, px, default=None)
+        slope_info = bank_lidar[i]
+        slope = slope_info["slope_deg"] if slope_info is not None else None
+        slope_source = "nc-dps-lidar-dem03-cross-section"
+        if slope is None:
+            slope = safe_call(compute_bank_slope, int(row["pixel_row"]),
+                              int(row["pixel_col"]), dem_arr, px, default=None)
+            slope_source = "usgs-3dep-10m-gradient-fallback"
         if slope is not None:
             extras["bank_slope_deg"][i] = round(float(slope), 2)
-            cols["bank_slope_score"][i] = bank_slope_score(float(slope)); counts["bank_slope_score"] += 1
+            extras["bank_slope_source"][i] = slope_source
+            cols["bank_slope_score"][i] = bank_slope_score(float(slope))
+            counts["bank_slope_score"] += 1
         if nbi_gdf is not None:
             cols["bridge_proximity_bonus"][i] = bridge_proximity_bonus(pt, nbi_gdf)
             counts["bridge_proximity_bonus"] += 1
@@ -513,7 +532,12 @@ def wire_region_parameters(cands, region):
         "beach_dist_km": f"haversine to region ref: {bch['label']}",
         "tourism_amenity_density": "OSM leisure/tourism features per 2 km radius",
         "road_access_score": "OSM drive network nearest-node distance",
-        "bank_slope_score": "region DEM gradient (3x3)",
+        "bank_slope_score": (
+            "NC OneMap / NC DPS DEM03 statewide lidar-derived 3.125-ft (0.953 m) "
+            "elevations (perpendicular 50 m transect; robust 5 m bank-rise "
+            "metric); documented substitute because USGS 1 m 3DEP is not "
+            "statewide; unavailable profiles use the region 10 m 3DEP "
+            "DEM-gradient fallback"),
         "bridge_proximity_bonus": "FHWA/BTS NBI (NTAD), 50 m proximity",
         "superfund_score": (f"EPA Envirofacts SEMS state={region['state']} "
                             "(sign-fixed, georeferenced sites), shipped 500 m "
@@ -533,6 +557,17 @@ def wire_region_parameters(cands, region):
         if src is None or p in prov:
             continue
         mark(p, "real", src, n_real=counts.get(p, 0))
+    if "bank_slope_score" in prov:
+        prov["bank_slope_score"].update({
+            "n_nc_lidar_3_125ft": sum(v is not None for v in bank_lidar),
+            "n_3dep_10m_fallback": sum(
+                src == "usgs-3dep-10m-gradient-fallback"
+                for src in extras["bank_slope_source"]),
+            "source_mosaics": sorted({
+                source for info in bank_lidar if info is not None
+                for source in info["sources"]
+            }),
+        })
 
     # P0 Option A (owner-confirmed 2026-07-09): name the SCORED form of velocity
     # in provenance so the two velocity constructs are distinguishable. The Flow
@@ -634,6 +669,7 @@ def run_region(region, defaults):
 
     region = dict(region)
     region["_dem"], region["_transform"], region["_fdir"] = elevation, transform, fdir
+    region["_streams"] = stream_gdf
 
     wired, prov = wire_region_parameters(cands, region)
 
