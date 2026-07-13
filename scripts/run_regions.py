@@ -668,12 +668,23 @@ def wire_region_parameters(cands, region):
     return gdf, prov
 
 
-def write_zero_region(region, pre_gate, reason):
+def write_zero_region(region, pre_gate, reason, mask_stats=None):
     """Write a valid, empty region file + return an index entry for a town that
     yielded no deployable site. This is a CORRECT outcome (recorded, not retried),
     never a reason to loosen a gate or fabricate a site."""
     slug = region["slug"]
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    provenance = {"n_parameters": len(ALL_PARAMS), "varying": [], "constant": [],
+                  "parameters": {}, "hard_gate_removed": pre_gate,
+                  "candidates_pre_gate": pre_gate, "zero_reason": reason}
+    if mask_stats is not None:
+        provenance["stream_mask"] = {
+            "buffer_m": STREAM_MASK_BUFFER_M,
+            "sources": ["osm-overpass (all waterway ways)",
+                        "usgs-nhdplus flowlines"],
+            "pre_mask": int(mask_stats["pre_mask"]),
+            "removed": int(mask_stats["removed"]),
+        }
     doc = {
         "type": "FeatureCollection",
         "note": (f"GRIME region '{region['name']}' — real-data pipeline produced "
@@ -683,9 +694,7 @@ def write_zero_region(region, pre_gate, reason):
         "region": {k: region.get(k) for k in
                    ("slug", "name", "state", "bbox", "center", "utm_epsg",
                     "width_curve", "flood_method", "notes")},
-        "provenance": {"n_parameters": len(ALL_PARAMS), "varying": [], "constant": [],
-                       "parameters": {}, "hard_gate_removed": pre_gate,
-                       "candidates_pre_gate": pre_gate, "zero_reason": reason},
+        "provenance": provenance,
         "features": [],
     }
     (OUT_DIR / f"{slug}.geojson").write_text(json.dumps(_json_safe(doc), indent=1, sort_keys=True, allow_nan=False) + "\n")
