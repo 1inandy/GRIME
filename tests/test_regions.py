@@ -334,12 +334,16 @@ def test_overpass_env_accepts_interpreter_url(monkeypatch):
         "GRIME_OVERPASS_ENDPOINT",
         "https://example.test/overpass/api/interpreter/",
     )
+    monkeypatch.setenv("GRIME_OVERPASS_RATE_LIMIT", "off")
     old = ox.settings.overpass_endpoint
+    old_rate_limit = ox.settings.overpass_rate_limit
     try:
         rr._configure_osmnx()
         assert ox.settings.overpass_endpoint == "https://example.test/overpass/api"
+        assert ox.settings.overpass_rate_limit is False
     finally:
         ox.settings.overpass_endpoint = old
+        ox.settings.overpass_rate_limit = old_rate_limit
         monkeypatch.delattr(rr._configure_osmnx, "_done", raising=False)
 
 

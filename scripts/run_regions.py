@@ -65,6 +65,13 @@ def _configure_osmnx():
         if _ep.endswith("/interpreter"):
             _ep = _ep.removesuffix("/interpreter")
         ox.settings.overpass_endpoint = _ep
+        # Some public mirrors expose the interpreter but not the canonical
+        # status-line format OSMnx 1.x's rate-limit parser requires. Operators
+        # may bypass only that parser while the supervisor still enforces its
+        # single-worker 4–10 s inter-region pacing. Default remains on.
+        _rl = os.environ.get("GRIME_OVERPASS_RATE_LIMIT", "1").strip().lower()
+        if _rl in {"0", "false", "no", "off"}:
+            ox.settings.overpass_rate_limit = False
     _configure_osmnx._done = True
 
 
