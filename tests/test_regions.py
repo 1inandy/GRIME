@@ -302,13 +302,33 @@ def test_write_zero_region_is_honest_not_a_failure(tmp_path, monkeypatch):
               "utm_epsg": 32617, "tier": "town",
               "width_curve": {"code": "APL"}, "flood_method": "none",
               "notes": "coastal plain"}
-    entry = rr.write_zero_region(region, 3, "all 3 candidate sites removed by the hard gates")
+    entry = rr.write_zero_region(
+        region, 3, "all 3 candidate sites removed by the hard gates",
+        mask_stats={"pre_mask": 4, "removed": 1},
+    )
     assert entry["status"] == "ok" and entry["site_count"] == 0
     assert "hard gates" in entry["zero_reason"]
     doc = json.load(open(tmp_path / "emptyville.geojson"))
     assert doc["features"] == []                       # no fabricated sites
     assert doc["provenance"]["zero_reason"] == entry["zero_reason"]
     assert doc["provenance"]["candidates_pre_gate"] == 3
+    assert doc["provenance"]["stream_mask"]["pre_mask"] == 4
+    assert doc["provenance"]["stream_mask"]["removed"] == 1
+
+
+def test_3dep_image_server_request_is_exact_10m_product():
+    """The WMS fallback must stay on official 1/3-arc-second 3DEP and request
+    a bounded target-UTM raster, never the service's unfiltered dynamic mosaic."""
+    from core.pipeline import _image_server_export_params
+
+    params = _image_server_export_params(
+        (-79.5147, 35.6856, -79.4126, 35.7685), 10, "EPSG:32617"
+    )
+    width, height = map(int, params["size"].split(","))
+    assert params["bboxSR"] == params["imageSR"] == "32617"
+    assert 900 <= width <= 1000 and 900 <= height <= 1000
+    assert "USGS 1/3 Arc Second%" in params["mosaicRule"]
+    assert params["pixelType"] == "F32"
 
 
 def test_tourism_source_failure_is_none_not_assumed(monkeypatch):
