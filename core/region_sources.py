@@ -204,34 +204,12 @@ def area_weighted(bg_gdf, polygon, column):
     return float((inter[column] * w).sum() / w.sum())
 
 
-# ── EPA Envirofacts TRI by STATE (sign-fixed, bbox-filtered) ─────────
+# ── EPA DataMap TRI by state (compatibility wrapper) ────────────────
 
 def tri_points_state(state_abbr, bbox):
-    """TRI facility points in bbox for a state — same longitude-sign + null fix
-    as the Durham fetcher, generalized. Returns [(lat, lon)]."""
-    url = (f"https://data.epa.gov/efservice/tri_facility/state_abbr/"
-           f"{state_abbr}/rows/0:9999/JSON")
-    j = cached_get_json(url, kind="tri_state", timeout=120)
-    if not j:
-        return []
-    w, s, e, n = bbox
-    pts = []
-    for f in j:
-        lat = f.get("pref_latitude") or f.get("fac_latitude")
-        lon = f.get("pref_longitude") or f.get("fac_longitude")
-        if lat in (None, "", 0) or lon in (None, "", 0):
-            continue
-        try:
-            lat, lon = float(lat), float(lon)
-        except (TypeError, ValueError):
-            continue
-        if lon > 0:
-            lon = -lon           # Envirofacts drops the minus sign in CONUS
-        if lat < 0:
-            lat = -lat
-        if s <= lat <= n and w <= lon <= e:
-            pts.append((lat, lon))
-    return pts
+    """Delegate to the canonical current/open TRI implementation."""
+    from core.real_sources import tri_facility_points
+    return tri_facility_points(state_abbr, bbox)
 
 
 # ── NBI bridges with pagination (big-city bboxes exceed one page) ────

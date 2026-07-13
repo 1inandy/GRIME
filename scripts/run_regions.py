@@ -80,6 +80,7 @@ from core.scoring import compute_composite_score, sensitivity_analysis, ALL_PARA
 from core.pipeline import run_pipeline
 from core import real_sources as rs
 from core import region_sources as rg
+from core.padus_service import padus_protected_gdf_remote
 
 CONFIG = Path(_ROOT) / "scripts/regions.json"
 OUT_DIR = Path(_ROOT) / "mock_data/regions"
@@ -201,6 +202,8 @@ def wire_region_parameters(cands, region):
     utm = f"EPSG:{region['utm_epsg']}"
     bbox = tuple(region["bbox"])
     slug = region["slug"]
+    source_states = tuple(region.get("source_states", [region["state"]]))
+    source_states_label = ",".join(source_states)
     n = len(cands)
     prov = {}
 
@@ -208,6 +211,16 @@ def wire_region_parameters(cands, region):
         prov[param] = {"kind": kind, "source": source,
                        "n_real": n_real if n_real is not None else (n if kind == "real" else 0),
                        "n_sites": n}
+
+    def fetch_state_points(fetcher, query_bbox):
+        """Fetch a complete multi-state inventory, never an unlabeled partial."""
+        merged = []
+        for state in source_states:
+            points = fetcher(state, query_bbox)
+            if points is None:
+                return None
+            merged.extend(points)
+        return list(dict.fromkeys(merged))
 
     # ── shared fetches ──
     log(slug, "NLDI snap + EROM + StreamCat...")
@@ -221,13 +234,18 @@ def wire_region_parameters(cands, region):
     log(slug, f"  block groups: {0 if bg is None else len(bg)}")
 
     log(slug, "Point layers: TRI(state) / NPDES / CSO / NBI...")
-    tri = rg.to_utm_points(rg.tri_points_state(region["state"], bbox), utm)
-    npdes = rg.to_utm_points(rs.npdes_outfall_points(bbox), utm)
-    cso_raw = rs.cso_points_nc(bbox)          # national inventory, bbox-filtered
+    tri_raw = fetch_state_points(rs.tri_facility_points, bbox)
+    tri = rg.to_utm_points(tri_raw or [], utm)
+    npdes_raw = rs.npdes_outfall_points(bbox, state_abbrs=source_states)
+    npdes = rg.to_utm_points(npdes_raw or [], utm)
+    cso_raw = rs.cso_outfall_points(bbox, state_abbrs=source_states)
     cso = rg.to_utm_points(cso_raw or [], utm)
     nbi_pts = rg.to_utm_points(rg.nbi_bridge_points_paged(bbox), utm)
     nbi_gdf = gpd.GeoDataFrame(geometry=nbi_pts, crs=utm) if len(nbi_pts) else None
-    log(slug, f"  TRI={len(tri)} NPDES={len(npdes)} CSO={'dl-fail' if cso_raw is None else len(cso)} NBI={len(nbi_pts)}")
+    log(slug, f"  states={source_states_label} "
+              f"TRI={'fetch-fail' if tri_raw is None else len(tri)} "
+              f"NPDES={'dl-fail' if npdes_raw is None else len(npdes)} "
+              f"CSO={'dl-fail' if cso_raw is None else len(cso)} NBI={len(nbi_pts)}")
 
     litter_key = region.get("litter_source")
     litter_raw = rg.municipal_litter_points(litter_key, bbox) if litter_key else None
@@ -239,11 +257,32 @@ def wire_region_parameters(cands, region):
     # Superfund: SEMS state inventory, bbox +0.05 deg so a just-outside site
     # still contributes through the fast (500 m half-decay) proximity curve.
     pad = 0.05
-    sems_raw = rs.sems_superfund_points(
-        region["state"], (bbox[0] - pad, bbox[1] - pad, bbox[2] + pad, bbox[3] + pad))
+    sems_bbox = (bbox[0] - pad, bbox[1] - pad, bbox[2] + pad, bbox[3] + pad)
+    sems_raw = fetch_state_points(rs.sems_superfund_points, sems_bbox)
     sems = rg.to_utm_points(sems_raw or [], utm)
-    # Protected areas: local PAD-US 4.1 state clip (NC download only).
-    padus = rs.padus_protected_gdf(bbox, utm) if region["state"] == "NC" else None
+    # Prefer versioned state GDBs. When any required package is unavailable,
+    # query USGS's official PAD-US combined-inventory service for the whole bbox.
+    padus_frames = []
+    padus_missing = []
+    for state in source_states:
+        frame = rs.padus_protected_gdf(bbox, utm, state_abbr=state)
+        if frame is None:
+            padus_missing.append(state)
+        else:
+            padus_frames.append(frame)
+    padus_source_kind = "state GDB"
+    if padus_missing:
+        padus = padus_protected_gdf_remote(bbox, utm)
+        padus_source_kind = "USGS feature service"
+        if padus is None and padus_frames:
+            padus = gpd.GeoDataFrame(pd.concat(padus_frames, ignore_index=True),
+                                     crs=utm)
+            padus_source_kind = (
+                f"partial state GDB ({','.join(padus_missing)} unavailable; "
+                "service failed)")
+    else:
+        padus = (gpd.GeoDataFrame(pd.concat(padus_frames, ignore_index=True), crs=utm)
+                 if padus_frames else None)
     # Drinking-water intakes: NC OneMap SWAP surface intakes; the shipped curve
     # integrates to 50 km, so fetch a 0.5-deg-padded bbox.
     intakes_gdf = None
@@ -330,10 +369,10 @@ def wire_region_parameters(cands, region):
             rd = safe_call(get_road_density, disc, da, bbox, utm_crs=utm, default=None)
             if rd is not None:
                 cols["road_density_km_km2"][i] = round(rd, 3); counts["road_density_km_km2"] += 1
-        if len(tri):
+        if tri_raw is not None:
             cols["tri_facility_density"][i] = round(float(tri.within(disc).sum()) / max(da, 0.01), 4)
             counts["tri_facility_density"] += 1
-        if len(npdes):
+        if npdes_raw is not None:
             cols["npdes_points"][i] = int(npdes.within(disc).sum()); counts["npdes_points"] += 1
         if cso_raw is not None:
             cols["cso_density"][i] = round(inverse_distance_score(pt, cso, 500), 4)
@@ -460,6 +499,15 @@ def wire_region_parameters(cands, region):
 
     # fallback constants where a whole column stayed NaN-by-design
     fallback_notes = {}
+    if tri_raw is None:
+        fallback_notes["tri_facility_density"] = (
+            0.0, f"EPA DataMap TRI unavailable for states={source_states_label}")
+    if npdes_raw is None:
+        fallback_notes["npdes_points"] = (
+            0.0, "EPA ECHO national NPDES bulk archive unavailable — documented fallback")
+    if cso_raw is None:
+        fallback_notes["cso_density"] = (
+            0.0, "EPA ECHO national CSO bulk archive unavailable — documented fallback")
     if litter_raw is None:
         fallback_notes["litter_complaint_density"] = (
             0.0, ("configured official municipal litter feed unavailable for this run"
@@ -470,9 +518,8 @@ def wire_region_parameters(cands, region):
             0.0, "EPA Envirofacts SEMS unreachable for this run — documented fallback")
     if padus is None:
         fallback_notes["protected_area_score"] = (
-            0.0, ("no local PAD-US 4.1 clip for this state (NC-only download)"
-                  if region["state"] != "NC" else
-                  "PAD-US 4.1 NC clip missing from cache/padus — documented fallback"))
+            0.0, (f"PAD-US 4.1 state package(s) and official feature service "
+                  f"unavailable for states={source_states_label}"))
     if intakes_gdf is None:
         fallback_notes["water_intake_score"] = (
             0.0, ("no public surface-intake layer wired outside NC (SWAP layer is NC-only)"
@@ -500,11 +547,11 @@ def wire_region_parameters(cands, region):
     # navigable water exists near this bbox — in both cases the hard gate
     # stays inert for the row (gates only fire on real values). The gate
     # itself lives in core.scoring.apply_hard_gates (NAVIGABLE_GATE_M).
-    nwn = rs.nwn_navigable_union(bbox, utm)
+    nwn = rs.nwn_navigable_union(bbox, utm, state_abbr=region["state"])
     if nwn is None:
         gdf["navigable_dist_m"] = np.nan
         mark("navigable_dist_m", "fallback",
-             "USACE NWN clip not on disk (cache/nwn) — navigability gate inert")
+             f"no USACE NWN clip covering state={region['state']} — navigability gate inert")
     elif nwn.is_empty:
         gdf["navigable_dist_m"] = np.nan
         mark("navigable_dist_m", "real",
@@ -524,9 +571,12 @@ def wire_region_parameters(cands, region):
         "impervious_pct": "EPA StreamCat pctimp2019 (per NHDPlus watershed)",
         "runoff_coeff_C": "derived from real impervious_pct (C=0.05+0.009*I)",
         "road_density_km_km2": "OSM drive network (osmnx, cached) clipped per catchment",
-        "tri_facility_density": f"EPA Envirofacts TRI state={region['state']} (sign-fixed), per catchment",
-        "npdes_points": "EPA ECHO NPDES outfalls (national bulk), per catchment",
-        "cso_density": "EPA ECHO CSO inventory (national bulk), Cauchy proximity",
+        "tri_facility_density": (f"EPA DataMap TRI open facilities states={source_states_label} "
+                                 "(preferred decimal or packed-DMS recovery), per catchment"),
+        "npdes_points": (f"EPA ECHO active NPDES outfalls states={source_states_label} "
+                         "(types NPD/GPC/NGP; statuses ADC/EFF/EXP), per catchment"),
+        "cso_density": (f"EPA ECHO open CSO/TCS outfall PF coordinates "
+                        f"states={source_states_label}, Cauchy proximity"),
         "litter_complaint_density": (
             f"{rg.litter_source_label(litter_key)}; complaint distance to catchment "
             f"decays as 1/(1+(d/{rg.LITTER_HALF_DECAY_M:g}m)^2), divided by "
@@ -551,16 +601,17 @@ def wire_region_parameters(cands, region):
         "bank_slope_score": (
             "NC OneMap / NC DPS DEM03 statewide lidar-derived 3.125-ft (0.953 m) "
             "elevations (perpendicular 50 m transect; robust 5 m bank-rise "
-            "metric); documented substitute because USGS 1 m 3DEP is not "
-            "statewide; unavailable profiles use the region 10 m 3DEP "
-            "DEM-gradient fallback"),
+            "metric); unavailable profiles use the region 10 m 3DEP "
+            "DEM-gradient fallback" if region["state"] == "NC" else
+            "USGS 3DEP 10 m DEM local gradient; NC lidar source is outside this region"),
         "bridge_proximity_bonus": "FHWA/BTS NBI (NTAD), 50 m proximity",
-        "superfund_score": (f"EPA Envirofacts SEMS state={region['state']} "
-                            "(sign-fixed, georeferenced sites), shipped 500 m "
+        "superfund_score": (f"EPA DataMap SEMS active sites states={source_states_label} "
+                            "(non-archived, georeferenced), shipped 500 m "
                             "inverse-distance curve") if sems_raw is not None else None,
-        "protected_area_score": ("USGS PAD-US 4.1 NC state clip (local GDB, retrieved "
-                                 "2026-07-10), shipped designation-weighted proximity "
-                                 "curve") if padus is not None else None,
+        "protected_area_score": (f"USGS PAD-US 4.1 {padus_source_kind}; "
+                                 f"states={source_states_label}; shipped "
+                                 "designation-weighted proximity curve")
+                                 if padus is not None else None,
         "water_intake_score": ("NC OneMap / NC DEQ SWAP public water supply sources "
                                "(source_typ='Surface Water'), shipped exp(-d/10km) "
                                "curve") if intakes_gdf is not None else None,

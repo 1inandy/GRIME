@@ -650,6 +650,10 @@
    "slug": "new-york-city",
    "name": "New York City",
    "state": "NY",
+   "source_states": [
+    "NY",
+    "NJ"
+   ],
    "center": [
     -74.006,
     40.7143
@@ -679,7 +683,7 @@
     "label": "Rockaway Beach"
    },
    "parcels": null,
-   "notes": "Manhattan Prong / New England crystalline province for mainland streams; heavily tidal \u2014 hard gates expected to exclude most navigable water"
+   "notes": "Manhattan Prong / New England crystalline province for mainland streams; bbox crosses NY/NJ; OOS NWN navigability remains a documented fallback"
   },
   {
    "slug": "chicago",

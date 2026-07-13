@@ -20,10 +20,11 @@ Verified sources (endpoint-checked 2026-07-06):
   - Bieger et al. 2015, JAWRA 51(3), Table 3, Appalachian Highlands division
                   (contains the NC Piedmont) — bankfull width W(m)=3.12·DA(km²)^0.415
                   -> channel_width_m -> channel_width_score
-  - EPA Envirofacts TRI (Durham County) — with the longitude-sign + null fix
+  - EPA DataMap TRI (state inventories) — open facilities, with packed-DMS
+                  coordinate recovery and the longitude-sign + null fix
                   -> tri_facility_density
-  - EPA ECHO bulk downloads — NPDES outfalls -> npdes_points; CSO inventory
-                  -> cso_density (truthfully 0 for Durham's separated sewers)
+  - EPA ECHO bulk downloads — active NPDES outfalls -> npdes_points; national
+                  CSO outfall inventory -> cso_density
   - FHWA/BTS National Bridge Inventory (NTAD) — bridge points -> bridge_proximity_bonus
   - Durham County parcels (PROPERTY_OWNER) — public/private -> land_ownership
   - NC OneMap public water supply sources — downstream intakes -> water_intake_score
@@ -155,6 +156,40 @@ def cached_download(url, kind="dl", retries=3, timeout=180, backoff=5.0):
                 return cp
         except Exception as e:
             print(f"  [warn] download retry {attempt} for {url}: {e}")
+            time.sleep(backoff * (2 ** attempt))
+    return None
+
+
+_ECHO_CACHE_DIR = Path(os.environ.get("GRIME_ECHO_CACHE", "cache/echo"))
+
+
+def echo_bulk_download(url, filename, retries=3, timeout=180, backoff=5.0):
+    """Download an EPA ECHO bulk ZIP under a stable, auditable filename.
+
+    ECHO updates these national exports in place, so their official filename is
+    more useful provenance than the generic URL-hash cache. The caller owns the
+    adjacent ``PROVENANCE.txt`` receipt; this helper only preserves download-on-
+    miss behavior and returns ``None`` after exhausted retries.
+    """
+    _ECHO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    destination = _ECHO_CACHE_DIR / filename
+    if destination.exists() and destination.stat().st_size > 0:
+        return destination
+    for attempt in range(retries):
+        try:
+            with requests.get(url, headers=_UA, timeout=timeout, stream=True) as response:
+                if response.status_code != 200:
+                    time.sleep(backoff * (2 ** attempt))
+                    continue
+                partial = destination.with_suffix(destination.suffix + ".part")
+                with open(partial, "wb") as stream:
+                    for chunk in response.iter_content(1 << 20):
+                        if chunk:
+                            stream.write(chunk)
+                partial.replace(destination)
+                return destination
+        except Exception as exc:
+            print(f"  [warn] ECHO download retry {attempt} for {url}: {exc}")
             time.sleep(backoff * (2 ** attempt))
     return None
 
@@ -435,39 +470,81 @@ def bankfull_width_m_bieger(drainage_km2):
     return 3.12 * drainage_km2 ** 0.415
 
 
-# ── 6. EPA Envirofacts TRI (Durham County) — with the sign + null fix ─
+# ── 6. EPA DataMap TRI — current open facilities by state ──────────────
+
+def _packed_dms_to_dd(value):
+    """Convert EPA's packed ``DDMMSS``/``DDDMMSS`` coordinates to degrees.
+
+    TRI's ``fac_latitude`` and ``fac_longitude`` are not decimal degrees: for
+    example, ``352440`` is 35°24'40", not 352,440 degrees. Invalid minute or
+    second fields return ``None`` instead of inventing a usable coordinate.
+    """
+    try:
+        value = abs(float(value))
+    except (TypeError, ValueError):
+        return None
+    degrees = int(value // 10000)
+    minutes = int((value % 10000) // 100)
+    seconds = value % 100
+    if minutes >= 60 or seconds >= 60:
+        return None
+    return degrees + minutes / 60.0 + seconds / 3600.0
+
+
+def _tri_coordinate(preferred, packed, *, longitude=False):
+    """Use TRI's preferred decimal coordinate, then its packed-DMS fallback."""
+    try:
+        value = float(preferred)
+    except (TypeError, ValueError):
+        value = None
+    limit = 180.0 if longitude else 90.0
+    if value is None or value == 0 or abs(value) > limit:
+        value = _packed_dms_to_dd(packed)
+    if value is None or value == 0 or abs(value) > limit:
+        return None
+    # EPA's TRI response represents west longitudes as positive magnitudes.
+    if longitude and value > 0:
+        value = -value
+    if not longitude and value < 0:
+        value = -value
+    return value
+
+
+def tri_facility_points(state_abbr, bbox):
+    """Open TRI facility points in a state, clipped to ``bbox``.
+
+    The current EPA DataMap endpoint supplies preferred decimal coordinates
+    when available and packed-DMS ``fac_*`` coordinates otherwise. Returns
+    ``None`` when the source is unreachable and ``[]`` for a successful query
+    with no open facilities in the bounding box.
+
+    Source: ``data.epa.gov/dmapservice/tri.tri_facility/state_abbr/equals/``
+    ``{STATE}/1:9999/json`` (checked 2026-07-12).
+    """
+    state = str(state_abbr).strip().upper()
+    url = ("https://data.epa.gov/dmapservice/tri.tri_facility/"
+           f"state_abbr/equals/{state}/1:9999/json")
+    rows = cached_get_json(url, kind="tri", timeout=120)
+    if rows is None:
+        return None
+    w, s, e, n = bbox
+    points = []
+    for facility in rows:
+        if str(facility.get("fac_closed_ind", "")).strip() != "0":
+            continue
+        lat = _tri_coordinate(facility.get("pref_latitude"),
+                              facility.get("fac_latitude"))
+        lon = _tri_coordinate(facility.get("pref_longitude"),
+                              facility.get("fac_longitude"), longitude=True)
+        if lat is not None and lon is not None and s <= lat <= n and w <= lon <= e:
+            points.append((lat, lon))
+    return points
+
 
 def tri_points_durham():
-    """All TRI facility points in Durham County. FIX: the Envirofacts response
-    gives latitudes/longitudes as bare positive magnitudes (e.g. 78.89 for a
-    Durham longitude that is really -78.89), and some rows have null coords —
-    the old code fed those straight into Point(), so every facility landed in the
-    eastern hemisphere and counted as zero-in-catchment. Returns [(lat, lon)]."""
-    url = "https://data.epa.gov/efservice/tri_facility/state_abbr/NC/county_name/DURHAM/JSON"
-    j = cached_get_json(url, kind="tri", timeout=90)
-    if not j:
-        return []
-    pts = []
-    for f in j:
-        lat = f.get("pref_latitude") or f.get("fac_latitude")
-        lon = f.get("pref_longitude") or f.get("fac_longitude")
-        if lat in (None, "", 0) or lon in (None, "", 0):
-            continue
-        try:
-            lat = float(lat)
-            lon = float(lon)
-        except (TypeError, ValueError):
-            continue
-        # Sign fix: Durham is ~36 N, ~-78.9 W. Envirofacts drops the minus sign
-        # on longitude (and occasionally latitude); restore it for the US.
-        if lon > 0:
-            lon = -lon
-        if lat < 0:
-            lat = -lat
-        # sanity window for the Durham region
-        if 35.0 <= lat <= 37.0 and -80.0 <= lon <= -78.0:
-            pts.append((lat, lon))
-    return pts
+    """Compatibility wrapper for the frozen Durham flagship wiring."""
+    points = tri_facility_points("NC", (-80.0, 35.0, -78.0, 37.0))
+    return points if points is not None else []
 
 
 # ── 7. EPA ECHO bulk — NPDES outfalls & CSO inventory ────────────────
@@ -494,18 +571,50 @@ def _load_zip_member_csv(zip_path, name_contains):
         return None, None
 
 
-def npdes_outfall_points(bbox):
-    """NPDES permitted outfall points within bbox (west,south,east,north) from
-    the ECHO bulk download. Returns [(lat, lon)]."""
-    zp = cached_download("https://echo.epa.gov/files/echodownloads/npdes_outfalls_layer.zip")
+def _state_filter(state_abbrs):
+    """Normalize an optional state code or iterable of codes for bulk rows."""
+    if state_abbrs is None:
+        return None
+    if isinstance(state_abbrs, str):
+        state_abbrs = [state_abbrs]
+    return {str(state).strip().upper() for state in state_abbrs
+            if state is not None and str(state).strip()}
+
+
+def npdes_outfall_points(bbox, state_abbrs=None):
+    """Active NPDES outfalls within ``bbox`` from EPA ECHO's national bulk file.
+
+    NPD/GPC/NGP are the NPDES permit types; administratively continued,
+    effective, and expired-current permits are retained, while terminated,
+    pending, not-needed, denied, and non-NPDES records are excluded. Returns
+    ``state_abbrs`` optionally restricts rows by ``STATE_CODE`` (useful where a
+    metro bbox crosses a state line). Returns ``None`` on download/parse failure
+    and ``[]`` on a successful real zero.
+    """
+    zp = echo_bulk_download(
+        "https://echo.epa.gov/files/echodownloads/npdes_outfalls_layer.zip",
+        "npdes_outfalls_layer.zip")
     rows, _ = _load_zip_member_csv(zp, "outfall")
-    if not rows:
-        return []
+    if rows is None:
+        return None
     w, s, e, n = bbox
+    states = _state_filter(state_abbrs)
     out = []
     for r in rows:
-        lat = r.get("LATITUDE83") or r.get("FAC_LAT") or r.get("LATITUDE")
-        lon = r.get("LONGITUDE83") or r.get("FAC_LONG") or r.get("LONGITUDE")
+        if states is not None:
+            row_state = str(r.get("STATE_CODE", "")).strip().upper()
+            if row_state not in states:
+                continue
+        permit_type = str(r.get("PERMIT_TYPE_CODE", "")).strip().upper()
+        permit_status = str(r.get("PERMIT_STATUS_CODE", "")).strip().upper()
+        if permit_type not in {"NPD", "GPC", "NGP"}:
+            continue
+        if permit_status not in {"ADC", "EFF", "EXP"}:
+            continue
+        # This is the outfall layer: use its outfall coordinates only, never a
+        # facility-location proxy when a permitted feature lacks coordinates.
+        lat = r.get("LATITUDE83")
+        lon = r.get("LONGITUDE83")
         try:
             lat = float(lat)
             lon = float(lon)
@@ -516,20 +625,38 @@ def npdes_outfall_points(bbox):
     return out
 
 
-def cso_points_nc(bbox):
-    """CSO outfall points within bbox from the ECHO CSO inventory. Returns
-    [(lat, lon)] — expected to be EMPTY for Durham (separated sewer system), a
-    truthful zero rather than a dead-endpoint fallback."""
-    zp = cached_download("https://echo.epa.gov/files/echodownloads/ALL_CSO_downloads.zip")
+def cso_outfall_points(bbox, state_abbrs=None):
+    """Open CSO outfall points within ``bbox`` from ECHO's national inventory.
+
+    Coordinates are the permitted feature (``PF_LAT``/``PF_LON``), not the
+    facility proxy. Removed/plugged ``CLS`` features and records that are not
+    classified CSO/TCS are excluded. Returns ``None`` on source failure and
+    ``state_abbrs`` optionally restricts rows by ``PERMITTING_STATE`` with
+    ``STATE_CODE`` as the documented schema fallback. Returns ``[]`` for a
+    successful real zero (as expected for separated-sewer cities).
+    """
+    zp = echo_bulk_download(
+        "https://echo.epa.gov/files/echodownloads/ALL_CSO_downloads.zip",
+        "ALL_CSO_downloads.zip")
     rows, _ = _load_zip_member_csv(zp, "cso")
     if rows is None:
         return None  # download failed → unknown, not a confirmed zero
     w, s, e, n = bbox
+    states = _state_filter(state_abbrs)
     out = []
     for r in rows:
-        # ECHO's ALL_CSO_DOWNLOADS.csv names the coordinates FACILITY_LAT/LON
-        lat = r.get("FACILITY_LAT") or r.get("LATITUDE") or r.get("FAC_LAT")
-        lon = r.get("FACILITY_LON") or r.get("LONGITUDE") or r.get("FAC_LONG")
+        if states is not None:
+            row_state = str(r.get("PERMITTING_STATE")
+                            or r.get("STATE_CODE") or "").strip().upper()
+            if row_state not in states:
+                continue
+        characters = {part.strip().upper()
+                      for part in str(r.get("PF_CHARACTER", "")).split("|")
+                      if part.strip()}
+        if "CLS" in characters or not characters.intersection({"CSO", "TCS"}):
+            continue
+        lat = r.get("PF_LAT")
+        lon = r.get("PF_LON")
         try:
             lat = float(lat)
             lon = float(lon)
@@ -538,6 +665,11 @@ def cso_points_nc(bbox):
         if s <= lat <= n and w <= lon <= e:
             out.append((lat, lon))
     return out
+
+
+def cso_points_nc(bbox, state_abbrs=None):
+    """Backward-compatible name for the national CSO outfall inventory."""
+    return cso_outfall_points(bbox, state_abbrs=state_abbrs)
 
 
 # ── 8. National Bridge Inventory (NTAD ArcGIS) — bridge points ───────
@@ -712,26 +844,28 @@ def nc_surface_intake_points(bbox_wide):
     return out
 
 
-# ── 11. EPA SEMS (Superfund) — active site inventory by state ─────────
+# ── 11. EPA DataMap SEMS (Superfund) — active inventory by state ────
 
 def sems_superfund_points(state_abbr, bbox):
     """Superfund (SEMS, the CERCLIS successor) site points in bbox for a state,
-    from EPA Envirofacts — the same REST family + longitude-sign fix as the TRI
-    wiring. Only georeferenced sites are usable (~1/3 of SEMS rows carry
+    from EPA DataMap. Only georeferenced sites are usable (~1/3 of SEMS rows carry
     coordinates); non-georeferenced sites are simply absent, which understates
     rather than fabricates. Returns [(lat, lon)], or None when the endpoint is
     unreachable (caller keeps the documented fallback).
 
-    Source: https://data.epa.gov/efservice/envirofacts_site/fk_ref_state_code/
-    {STATE}/rows/0:9999/JSON (EPA Envirofacts SEMS; wired 2026-07-10)."""
-    url = (f"https://data.epa.gov/efservice/envirofacts_site/fk_ref_state_code/"
-           f"{state_abbr}/rows/0:9999/JSON")
+    Source: https://data.epa.gov/dmapservice/sems.envirofacts_site/
+    fk_ref_state_code/equals/{STATE}/1:9999/json (checked 2026-07-12)."""
+    state = str(state_abbr).strip().upper()
+    url = ("https://data.epa.gov/dmapservice/sems.envirofacts_site/"
+           f"fk_ref_state_code/equals/{state}/1:9999/json")
     j = cached_get_json(url, kind="sems", timeout=120)
     if j is None:
         return None
     w, s, e, n = bbox
     pts = []
     for f in j:
+        if str(f.get("archived_ind", "")).strip().upper() == "Y":
+            continue
         lat = f.get("primary_latitude_decimal_val")
         lon = f.get("primary_longitude_decimal_val")
         if lat in (None, "", 0) or lon in (None, "", 0):
@@ -751,47 +885,114 @@ def sems_superfund_points(state_abbr, bbox):
 
 # ── 12. USGS PAD-US 4.1 — protected areas (local state clip) ──────────
 
-# One-time bulk download (FIX_PROMPT_2 rule 8):
-#   cache/padus/nc/PADUS4_1_StateNC.gdb
-#   from https://www.sciencebase.gov/catalog/item/6759abcfd34edfeb8710a004
-#   ("PAD-US 4.1 State Downloads", PADUS4_1_State_NC_GDB_KMZ.zip, retrieved
-#   2026-07-10 — see cache/padus/PROVENANCE.txt). PAD-US 4.x ships state
-#   downloads as GDB+KMZ only (no state GeoPackage exists for 4.x; FIX_PLAN_2
-#   P1.2 said "GeoPackage" — format deviation, same dataset).
+# One-time bulk downloads (FIX_PROMPT_2 rule 8) live under a predictable
+# state-resolved layout:
+#   cache/padus/{state_lower}/PADUS4_1_State{STATE}.gdb
+# from https://www.sciencebase.gov/catalog/item/6759abcfd34edfeb8710a004
+# ("PAD-US 4.1 State Downloads"; see cache/padus/PROVENANCE.txt). PAD-US 4.x
+# ships state downloads as GDB+KMZ only. ``GRIME_PADUS_ROOT`` relocates the
+# whole tree; the historical ``GRIME_PADUS_GDB`` override remains supported for
+# NC, and ``GRIME_PADUS_GDB_{STATE}`` can override an individual state.
+_PADUS_ROOT = Path(os.environ.get("GRIME_PADUS_ROOT", "cache/padus"))
 _PADUS_GDB = Path(os.environ.get(
-    "GRIME_PADUS_GDB", "cache/padus/nc/PADUS4_1_StateNC.gdb"))
+    "GRIME_PADUS_GDB", str(_PADUS_ROOT / "nc" / "PADUS4_1_StateNC.gdb")))
 _PADUS_LAYER = "PADUS4_1Comb_DOD_Trib_NGP_Fee_Desig_Ease_State_NC"
-_PADUS_STATE = "NC"          # the downloaded clip covers North Carolina only
-_padus_cache = {"gdf": None, "loaded": False}
+_PADUS_STATE = "NC"          # compatibility aliases for the original NC loader
+_padus_cache = {}
 
 
-def padus_protected_gdf(bbox, utm_crs, pad_km=20.0):
+def _padus_state_code(state_abbr):
+    """Normalize a two-letter state/territory abbreviation, or return None."""
+    state = str(state_abbr or "").strip().upper()
+    return state if len(state) == 2 and state.isalpha() else None
+
+
+def _padus_gdb_for_state(state_abbr):
+    """Local PAD-US 4.1 state GDB path under the documented cache layout."""
+    state = _padus_state_code(state_abbr)
+    if state is None:
+        return None
+    override = os.environ.get(f"GRIME_PADUS_GDB_{state}")
+    if override:
+        return Path(override)
+    if state == "NC":
+        return _PADUS_GDB             # preserve GRIME_PADUS_GDB + old tests
+    return _PADUS_ROOT / state.lower() / f"PADUS4_1_State{state}.gdb"
+
+
+def _padus_layer_for_state(state_abbr):
+    state = _padus_state_code(state_abbr)
+    if state is None:
+        return None
+    if state == "NC":
+        return _PADUS_LAYER
+    return f"PADUS4_1Comb_DOD_Trib_NGP_Fee_Desig_Ease_State_{state}"
+
+
+def padus_protected_gdf(bbox, utm_crs, state_abbr="NC", pad_km=20.0):
     """Protected-area polygons intersecting ``bbox`` (WGS84 lon/lat, padded by
     ``pad_km`` so the shipped 20 km scoring buffer never runs off the clip),
     reprojected to ``utm_crs``, with a ``designation`` column carrying the
     PAD-US descriptive designation type (d_Des_Tp — e.g. 'State Park',
     'Local Park'), which is what core.impact.PROTECTION_WEIGHTS keys match
-    against. Returns a GeoDataFrame, or None when the local PAD-US clip is not
-    on disk (caller keeps the documented fallback). Whole-state layer is read
-    once per process and clipped per call."""
+    against. ``state_abbr`` selects the state-resolved local GDB. Returns None
+    when the GDB is missing, unreadable, or has an incompatible schema (caller
+    keeps the documented fallback). A successful query with no intersecting
+    areas returns an empty GeoDataFrame, preserving the distinction between
+    unknown and a computed absence.
+
+    The GDB is first opened for metadata only so the padded WGS84 query geometry
+    can be transformed to the layer's native CRS. The actual read then supplies
+    a native-CRS bbox to GDAL, avoiding a whole-state load for large states."""
     import geopandas as gpd
 
-    if not _padus_cache["loaded"]:
-        _padus_cache["loaded"] = True
-        if _PADUS_GDB.exists():
-            gdf = gpd.read_file(_PADUS_GDB, layer=_PADUS_LAYER)
-            gdf = gdf[["d_Des_Tp", "GAP_Sts", "geometry"]].rename(
-                columns={"d_Des_Tp": "designation"})
-            _padus_cache["gdf"] = gdf          # native CONUS Albers (ESRI:102039)
-    full = _padus_cache["gdf"]
-    if full is None:
+    state = _padus_state_code(state_abbr)
+    gdb = _padus_gdb_for_state(state)
+    layer = _padus_layer_for_state(state)
+    if state is None or gdb is None or layer is None or not gdb.exists():
         return None
+
+    try:
+        bounds = tuple(round(float(v), 8) for v in bbox)
+        if len(bounds) != 4 or bounds[0] >= bounds[2] or bounds[1] >= bounds[3]:
+            return None
+        pad_km = float(pad_km)
+        if pad_km < 0:
+            return None
+    except (TypeError, ValueError):
+        return None
+
+    cache_key = (state, str(gdb), layer, bounds, str(utm_crs), pad_km)
+    cached = _padus_cache.get(cache_key)
+    if cached is not None:
+        return cached.copy()
+
     from shapely.geometry import box
-    w, s, e, n = bbox
-    clip_wgs = gpd.GeoSeries([box(w, s, e, n)], crs="EPSG:4326")
-    clip = clip_wgs.to_crs(full.crs).buffer(pad_km * 1000.0).iloc[0]
-    sub = full[full.intersects(clip)]
-    return sub.to_crs(utm_crs)
+
+    try:
+        # ``rows=0`` asks Fiona/GDAL for schema + CRS without reading features.
+        meta = gpd.read_file(gdb, layer=layer, rows=0)
+        if meta.crs is None or "d_Des_Tp" not in meta.columns:
+            return None
+        clip_wgs = gpd.GeoSeries([box(*bounds)], crs="EPSG:4326")
+        clip_native = clip_wgs.to_crs(meta.crs).buffer(pad_km * 1000.0).iloc[0]
+        gdf = gpd.read_file(gdb, layer=layer, bbox=clip_native.bounds)
+        if gdf.crs is None or "d_Des_Tp" not in gdf.columns:
+            return None
+        # The GDAL bbox is rectangular; retain the exact padded query geometry.
+        gdf = gdf[gdf.intersects(clip_native)]
+        keep = ["d_Des_Tp"]
+        if "GAP_Sts" in gdf.columns:
+            keep.append("GAP_Sts")
+        keep.append("geometry")
+        result = gdf[keep].rename(columns={"d_Des_Tp": "designation"})
+        result = result.to_crs(utm_crs)
+    except Exception:
+        # A corrupt/unsupported GDB is unknown, never a fabricated empty layer.
+        return None
+
+    _padus_cache[cache_key] = result
+    return result.copy()
 
 
 # ── 13. USACE/BTS National Waterway Network — navigable-water gate ────
@@ -805,15 +1006,19 @@ _NWN_GEOJSON = Path(os.environ.get("GRIME_NWN_GEOJSON",
 _nwn_cache = {"gdf": None, "loaded": False}
 
 
-def nwn_navigable_union(bbox, utm_crs, pad_km=2.0):
+def nwn_navigable_union(bbox, utm_crs, pad_km=2.0, state_abbr="NC"):
     """Union of USACE NWN navigable-waterway line segments intersecting
     ``bbox`` (WGS84, padded by ``pad_km``), reprojected to ``utm_crs``.
     Feeds the navigability hard gate: candidates within
     core.feasibility.NAVIGABLE_GATE_M of this geometry are excluded.
     Returns shapely geometry (possibly empty — an honest 'no navigable water
     here'), or None when the local NWN clip is not on disk (gate stays
-    inert — documented, never guessed)."""
+    inert — documented, never guessed). The cached clip covers NC only, so an
+    out-of-state request is unknown rather than a false computed absence."""
     import geopandas as gpd
+
+    if str(state_abbr).strip().upper() != "NC":
+        return None
 
     if not _nwn_cache["loaded"]:
         _nwn_cache["loaded"] = True

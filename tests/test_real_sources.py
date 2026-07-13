@@ -80,26 +80,37 @@ def test_erom_drainage_km2():
     assert rs.erom_drainage_km2({}) is None
 
 
-# ── TRI: the longitude-sign + null fix (the actual shipped bug) ──
+# ── TRI: current DataMap endpoint, open filter, DMS + sign fixes ──
 
-def test_tri_sign_fix_and_null_handling(monkeypatch):
-    # Envirofacts returns bare-positive longitudes and some null rows
+def test_tri_open_filter_packed_dms_sign_and_bbox(monkeypatch):
     fixture = [
-        {"pref_latitude": 36.0, "pref_longitude": 78.891667},      # sign-flip to -78.89
-        {"pref_latitude": 35.995556, "pref_longitude": 78.899444},
-        {"pref_latitude": None, "pref_longitude": None},           # null → dropped
-        {"pref_latitude": 36.0, "pref_longitude": -78.9},          # already negative
-        {"pref_latitude": 41.0, "pref_longitude": 74.0},           # NY-ish → outside window, dropped
+        {"fac_closed_ind": "0", "pref_latitude": 36.0,
+         "pref_longitude": 78.891667},               # positive magnitude → west
+        {"fac_closed_ind": "0", "pref_latitude": None,
+         "pref_longitude": None, "fac_latitude": 355930,
+         "fac_longitude": 785400},                   # packed DDMMSS fallback
+        {"fac_closed_ind": "1", "pref_latitude": 36.01,
+         "pref_longitude": 78.9},                    # closed → dropped
+        {"fac_closed_ind": "0", "pref_latitude": None,
+         "pref_longitude": None, "fac_latitude": 356130,
+         "fac_longitude": 786100},                   # invalid minutes → dropped
+        {"fac_closed_ind": "0", "pref_latitude": 41.0,
+         "pref_longitude": 74.0},                    # outside bbox → dropped
     ]
-    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: fixture)
-    pts = rs.tri_points_durham()
-    assert len(pts) == 3                       # 2 sign-flipped + 1 already-negative; nulls/out-of-window gone
-    for lat, lon in pts:
-        assert 35.0 <= lat <= 37.0 and -80.0 <= lon <= -78.0   # all land in Durham region
+    calls = []
+    monkeypatch.setattr(
+        rs, "cached_get_json",
+        lambda url, **kwargs: calls.append((url, kwargs)) or fixture)
+    pts = rs.tri_facility_points("nc", (-79.05, 35.90, -78.75, 36.05))
+    assert calls[0][0].endswith(
+        "/tri.tri_facility/state_abbr/equals/NC/1:9999/json")
+    assert pts == [(36.0, -78.891667), (35 + 59 / 60 + 30 / 3600, -78.9)]
 
 
-def test_tri_zero_when_endpoint_dead(monkeypatch):
+def test_tri_distinguishes_failure_from_real_empty(monkeypatch):
     monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: None)
+    assert rs.tri_facility_points("NC", (-79.05, 35.90, -78.75, 36.05)) is None
+    # Frozen flagship wrapper retains its historical list return contract.
     assert rs.tri_points_durham() == []
 
 
@@ -138,16 +149,113 @@ def test_nbi_parses_decimal_degrees(monkeypatch):
     assert all(lon < 0 for _, lon in pts)
 
 
-# ── CSO: distinguishes truthful-zero from download failure ──
+# ── ECHO NPDES/CSO: active outfalls and real-zero semantics ──
+
+def test_echo_bulk_download_reuses_stable_named_cache(monkeypatch, tmp_path):
+    monkeypatch.setattr(rs, "_ECHO_CACHE_DIR", tmp_path)
+    cached = tmp_path / "npdes_outfalls_layer.zip"
+    cached.write_bytes(b"already downloaded")
+    monkeypatch.setattr(
+        rs.requests, "get",
+        lambda *a, **k: pytest.fail("stable cache hit must not re-download"))
+    got = rs.echo_bulk_download(
+        "https://echo.epa.gov/files/echodownloads/npdes_outfalls_layer.zip",
+        "npdes_outfalls_layer.zip")
+    assert got == cached
+
+
+def test_npdes_filters_status_type_and_uses_outfall_coordinates(monkeypatch):
+    rows = [
+        {"PERMIT_TYPE_CODE": "NPD", "PERMIT_STATUS_CODE": "EFF",
+         "LATITUDE83": "36.00", "LONGITUDE83": "-78.90"},
+        {"PERMIT_TYPE_CODE": "GPC", "PERMIT_STATUS_CODE": "ADC",
+         "LATITUDE83": "36.01", "LONGITUDE83": "-78.91"},
+        {"PERMIT_TYPE_CODE": "NGP", "PERMIT_STATUS_CODE": "EXP",
+         "LATITUDE83": "36.02", "LONGITUDE83": "-78.92"},
+        {"PERMIT_TYPE_CODE": "NPD", "PERMIT_STATUS_CODE": "TRM",
+         "LATITUDE83": "36.00", "LONGITUDE83": "-78.90"},
+        {"PERMIT_TYPE_CODE": "NPD", "PERMIT_STATUS_CODE": "PND",
+         "LATITUDE83": "36.00", "LONGITUDE83": "-78.90"},
+        {"PERMIT_TYPE_CODE": "IIU", "PERMIT_STATUS_CODE": "EFF",
+         "LATITUDE83": "36.00", "LONGITUDE83": "-78.90"},
+        # No outfall coordinate: facility proxies must not be substituted.
+        {"PERMIT_TYPE_CODE": "NPD", "PERMIT_STATUS_CODE": "EFF",
+         "LATITUDE83": "", "LONGITUDE83": "", "FAC_LAT": "36.00",
+         "FAC_LONG": "-78.90"},
+    ]
+    monkeypatch.setattr(rs, "echo_bulk_download", lambda *a, **k: "npdes.zip")
+    monkeypatch.setattr(rs, "_load_zip_member_csv", lambda *a, **k: (rows, "outfall.csv"))
+    assert rs.npdes_outfall_points((-79.05, 35.90, -78.75, 36.05)) == [
+        (36.0, -78.9), (36.01, -78.91), (36.02, -78.92)]
+
+
+def test_npdes_distinguishes_failure_from_real_empty(monkeypatch):
+    monkeypatch.setattr(rs, "echo_bulk_download", lambda *a, **k: None)
+    assert rs.npdes_outfall_points(
+        (-79.05, 35.90, -78.75, 36.05), state_abbrs={"NY", "NJ"}) is None
+    monkeypatch.setattr(rs, "_load_zip_member_csv", lambda *a, **k: ([], "outfall.csv"))
+    assert rs.npdes_outfall_points(
+        (-79.05, 35.90, -78.75, 36.05), state_abbrs={"NY", "NJ"}) == []
+
+
+def test_npdes_optional_ny_nj_state_filter(monkeypatch):
+    def row(state, lat):
+        return {"STATE_CODE": state, "PERMIT_TYPE_CODE": "NPD",
+                "PERMIT_STATUS_CODE": "EFF", "LATITUDE83": str(lat),
+                "LONGITUDE83": "-74.0"}
+
+    rows = [row("NY", 40.70), row("NJ", 40.71), row("CT", 40.72)]
+    monkeypatch.setattr(rs, "echo_bulk_download", lambda *a, **k: "npdes.zip")
+    monkeypatch.setattr(rs, "_load_zip_member_csv", lambda *a, **k: (rows, "outfall.csv"))
+    bbox = (-74.2, 40.6, -73.8, 40.8)
+    assert rs.npdes_outfall_points(bbox, state_abbrs={"ny", "NJ"}) == [
+        (40.70, -74.0), (40.71, -74.0)]
+    assert len(rs.npdes_outfall_points(bbox)) == 3  # bbox-only compatibility
 
 def test_cso_download_failure_is_none_not_zero(monkeypatch):
-    monkeypatch.setattr(rs, "cached_download", lambda *a, **k: None)
-    assert rs.cso_points_nc((-79.05, 35.90, -78.75, 36.05)) is None  # unknown, not confirmed 0
+    monkeypatch.setattr(rs, "echo_bulk_download", lambda *a, **k: None)
+    assert rs.cso_outfall_points(
+        (-79.05, 35.90, -78.75, 36.05), state_abbrs=("NY", "NJ")) is None
+
+
+def test_cso_uses_permitted_feature_coordinates_and_excludes_closed(monkeypatch):
+    rows = [
+        {"PF_CHARACTER": "CSO", "PF_LAT": "36.00", "PF_LON": "-78.90"},
+        {"PF_CHARACTER": "DSW|TCS", "PF_LAT": "36.01", "PF_LON": "-78.91"},
+        {"PF_CHARACTER": "CLS", "PF_LAT": "36.02", "PF_LON": "-78.92"},
+        {"PF_CHARACTER": "CLS|CSO", "PF_LAT": "36.03", "PF_LON": "-78.93"},
+        {"PF_CHARACTER": "DSW", "PF_LAT": "36.00", "PF_LON": "-78.90"},
+        # Facility proxy is in-bbox, but the actual outfall is not.
+        {"PF_CHARACTER": "CSO", "PF_LAT": "41.0", "PF_LON": "-74.0",
+         "FACILITY_LAT": "36.0", "FACILITY_LON": "-78.9"},
+    ]
+    monkeypatch.setattr(rs, "echo_bulk_download", lambda *a, **k: "cso.zip")
+    monkeypatch.setattr(rs, "_load_zip_member_csv", lambda *a, **k: (rows, "cso.csv"))
+    expected = [(36.0, -78.9), (36.01, -78.91)]
+    assert rs.cso_outfall_points((-79.05, 35.90, -78.75, 36.05)) == expected
+    assert rs.cso_points_nc((-79.05, 35.90, -78.75, 36.05)) == expected
+
+
+def test_cso_optional_ny_nj_state_filter_and_field_fallback(monkeypatch):
+    rows = [
+        {"PERMITTING_STATE": "NY", "STATE_CODE": "CT", "PF_CHARACTER": "CSO",
+         "PF_LAT": "40.70", "PF_LON": "-74.0"},
+        {"PERMITTING_STATE": "", "STATE_CODE": "NJ", "PF_CHARACTER": "TCS",
+         "PF_LAT": "40.71", "PF_LON": "-74.0"},
+        {"PERMITTING_STATE": "CT", "STATE_CODE": "NY", "PF_CHARACTER": "CSO",
+         "PF_LAT": "40.72", "PF_LON": "-74.0"},
+    ]
+    monkeypatch.setattr(rs, "echo_bulk_download", lambda *a, **k: "cso.zip")
+    monkeypatch.setattr(rs, "_load_zip_member_csv", lambda *a, **k: (rows, "cso.csv"))
+    bbox = (-74.2, 40.6, -73.8, 40.8)
+    assert rs.cso_outfall_points(bbox, state_abbrs=["ny", "NJ"]) == [
+        (40.70, -74.0), (40.71, -74.0)]
+    assert len(rs.cso_outfall_points(bbox)) == 3  # bbox-only compatibility
 
 
 # ── SEMS (Superfund) — fix-pass-2 Phase 1 (shapes recorded 2026-07-10) ──
 
-def test_sems_sign_fix_bbox_filter_and_null_handling(monkeypatch):
+def test_sems_dmap_active_sign_bbox_and_null_handling(monkeypatch):
     fixture = [
         # in-bbox, longitude sign dropped by Envirofacts → must be flipped
         {"name": "IN-BBOX SIGNFIX", "fk_ref_state_code": "NC",
@@ -157,6 +265,10 @@ def test_sems_sign_fix_bbox_filter_and_null_handling(monkeypatch):
         {"name": "IN-BBOX OK", "fk_ref_state_code": "NC",
          "primary_latitude_decimal_val": "36.01",
          "primary_longitude_decimal_val": "-78.95"},
+        # archived inventory record → not an active Superfund proxy
+        {"name": "ARCHIVED", "fk_ref_state_code": "NC", "archived_ind": "Y",
+         "primary_latitude_decimal_val": "36.00",
+         "primary_longitude_decimal_val": "-78.90"},
         # no coordinates (2/3 of SEMS rows) → skipped, not fabricated
         {"name": "NO COORDS", "fk_ref_state_code": "NC",
          "primary_latitude_decimal_val": None,
@@ -166,8 +278,13 @@ def test_sems_sign_fix_bbox_filter_and_null_handling(monkeypatch):
          "primary_latitude_decimal_val": "35.23",
          "primary_longitude_decimal_val": "-80.84"},
     ]
-    monkeypatch.setattr(rs, "cached_get_json", lambda *a, **k: fixture)
+    calls = []
+    monkeypatch.setattr(
+        rs, "cached_get_json",
+        lambda url, **kwargs: calls.append((url, kwargs)) or fixture)
     pts = rs.sems_superfund_points("NC", (-79.05, 35.90, -78.75, 36.05))
+    assert calls[0][0].endswith(
+        "/sems.envirofacts_site/fk_ref_state_code/equals/NC/1:9999/json")
     assert pts == [(35.99, -78.90), (36.01, -78.95)]
 
 

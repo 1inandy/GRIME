@@ -43,6 +43,11 @@ def test_missing_clip_returns_none(monkeypatch):
     assert rs.nwn_navigable_union(WILMINGTON_BBOX, UTM18) is None
 
 
+def test_nc_only_clip_is_unknown_outside_state(nwn_fixture):
+    assert rs.nwn_navigable_union(
+        (-74.13, 40.64, -73.88, 40.79), UTM18, state_abbr="NY") is None
+
+
 def test_gate_drops_on_channel_keeps_offset_and_nan(nwn_fixture):
     """A candidate ON the Cape Fear shipping channel is excluded; one well
     off it survives; a row with no NWN data (NaN) survives — gates only fire
