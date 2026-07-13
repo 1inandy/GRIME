@@ -34,9 +34,10 @@ docstring):
 - parameters wired by the **current** `wire_region_parameters` (the thing the
   fix phases change), scored by the shipped `compute_composite_score`,
   **default weights, no per-site calibration**;
-- **recovered (PRIMARY)** = ≥1 hard-gate-surviving (deployable) candidate
-  within **80 m** of the trap (Euclidean in region UTM — permissive stand-in
-  for the paper's along-channel buffer). A secondary diagnostic count applies
+- **recovered (PRIMARY)** = ≥1 post-hard-gate model candidate within **80 m**
+  of the trap; this is not field confirmation of deployment feasibility.
+  Distance is Euclidean in region UTM, a permissive stand-in for the paper's
+  along-channel buffer. A secondary diagnostic count applies
   the paper's 0.70 threshold (composite ≥ 70 on the 0–100 scale) on top; that
   cutoff does not transfer to the pipeline's batch-relative MinMax composites
   (baseline shows in-buffer candidates at composite 40–60, never ≥70), so it
@@ -68,6 +69,7 @@ top-10 rank shifts vs `paper-2026` are recorded every row.
 | fix3 step 1 — native-resolution NC lidar bank cross-sections (2026-07-12) | bank slope live in NC harness; committed flagship remains 24/27 until the one final regen | n/a | **21/27** primary (= baseline; 0/27 at ≥70 diagnostic; zero run failures) | 96.5% (committed flagship intentionally untouched) | 0 (flagship intentionally untouched until single regen) |
 | fix3 step 2 — exact-category municipal litter complaints (2026-07-13) | Charlotte/Raleigh/Greensboro feeds live in harness; committed flagship remains 24/27 until the one final regen | n/a | **21/27** primary (= baseline; 0/27 at ≥70 diagnostic; zero run failures) | 96.5% (committed flagship intentionally untouched) | 0 (flagship intentionally untouched until single regen) |
 | fix3 step 3 — national EPA/PAD-US coverage lift (2026-07-13) | current/open TRI/SEMS/ECHO inputs + state PAD-US/service fallback live; committed outputs remain untouched until one final regen | n/a | **21/27** primary (= baseline; 0/27 at ≥70 diagnostic; zero run failures) | 96.5% (committed flagship intentionally untouched) | 0 (flagship intentionally untouched until single regen) |
+| fix3 step 4a — remove assumed OSM tourism fallback (2026-07-13) | a failed real OSM query is now an explicit constant 0.0 fallback, never an assumed 1.0 or per-site retry; committed outputs still await the single regen | n/a | **21/27** primary (= baseline; 0/27 at ≥70 diagnostic; zero run failures) | 96.5% (committed flagship intentionally untouched) | 0 (flagship intentionally untouched until single regen) |
 
 **Phase-0 baseline reading.** The reconstruction lands within ONE trap of the
 published 22/27 despite a different candidate generator (Python pipeline at

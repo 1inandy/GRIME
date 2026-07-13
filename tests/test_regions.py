@@ -311,6 +311,38 @@ def test_write_zero_region_is_honest_not_a_failure(tmp_path, monkeypatch):
     assert doc["provenance"]["candidates_pre_gate"] == 3
 
 
+def test_tourism_source_failure_is_none_not_assumed(monkeypatch):
+    """An Overpass outage is a documented caller fallback, never an assumed
+    urban amenity density or a per-candidate retry storm."""
+    import core.impact as impact
+    from shapely.geometry import Point
+
+    monkeypatch.setattr(impact, "_bbox_osm_features", lambda *a, **k: None)
+    assert impact.get_tourism_amenity_density(
+        Point(700000, 4000000), bbox=(-79.0, 35.9, -78.8, 36.1)
+    ) is None
+
+
+def test_overpass_env_accepts_interpreter_url(monkeypatch):
+    """The operator knob normalizes an interpreter URL to the base URL OSMnx
+    1.x expects, preventing a silent /interpreter/interpreter endpoint."""
+    import osmnx as ox
+    import scripts.run_regions as rr
+
+    monkeypatch.delattr(rr._configure_osmnx, "_done", raising=False)
+    monkeypatch.setenv(
+        "GRIME_OVERPASS_ENDPOINT",
+        "https://example.test/overpass/api/interpreter/",
+    )
+    old = ox.settings.overpass_endpoint
+    try:
+        rr._configure_osmnx()
+        assert ox.settings.overpass_endpoint == "https://example.test/overpass/api"
+    finally:
+        ox.settings.overpass_endpoint = old
+        monkeypatch.delattr(rr._configure_osmnx, "_done", raising=False)
+
+
 def test_supervisor_resume_skips_built_regions(tmp_path, monkeypatch):
     """The supervisor must not re-run a region whose output already exists."""
     import types
