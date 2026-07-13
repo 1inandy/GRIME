@@ -247,6 +247,22 @@ def main():
             if not approx(got, expected, 1e-9):
                 errors.append(f"{curve_name} inverse-distance({d} m)={got} != {expected}")
 
+    # Municipal litter complaints use the same Cauchy decay, but distance is to
+    # the candidate catchment boundary and the sum is divided by catchment area.
+    litter_curve = pc["litter_complaint_density"]
+    from core.region_sources import (LITTER_HALF_DECAY_M,
+                                     litter_density_from_points)
+    litter_half = float(litter_curve["half_decay_m"])
+    if not approx(LITTER_HALF_DECAY_M, litter_half):
+        errors.append(f"litter half_decay code {LITTER_HALF_DECAY_M} != model {litter_half}")
+    catchment = Polygon([(-1, -1), (1, -1), (1, 1), (-1, 1)])
+    complaints = gpd.GeoSeries([Point(0, 0), Point(1 + litter_half, 0)],
+                               crs="EPSG:32617")
+    got = litter_density_from_points(catchment, 2.0, complaints)
+    expected = (1.0 + 1.0 / (1.0 + (litter_half / litter_half) ** 2)) / 2.0
+    if not approx(got, expected, 1e-9):
+        errors.append(f"litter complaint decay/density={got} != {expected}")
+
     # protected areas: designation table + decay
     pa = pc["protected_area_score"]
     if {k: float(v) for k, v in pa["designation_weights"].items()} != PROTECTION_WEIGHTS:
@@ -322,7 +338,8 @@ def main():
           "bank-slope curves/input metric, "
           "hard gates, spacing + occlusion constants (pipeline & explorer), the "
           "width-order fallback, the impact proximity curves "
-          "(superfund/cso inverse-distance, PAD-US designation weights, intake decay), "
+          "(superfund/cso/litter inverse-distance, PAD-US designation weights, "
+          "intake decay), "
           "the SIR 2014-5030 HR1/HR4 flood regressions, and the land-ownership "
           "classifier table.")
     sys.exit(0)

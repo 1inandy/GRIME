@@ -154,6 +154,91 @@ def test_flood_q10_hr1_matches_sir_table7():
     assert rg.flood_q10_hr1(da_km2, 25.0) == pytest.approx(expected, rel=1e-9)
 
 
+# ── Municipal litter feeds — max-out step 2 ─────────────────────────
+
+def test_litter_sources_configured_only_where_public(config):
+    configured = {r["slug"]: r.get("litter_source") for r in config["regions"]
+                  if r.get("litter_source")}
+    assert configured == {
+        "charlotte": "charlotte_311",
+        "raleigh": "raleigh_ask",
+        "greensboro": "greensboro_trash_archive",
+    }
+
+
+def test_charlotte_litter_exact_filter_and_coordinates(monkeypatch):
+    seen = []
+
+    def fake(url, params, **kwargs):
+        seen.append(params)
+        return {"features": [
+            {"attributes": {"LATITUDE": 35.22, "LONGITUDE": -80.84,
+                            "REQUEST_TYPE": "LITTER/DEBRIS IN STREET"}},
+            {"attributes": {"LATITUDE": None, "LONGITUDE": None,
+                            "REQUEST_TYPE": "DUMPING IN STREET/ROW"}},
+        ]}
+
+    monkeypatch.setattr(rg, "cached_get_json", fake)
+    points = rg.municipal_litter_points(
+        "charlotte_311", (-80.97, 35.15, -80.71, 35.31))
+    assert points == [(35.22, -80.84)]
+    assert seen[0]["where"] == (
+        "REQUEST_TYPE IN ('LITTER/DEBRIS IN STREET','DUMPING IN STREET/ROW')")
+
+
+def test_raleigh_litter_filter_is_not_generic_pollution(monkeypatch):
+    seen = []
+
+    def fake(url, params, **kwargs):
+        seen.append(params)
+        return {"features": [
+            {"attributes": {"REQUEST_TYPE": "Litter"},
+             "geometry": {"x": -78.64, "y": 35.77}},
+        ]}
+
+    monkeypatch.setattr(rg, "cached_get_json", fake)
+    assert rg.municipal_litter_points(
+        "raleigh_ask", (-78.77, 35.69, -78.51, 35.85)) == [(35.77, -78.64)]
+    assert seen[0]["where"] == "REQUEST_TYPE = 'Litter'"
+    assert "Pollution" not in seen[0]["where"] and "Debris" not in seen[0]["where"]
+
+
+def test_greensboro_litter_join_deduplicates_cases(monkeypatch):
+    def fake(url, params, **kwargs):
+        if "/1/query" in url:
+            return {"features": [
+                {"attributes": {"CaseNumber": "A"}},
+                {"attributes": {"CaseNumber": "B"}},
+            ]}
+        return {"features": [
+            {"attributes": {"CaseNumber": "A", "Latitude": 36.07,
+                            "Longitude": -79.79}},
+            {"attributes": {"CaseNumber": "A", "Latitude": 36.071,
+                            "Longitude": -79.791}},       # duplicate violation
+            {"attributes": {"CaseNumber": "C", "Latitude": 36.08,
+                            "Longitude": -79.80}},        # not a complaint case
+        ]}
+
+    monkeypatch.setattr(rg, "cached_get_json", fake)
+    points = rg.municipal_litter_points(
+        "greensboro_trash_archive", (-79.92, 35.99, -79.66, 36.15))
+    assert points == [(36.07, -79.79)]
+
+
+def test_litter_distance_to_catchment_decay_and_failure(monkeypatch):
+    import geopandas as gpd
+    from shapely.geometry import Point, Polygon
+
+    catchment = Polygon([(-1, -1), (1, -1), (1, 1), (-1, 1)])
+    points = gpd.GeoSeries([Point(0, 0), Point(501, 0)], crs="EPSG:32617")
+    # weights 1.0 (inside) + 0.5 (500 m beyond edge), divided by 2 km²
+    assert rg.litter_density_from_points(catchment, 2.0, points) == pytest.approx(0.75)
+    assert rg.municipal_litter_points("unsupported", (-1, -1, 1, 1)) is None
+
+    monkeypatch.setattr(rg, "cached_get_json", lambda *a, **k: None)
+    assert rg.municipal_litter_points("raleigh_ask", (-1, -1, 1, 1)) is None
+
+
 # ── API endpoints (fixture region, offline) ──────────────────────────
 
 @pytest.fixture()

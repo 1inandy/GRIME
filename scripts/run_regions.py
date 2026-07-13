@@ -229,6 +229,12 @@ def wire_region_parameters(cands, region):
     nbi_gdf = gpd.GeoDataFrame(geometry=nbi_pts, crs=utm) if len(nbi_pts) else None
     log(slug, f"  TRI={len(tri)} NPDES={len(npdes)} CSO={'dl-fail' if cso_raw is None else len(cso)} NBI={len(nbi_pts)}")
 
+    litter_key = region.get("litter_source")
+    litter_raw = rg.municipal_litter_points(litter_key, bbox) if litter_key else None
+    litter = rg.to_utm_points(litter_raw or [], utm)
+    log(slug, f"Municipal litter complaints: "
+              f"{'unsupported' if not litter_key else ('fetch-fail' if litter_raw is None else len(litter))}")
+
     log(slug, "Impact layers: SEMS(superfund) / PAD-US / SWAP intakes...")
     # Superfund: SEMS state inventory, bbox +0.05 deg so a just-outside site
     # still contributes through the fast (500 m half-decay) proximity curve.
@@ -332,7 +338,10 @@ def wire_region_parameters(cands, region):
         if cso_raw is not None:
             cols["cso_density"][i] = round(inverse_distance_score(pt, cso, 500), 4)
             counts["cso_density"] += 1
-        # litter_complaint_density: no machine-readable source → NaN fallback
+        if litter_raw is not None:
+            cols["litter_complaint_density"][i] = round(
+                rg.litter_density_from_points(disc, da, litter), 4)
+            counts["litter_complaint_density"] += 1
 
         # flow — SYMMETRIC snap guard: reject the COMID when its drainage is far
         # smaller (minor tributary) OR far larger (site snapped to a tidal/major
@@ -450,9 +459,12 @@ def wire_region_parameters(cands, region):
         log(slug, f"  velocity fallback (0.5 m/s, shipped default) for {n_vel_fb} sites lacking EROM/snap")
 
     # fallback constants where a whole column stayed NaN-by-design
-    fallback_notes = {
-        "litter_complaint_density": (0.0, "no machine-readable 311/litter source for this region"),
-    }
+    fallback_notes = {}
+    if litter_raw is None:
+        fallback_notes["litter_complaint_density"] = (
+            0.0, ("configured official municipal litter feed unavailable for this run"
+                  if litter_key else
+                  "no public machine-readable litter/illegal-dumping feed for this region"))
     if sems_raw is None:
         fallback_notes["superfund_score"] = (
             0.0, "EPA Envirofacts SEMS unreachable for this run — documented fallback")
@@ -515,6 +527,10 @@ def wire_region_parameters(cands, region):
         "tri_facility_density": f"EPA Envirofacts TRI state={region['state']} (sign-fixed), per catchment",
         "npdes_points": "EPA ECHO NPDES outfalls (national bulk), per catchment",
         "cso_density": "EPA ECHO CSO inventory (national bulk), Cauchy proximity",
+        "litter_complaint_density": (
+            f"{rg.litter_source_label(litter_key)}; complaint distance to catchment "
+            f"decays as 1/(1+(d/{rg.LITTER_HALF_DECAY_M:g}m)^2), divided by "
+            "catchment km²" if litter_raw is not None else None),
         "usgs_mean_q_cfs": "NHDPlus EROM qe_ma per COMID (snap-guarded)",
         "seasonal_cv": "CV of NHDPlus EROM monthly flows per COMID",
         "flood_q10_cfs": (

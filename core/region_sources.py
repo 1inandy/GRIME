@@ -284,3 +284,166 @@ def to_utm_points(pts, utm_crs):
         return gpd.GeoSeries([], crs=utm_crs)
     g = gpd.GeoSeries([Point(lon, lat) for lat, lon in pts], crs=WGS84)
     return g.to_crs(utm_crs)
+
+
+# ── Municipal litter / illegal-dumping complaints ───────────────────
+
+LITTER_HALF_DECAY_M = 500.0
+
+_LITTER_SOURCES = {
+    "charlotte_311": {
+        "label": "Charlotte ServiceRequests311 (litter/debris or dumping in street/ROW)",
+        "url": ("https://gis.charlottenc.gov/arcgis/rest/services/ODP/"
+                "ServiceRequests311/MapServer/0/query"),
+    },
+    "raleigh_ask": {
+        "label": "Ask Raleigh requests (REQUEST_TYPE='Litter')",
+        "url": ("https://services.arcgis.com/v400IkDOw1ad7Yad/arcgis/rest/services/"
+                "Ask_Raleigh_Requests/FeatureServer/0/query"),
+    },
+    "greensboro_trash_archive": {
+        "label": "Greensboro Trash & Waste code-complaint archive (through 2024-06-18)",
+        "url": ("https://gis.greensboro-nc.gov/arcgis/rest/services/"
+                "OpenGateCity/OpenData_CC_DS/MapServer"),
+    },
+}
+
+
+def _arcgis_features_paged(url, params, kind, page_size=1000, max_pages=100):
+    """Return every ArcGIS feature for a query, or ``None`` on any failed page."""
+    out = []
+    for page in range(max_pages):
+        query = dict(params)
+        query.update({"resultOffset": page * page_size,
+                      "resultRecordCount": page_size, "f": "json"})
+        data = cached_get_json(url, query, kind=kind, timeout=120)
+        if data is None or "features" not in data:
+            return None
+        features = data["features"]
+        out.extend(features)
+        if not data.get("exceededTransferLimit") and len(features) < page_size:
+            return out
+    return None                         # a silent page cap is not a valid dataset
+
+
+def _attrs_lower(feature):
+    return {str(k).lower(): v for k, v in feature.get("attributes", {}).items()}
+
+
+def _in_bbox(lat, lon, bbox):
+    w, s, e, n = bbox
+    return s <= lat <= n and w <= lon <= e
+
+
+def municipal_litter_points(source_key, bbox):
+    """Official litter/illegal-dumping complaint points for a configured city.
+
+    Returns ``[(lat, lon), ...]`` (including a truthful empty list after a
+    successful query) or ``None`` for an unsupported/unavailable source. Filters
+    are deliberately exact: unrelated pollution, blocked-drain, or generic code
+    cases are not treated as litter.
+    """
+    if source_key not in _LITTER_SOURCES:
+        return None
+    source = _LITTER_SOURCES[source_key]
+    if source_key == "charlotte_311":
+        features = _arcgis_features_paged(
+            source["url"], {
+                "where": ("REQUEST_TYPE IN ('LITTER/DEBRIS IN STREET',"
+                          "'DUMPING IN STREET/ROW')"),
+                "outFields": ("OBJECTID,REQUEST_TYPE,TITLE,RECEIVED_DATE,"
+                              "LATITUDE,LONGITUDE"),
+                "returnGeometry": "false",
+            }, "litter_charlotte", page_size=7500)
+        if features is None:
+            return None
+        points = []
+        for feature in features:
+            a = _attrs_lower(feature)
+            try:
+                lat, lon = float(a["latitude"]), float(a["longitude"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if _in_bbox(lat, lon, bbox):
+                points.append((lat, lon))
+        return points
+
+    if source_key == "raleigh_ask":
+        w, s, e, n = bbox
+        features = _arcgis_features_paged(
+            source["url"], {
+                "where": "REQUEST_TYPE = 'Litter'",
+                "geometry": f"{w},{s},{e},{n}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": "4326", "outSR": "4326",
+                "spatialRel": "esriSpatialRelIntersects",
+                "outFields": "OBJECTID,CATEGORY,SERVICE,REQUEST_TYPE,APPLIED_DATE",
+                "returnGeometry": "true",
+            }, "litter_raleigh", page_size=1000)
+        if features is None:
+            return None
+        points = []
+        for feature in features:
+            geom = feature.get("geometry", {})
+            try:
+                lon, lat = float(geom["x"]), float(geom["y"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if _in_bbox(lat, lon, bbox):
+                points.append((lat, lon))
+        return points
+
+    # Greensboro's official archive separates complaint cases (table 1) from
+    # geocoded violations (layer 3). Join on CaseNumber and deduplicate cases;
+    # multiple violation rows must never multiply a single complaint.
+    base = source["url"]
+    complaints = _arcgis_features_paged(
+        f"{base}/1/query", {
+            "where": "CaseTypeCode = '17-1 TW' AND Origin = 'C - Complaint'",
+            "outFields": "CaseNumber,CaseTypeCode,Origin,EntryDate",
+            "returnGeometry": "false",
+        }, "litter_greensboro_cases", page_size=1000)
+    violations = _arcgis_features_paged(
+        f"{base}/3/query", {
+            "where": "CaseTypeCode = '17-1 TW'",
+            "outFields": "CaseNumber,CaseTypeCode,Latitude,Longitude",
+            "returnGeometry": "false",
+        }, "litter_greensboro_violations", page_size=1000)
+    if complaints is None or violations is None:
+        return None
+    case_ids = {str(_attrs_lower(f).get("casenumber", "")).strip()
+                for f in complaints}
+    case_ids.discard("")
+    by_case = {}
+    for feature in violations:
+        a = _attrs_lower(feature)
+        case = str(a.get("casenumber", "")).strip()
+        if not case or case not in case_ids or case in by_case:
+            continue
+        try:
+            lat, lon = float(a["latitude"]), float(a["longitude"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if _in_bbox(lat, lon, bbox):
+            by_case[case] = (lat, lon)
+    return list(by_case.values())
+
+
+def litter_density_from_points(catchment_polygon, catchment_area_km2,
+                               complaint_points_utm,
+                               half_decay_m=LITTER_HALF_DECAY_M):
+    """Distance-decayed complaints per catchment km².
+
+    A complaint inside the catchment has weight 1. Outside complaints decay as
+    ``1/(1+(distance/half_decay)^2)``. The source set is fetched once per region.
+    """
+    if complaint_points_utm is None or len(complaint_points_utm) == 0:
+        return 0.0
+    distances = complaint_points_utm.distance(catchment_polygon)
+    weights = 1.0 / (1.0 + (distances / float(half_decay_m)) ** 2)
+    return float(weights.sum() / max(float(catchment_area_km2), 0.01))
+
+
+def litter_source_label(source_key):
+    source = _LITTER_SOURCES.get(source_key)
+    return source["label"] if source else None
