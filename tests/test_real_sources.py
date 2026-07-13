@@ -259,6 +259,60 @@ def test_noaa_atlas14_parser(monkeypatch):
     assert rs.noaa_atlas14_24h50y_in(34.22, -77.94) is None
 
 
+# ── NC DPS/OneMap 3.125-ft lidar DEM bank profiles — max-out step 1 ──
+
+def test_nc_lidar_samples_parse_resolution_source_and_order(monkeypatch):
+    calls = []
+
+    def fake_post(url, payload, **kwargs):
+        calls.append((url, payload))
+        # locationId is local to each chunk. Deliberately reverse response order.
+        return {"samples": [
+            {"locationId": 1, "value": "300.0", "resolution": 4.0,
+             "attributes": {"name": "coarse-overview"}},
+            {"locationId": 0, "value": "291.203674316", "resolution": 3.125,
+             "attributes": {"name": "Durham_2024_QL1_03ft_CountywideRaster"}},
+        ]}
+
+    monkeypatch.setattr(rs, "cached_post_form_json", fake_post)
+    got = rs.nc_lidar_elevations([(2033454.49, 824484.42),
+                                  (2033457.62, 824484.42)])
+    assert len(calls) == 1
+    assert calls[0][1]["geometryType"] == "esriGeometryMultipoint"
+    assert got[0]["elevation_m"] == pytest.approx(291.203674316 * rs.FT_TO_M)
+    assert got[0]["source"].startswith("Durham_2024_QL1")
+    assert got[1] is None                 # coarse response is never called ~1 m
+
+
+def test_nc_lidar_samples_failure_is_documented_fallback(monkeypatch):
+    monkeypatch.setattr(rs, "cached_post_form_json", lambda *a, **k: None)
+    assert rs.nc_lidar_elevations([(1.0, 2.0), (3.0, 4.0)]) == [None, None]
+
+
+def test_bank_profile_metric_discriminates_and_guards():
+    import math
+    import numpy as np
+    from core.feasibility import bank_slope_from_profile, bank_slope_score
+
+    d = np.linspace(0.0, 50.0, 101)
+    center = 25.0
+    symmetric = np.abs(d - center) * math.tan(math.radians(20.0))
+    assert bank_slope_from_profile(d, symmetric) == pytest.approx(20.0, abs=0.05)
+
+    asymmetric = np.where(
+        d < center, (center - d) * math.tan(math.radians(10.0)),
+        (d - center) * math.tan(math.radians(30.0)))
+    assert bank_slope_from_profile(d, asymmetric) == pytest.approx(20.0, abs=0.05)
+    assert bank_slope_from_profile(d, np.zeros_like(d)) == pytest.approx(0.0)
+    assert bank_slope_from_profile([0, 1], [10, 11]) is None
+
+    # Frozen shipped curve boundaries; the new work changes inputs, not math.
+    assert bank_slope_score(14.999) == 1.0
+    assert bank_slope_score(15.0) == 0.5
+    assert bank_slope_score(30.0) == 0.2
+    assert bank_slope_score(45.0) == 0.1
+
+
 # ── statewide land-ownership extension — fix-pass-2 Phase 2 ──
 
 def test_land_ownership_statewide_hints():

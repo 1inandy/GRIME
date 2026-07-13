@@ -50,9 +50,9 @@ most ~80% of on-channel trap positions — the paper's own recall regime (80%,
 81.5%) sits exactly at this geometric ceiling. Rows below compare like-for-like
 (same harness, same bboxes); the paper row is the published anchor.
 
-Stop rule (FIX_PROMPT_2 rule 4): if a phase's Waterkeepers recall drops below
-the paper's 22/27 — or below the phase-0 harness baseline if that baseline is
-lower — STOP, report, do not merge. Dirichlet mean must stay ≥ 94.7±0.5 and
+Stop rule (GPT_SOL_PROMPT standing rule 4): if a step's Waterkeepers recall
+drops below the reconstructed phase-0 baseline of **21/27**, STOP, report, do
+not merge. Dirichlet mean must stay ≥ 94.7±0.5 and
 top-10 rank shifts vs `paper-2026` are recorded every row.
 
 ## Log
@@ -60,10 +60,12 @@ top-10 rank shifts vs `paper-2026` are recorded every row.
 | Phase | Params live | Ellerbe recall (80 m) | Waterkeepers recall (80 m) | Dirichlet top-25 % | Top-10 rank shifts vs paper |
 |---|---|---|---|---|---|
 | paper-2026 baseline (published) | 11/27 (committed Durham file) | 8/10 | 22/27 | 94.7% | — |
-| phase-0 harness baseline (pre-change re-run, 2026-07-10) | 21/27 statewide (Durham file unchanged: 11/27) | n/a (not re-runnable) | **21/27** primary (0/27 at the ≥70 diagnostic — see protocol) | 94.7% (exact) | 0 (data untouched) || phase 1 — SEMS + PAD-US + SWAP wired (2026-07-10) | 24/27 statewide NC | n/a | **21/27** primary (= baseline; identical miss list — impact params feed scores, not gates) | 94.7% (committed file untouched) | 0 (data untouched until the regen) |
+| phase-0 harness baseline (pre-change re-run, 2026-07-10) | 21/27 statewide (Durham file unchanged: 11/27) | n/a (not re-runnable) | **21/27** primary (0/27 at the ≥70 diagnostic — see protocol) | 94.7% (exact) | 0 (data untouched) |
+| phase 1 — SEMS + PAD-US + SWAP wired (2026-07-10) | 24/27 statewide NC | n/a | **21/27** primary (= baseline; identical miss list — impact params feed scores, not gates) | 94.7% (committed file untouched) | 0 (data untouched until the regen) |
 | phase 2 — parcels statewide + HR4 flood + velocity provenance (2026-07-10) | 26/27 statewide NC | n/a | **21/27** primary (= baseline; ownership never emits gate-tripping 0.0, flood feeds scores only) | 94.7% (committed file untouched) | 0 (regen pending) |
 | phase 3 — USACE-NWN navigability gate (2026-07-10) | 26/27 statewide NC | n/a | **21/27** primary (= baseline) — gate ACTIVE with zero recall cost: removed 19–55 near-navigable candidates in 5 coastal trap areas (Washington, Kinston, 3× Wilmington), no inland site touched | 94.7% (committed file untouched) | 0 (regen pending) |
 | regen — single fix-pass-2 regeneration (2026-07-10) | **24/27** flagship + regions (constants: truthful CSO zero, bank slope, litter) | n/a | 21/27 (unchanged — the harness generates its own candidates; code identical to phase 3) | **96.5%** on the re-scored flagship (min 82.8, max 100, 9/10 >90%); paper file at tag: 94.7% | Spearman ρ 0.893 over the same 147 sites; 8/10 of paper top-10 stay top-10, 9/10 top-25; largest shift rank 9→38 |
+| fix3 step 1 — native-resolution NC lidar bank cross-sections (2026-07-12) | bank slope live in NC harness; committed flagship remains 24/27 until the one final regen | n/a | **21/27** primary (= baseline; 0/27 at ≥70 diagnostic; zero run failures) | 96.5% (committed flagship intentionally untouched) | 0 (flagship intentionally untouched until single regen) |
 
 **Phase-0 baseline reading.** The reconstruction lands within ONE trap of the
 published 22/27 despite a different candidate generator (Python pipeline at

@@ -34,7 +34,8 @@ sys.path.insert(0, _ROOT)
 
 from core import UTM_CRS, WGS84, inverse_distance_score
 from core.flow import estimate_runoff_coefficient
-from core.feasibility import channel_width_score, bridge_proximity_bonus
+from core.feasibility import (bank_slope_score, bridge_proximity_bonus,
+                              channel_width_score, compute_bank_slopes_nc_lidar)
 from core.scoring import compute_composite_score, ALL_PARAMS
 from core import real_sources as rs
 
@@ -64,12 +65,14 @@ REAL_SOURCES = {
                             "shipped designation-weighted proximity curve",
     "water_intake_score": "NC OneMap / NC DEQ SWAP public water supply sources "
                           "(source_typ='Surface Water'), shipped exp(-d/10km) curve",
+    "bank_slope_score": "NC OneMap / NC DPS DEM03 statewide lidar-derived "
+                        "3.125-ft elevations, perpendicular 50 m cross-section "
+                        "with two-bank mean of the steepest 5 m rise; documented "
+                        "substitute because USGS 1 m 3DEP is not statewide",
 }
 # Documented, honest fallbacks (not made real this pass) with the reason.
 FALLBACK_REASONS = {
     "litter_complaint_density": "Durham One Call 311 endpoint dead / not machine-readable",
-    "bank_slope_score": "real DEM-derived but non-discriminating (<15° across the Piedmont "
-                        "sites); needs a finer cross-section metric, not a new source",
 }
 
 
@@ -92,6 +95,28 @@ def load_v1():
         rows.append(p)
     gdf = gpd.GeoDataFrame(rows, crs=WGS84)
     return gdf, data.get("note", "")
+
+
+def _durham_streams_for_bank_slope():
+    """Load the exact cached stream vectors that generated the frozen sites.
+
+    If that reproducibility cache is absent, rebuild the same 10 m/2 km² stream
+    universe and use nearest-line tangents; the 147 flagship site geometries
+    themselves remain frozen either way.
+    """
+    cached = Path("cache/regions_work/durham/streams.geojson")
+    if cached.exists():
+        streams = gpd.read_file(cached)
+        # This legacy cache is GeoJSON with UTM coordinates but no reliable CRS.
+        return streams.set_crs(UTM_CRS, allow_override=True)
+    from core.pipeline import fetch_dem, process_hydrology, run_pipeline
+    print("  cached Durham stream vectors absent; rebuilding 10 m stream tangents...")
+    hydrology = process_hydrology(fetch_dem(BBOX), BBOX)
+    streams, _candidates, _ = run_pipeline(
+        bbox=BBOX, hydrology=hydrology, return_hydrology=True,
+        threshold=20000, spacing_m=1500,
+        output_dir="cache/wire/bank_slope_durham", utm_crs=UTM_CRS)
+    return streams
 
 
 def fetch_and_wire(gdf, do_fetch=True):
@@ -146,8 +171,15 @@ def fetch_and_wire(gdf, do_fetch=True):
           f"PAD-US={'none' if padus is None else len(padus)} · "
           f"intakes={'dl-fail' if intake_pts is None else len(intake_pts)}")
 
+    print("Fetching NC 3.125-ft lidar bank cross-sections (batched, cached)...")
+    bank_lidar = compute_bank_slopes_nc_lidar(
+        utm, _durham_streams_for_bank_slope())
+    print(f"  high-resolution bank profiles: "
+          f"{sum(info is not None for info in bank_lidar)}/{n}")
+
     # New columns (start as copies so fallbacks keep the v1 value)
     new = {c: list(gdf[c]) for c in ALL_PARAMS if c in gdf.columns}
+    bank_degrees = list(gdf.get("bank_slope_deg", pd.Series([10.0] * n)))
     real_counts = {k: 0 for k in REAL_SOURCES}
 
     print("Computing per-site real values...")
@@ -212,6 +244,15 @@ def fetch_and_wire(gdf, do_fetch=True):
             new["bridge_proximity_bonus"][i] = bridge_proximity_bonus(pt, gdf_nbi)
             real_counts["bridge_proximity_bonus"] += 1
 
+        # Candidate-only high-resolution bank cross-section; if any profile is
+        # unavailable, preserve that site's existing real 10 m DEM value.
+        slope_info = bank_lidar[i]
+        if slope_info is not None:
+            slope = float(slope_info["slope_deg"])
+            bank_degrees[i] = round(slope, 2)
+            new["bank_slope_score"][i] = bank_slope_score(slope)
+            real_counts["bank_slope_score"] += 1
+
         # land ownership from the containing parcel
         owner = rs.parcel_owner_at(gdf["lat"].iloc[i], gdf["lon"].iloc[i])
         if owner is not None:
@@ -238,6 +279,7 @@ def fetch_and_wire(gdf, do_fetch=True):
     enriched = utm.copy()
     for c, vals in new.items():
         enriched[c] = vals
+    enriched["bank_slope_deg"] = bank_degrees
 
     # Navigability gate input (fix-pass-2 Phase 3) — same semantics as the
     # region runner: NaN (gate inert) when the NWN clip is missing or when no
@@ -266,6 +308,12 @@ def fetch_and_wire(gdf, do_fetch=True):
 
     for k, src in REAL_SOURCES.items():
         prov[k] = {"kind": "real", "source": src, "n_real": real_counts[k], "n_sites": n}
+    prov["bank_slope_score"].update({
+        "n_nc_lidar_3_125ft": sum(info is not None for info in bank_lidar),
+        "n_3dep_10m_fallback": sum(info is None for info in bank_lidar),
+        "source_mosaics": sorted({source for info in bank_lidar if info is not None
+                                  for source in info["sources"]}),
+    })
     for k, reason in FALLBACK_REASONS.items():
         prov[k] = {"kind": "fallback", "reason": reason, "n_sites": n}
     # P0 Option A: name the SCORED form of velocity so the two velocity
@@ -326,7 +374,8 @@ def main():
             "gates, MinMax. Sources: NHDPlus EROM, EPA StreamCat, USGS SIR 2014-5030 "
             "flood regression, Bieger 2015 width curve, EPA TRI/ECHO, FHWA NBI, Durham "
             "parcels, EPA SEMS (Superfund), USGS PAD-US 4.1 (local NC clip), NC DEQ "
-            "SWAP surface intakes. Parameters that could not be made real remain "
+            "SWAP surface intakes, and NC DPS/OneMap 3.125-ft lidar bank profiles. "
+            "Parameters that could not be made real remain "
             "documented fallbacks.")
     fc = {
         "type": "FeatureCollection",

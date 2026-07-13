@@ -7,6 +7,9 @@ scoring is still done by core.scoring exactly as shipped. Every source is free
 and keyless (Census ACS aside, which is used by the already-wired pop/EJ path).
 
 Verified sources (endpoint-checked 2026-07-06):
+  - NC OneMap / NC DPS DEM03 ImageServer — statewide 3.125-ft lidar-derived
+                  elevations -> bank_slope_score input. This is the documented
+                  real-source fallback because USGS 1 m 3DEP is not statewide.
   - NLDI          snap (lat,lon) -> NHDPlus COMID
   - USGS WaterData GeoServer WFS (wmadata:nhdflowline_network) — per-COMID EROM
                   mean/monthly flow, drainage area -> usgs_mean_q_cfs, seasonal_cv
@@ -97,6 +100,41 @@ def cached_get_json(url, params=None, kind="get", retries=4, timeout=45,
     return None
 
 
+def cached_post_form_json(url, payload, kind="post", retries=4, timeout=120,
+                          backoff=4.0):
+    """POST form data with the same durable cache and retry rules as
+    :func:`cached_get_json`. Error documents are never cached."""
+    key = url + "?POST=" + json.dumps(payload, sort_keys=True)
+    cp = _cache_path(kind, key)
+    if cp.exists():
+        try:
+            return json.loads(cp.read_text())
+        except Exception:
+            pass
+    last = None
+    for attempt in range(retries):
+        try:
+            r = requests.post(url, data=payload, headers=_UA, timeout=timeout)
+            if r.status_code in (429, 500, 502, 503, 504):
+                last = f"HTTP {r.status_code}"
+                time.sleep(backoff * (2 ** attempt))
+                continue
+            if r.status_code != 200:
+                return None
+            data = r.json()
+            if isinstance(data, dict) and "error" in data:
+                last = str(data)[:120]
+                time.sleep(backoff * (2 ** attempt))
+                continue
+            cp.write_text(json.dumps(data))
+            return data
+        except Exception as e:
+            last = f"{type(e).__name__}: {e}"
+            time.sleep(backoff * (2 ** attempt))
+    print(f"  [warn] cached_post_form_json gave up on {url} ({last})")
+    return None
+
+
 def cached_download(url, kind="dl", retries=3, timeout=180, backoff=5.0):
     """Download a (large) binary file to the cache once; return its local path
     or None."""
@@ -125,6 +163,68 @@ def cached_download(url, kind="dl", retries=3, timeout=180, backoff=5.0):
 # NHDPlusV2 EROM mean/monthly flow (qe_ma, qe_01..12) is already in cubic feet
 # per second — no cms conversion.
 KM2_TO_MI2 = 0.386102159
+
+
+# ── 0. NC statewide lidar DEM samples (bank-slope input) ────────────
+
+_NC_LIDAR_SAMPLES_ENDPOINT = (
+    "https://services.nconemap.gov/secure/rest/services/Elevation/"
+    "DEM03/ImageServer/getSamples"
+)
+NC_LIDAR_NATIVE_RESOLUTION_FT = 3.125
+NC_LIDAR_SOURCE_CRS_EPSG = 6543
+FT_TO_M = 0.3048
+
+
+def nc_lidar_elevations(points_stateplane_ft, chunk_size=1000):
+    """Sample the official statewide NC lidar DEM at EPSG:6543 coordinates.
+
+    Returns a list aligned to ``points_stateplane_ft``. Each successful entry is
+    ``{"elevation_m", "resolution_ft", "source"}``; missing/coarse responses
+    stay ``None`` so callers can use the documented 10 m 3DEP fallback. Raw
+    ArcGIS response batches are disk-cached and include the source mosaic name.
+
+    The service's native 3.125-foot cells are 0.953 m. USGS 1 m DEM catalog
+    coverage is currently incomplete in NC, so this NC DPS/OneMap lidar service
+    is the honest statewide substitute rather than silently resampling 10 m data.
+
+    Source: https://services.nconemap.gov/secure/rest/services/Elevation/DEM03/ImageServer
+    """
+    points = [(round(float(x), 2), round(float(y), 2))
+              for x, y in points_stateplane_ft]
+    out = [None] * len(points)
+    for start in range(0, len(points), int(chunk_size)):
+        chunk = points[start:start + int(chunk_size)]
+        geom = {"points": chunk,
+                "spatialReference": {"wkid": NC_LIDAR_SOURCE_CRS_EPSG}}
+        payload = {
+            "geometry": json.dumps(geom, separators=(",", ":")),
+            "geometryType": "esriGeometryMultipoint",
+            "returnFirstValueOnly": "true",
+            "outFields": "name",
+            "f": "json",
+        }
+        data = cached_post_form_json(
+            _NC_LIDAR_SAMPLES_ENDPOINT, payload, kind="nc_lidar_samples")
+        for sample in (data or {}).get("samples", []):
+            try:
+                local_id = int(sample["locationId"])
+                resolution = float(sample["resolution"])
+                elevation_ft = float(sample["value"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if not (0 <= local_id < len(chunk)):
+                continue
+            if (not math.isfinite(elevation_ft)
+                    or resolution > NC_LIDAR_NATIVE_RESOLUTION_FT + 1e-6):
+                continue
+            attrs = sample.get("attributes", {})
+            out[start + local_id] = {
+                "elevation_m": elevation_ft * FT_TO_M,
+                "resolution_ft": resolution,
+                "source": attrs.get("name") or attrs.get("Name") or "unknown",
+            }
+    return out
 
 
 # ── 1. NLDI: (lat, lon) -> COMID ─────────────────────────────────────

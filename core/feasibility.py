@@ -4,6 +4,8 @@ Road access, channel width, flow velocity gates, land ownership,
 bank slope stability, bridge proximity bonus.
 """
 
+import math
+
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -119,6 +121,187 @@ def channel_width_score(width_m):
 
 
 # ── 7.3 Bank Slope Stability ────────────────────────────────────────
+
+# Input/measurement constants only. The shipped bank_slope_score curve below
+# stays frozen; these constants make its input a real cross-bank measurement.
+BANK_XS_HALF_WIDTH_M = 25.0
+BANK_XS_NATIVE_SPACING_M = 3.125 * 0.3048
+BANK_XS_TANGENT_REACH_M = 15.0
+BANK_XS_CENTER_SEARCH_M = 3.0
+BANK_XS_WINDOW_M = 5.0
+BANK_XS_BANK_LIMIT_M = 20.0
+BANK_XS_START_OFFSET_M = 1.0
+
+
+def bank_cross_section_endpoints(candidate_point_utm, stream_gdf,
+                                 half_width_m=BANK_XS_HALF_WIDTH_M,
+                                 tangent_reach_m=BANK_XS_TANGENT_REACH_M,
+                                 segment_id=None):
+    """UTM endpoints of a transect perpendicular to the local stream tangent.
+
+    The generated candidate carries its source ``segment_id``; nearest-stream
+    lookup is retained as a defensive fallback for older candidate fixtures.
+    """
+    if stream_gdf is None or stream_gdf.empty:
+        return None
+    line = None
+    if segment_id is not None and segment_id in stream_gdf.index:
+        row = stream_gdf.loc[segment_id]
+        line = row.geometry if hasattr(row, "geometry") else None
+    if line is None:
+        nearest_pos = stream_gdf.geometry.distance(candidate_point_utm).argmin()
+        line = stream_gdf.iloc[nearest_pos].geometry
+    if line is None or line.is_empty or line.length <= 0:
+        return None
+
+    along = float(line.project(candidate_point_utm))
+    p0 = line.interpolate(max(0.0, along - float(tangent_reach_m)))
+    p1 = line.interpolate(min(float(line.length), along + float(tangent_reach_m)))
+    tx, ty = float(p1.x - p0.x), float(p1.y - p0.y)
+    norm = math.hypot(tx, ty)
+    if norm <= 1e-9:
+        coords = list(line.coords)
+        if len(coords) < 2:
+            return None
+        tx, ty = coords[-1][0] - coords[0][0], coords[-1][1] - coords[0][1]
+        norm = math.hypot(tx, ty)
+    if norm <= 1e-9:
+        return None
+    nx, ny = -ty / norm, tx / norm
+    h = float(half_width_m)
+    return (Point(candidate_point_utm.x - nx * h, candidate_point_utm.y - ny * h),
+            Point(candidate_point_utm.x + nx * h, candidate_point_utm.y + ny * h))
+
+
+def bank_slope_from_profile(distances_m, elevations_m,
+                            center_search_m=BANK_XS_CENTER_SEARCH_M,
+                            window_m=BANK_XS_WINDOW_M,
+                            bank_limit_m=BANK_XS_BANK_LIMIT_M,
+                            start_offset_m=BANK_XS_START_OFFSET_M):
+    """Robust cross-section bank angle in degrees from a 1 m profile.
+
+    The channel center is the lowest sample within ``center_search_m`` of the
+    transect midpoint (tolerating a small DEM/vector offset). On each bank, take
+    the steepest positive elevation rise over a fixed 5 m window within 20 m of
+    the channel, then average the two bank angles. A 5 m rise window suppresses
+    pixel noise while preserving the steep Piedmont banks that a 10 m 3x3 mean
+    blurred below the frozen 15-degree score threshold.
+    """
+    try:
+        d = np.asarray(distances_m, dtype=float)
+        z = np.asarray(elevations_m, dtype=float)
+    except (TypeError, ValueError):
+        return None
+    valid = np.isfinite(d) & np.isfinite(z)
+    if valid.sum() < 5:
+        return None
+    d, z = d[valid], z[valid]
+    order = np.argsort(d)
+    d, z = d[order], z[order]
+    if d[-1] - d[0] < 2 * (float(start_offset_m) + float(window_m)):
+        return None
+
+    midpoint = (float(d[0]) + float(d[-1])) / 2.0
+    center_mask = np.abs(d - midpoint) <= float(center_search_m)
+    if not center_mask.any():
+        return None
+    center_indices = np.flatnonzero(center_mask)
+    center = float(d[center_indices[np.argmin(z[center_mask])]])
+
+    step = max(1.0, float(np.median(np.diff(np.unique(d)))))
+    offsets = np.arange(float(start_offset_m),
+                        float(bank_limit_m) - float(window_m) + step / 2,
+                        step)
+    side_angles = []
+    for sign in (-1.0, 1.0):
+        grades = []
+        for off in offsets:
+            inner_d = center + sign * off
+            outer_d = center + sign * (off + float(window_m))
+            if min(inner_d, outer_d) < d[0] or max(inner_d, outer_d) > d[-1]:
+                continue
+            inner_z = float(np.interp(inner_d, d, z))
+            outer_z = float(np.interp(outer_d, d, z))
+            grades.append(max(0.0, (outer_z - inner_z) / float(window_m)))
+        if grades:
+            side_angles.append(math.degrees(math.atan(max(grades))))
+    return float(np.mean(side_angles)) if side_angles else None
+
+
+def bank_profile_points(candidate_row, stream_gdf):
+    """Return ``(distances_m, points_utm)`` across a candidate's two banks."""
+    endpoints = bank_cross_section_endpoints(
+        candidate_row.geometry, stream_gdf,
+        segment_id=candidate_row.get("segment_id"))
+    if endpoints is None:
+        return None
+    p0, p1 = endpoints
+    length = float(p0.distance(p1))
+    if length <= 0:
+        return None
+    n_points = max(3, int(round(length / BANK_XS_NATIVE_SPACING_M)) + 1)
+    distances = np.linspace(0.0, length, n_points)
+    ux, uy = (p1.x - p0.x) / length, (p1.y - p0.y) / length
+    points = [Point(p0.x + ux * d, p0.y + uy * d) for d in distances]
+    return distances, points
+
+
+def _bank_info_from_samples(distances, samples):
+    elevations = [np.nan if sample is None else sample["elevation_m"]
+                  for sample in samples]
+    slope = bank_slope_from_profile(distances, elevations)
+    if slope is None:
+        return None
+    sources = sorted({sample["source"] for sample in samples if sample is not None})
+    return {"slope_deg": float(slope), "sources": sources,
+            "n_samples": sum(sample is not None for sample in samples),
+            "n_expected": len(samples)}
+
+
+def compute_bank_slope_nc_lidar(candidate_row, stream_gdf):
+    """Measure one bank profile from the statewide 3.125-ft NC lidar DEM."""
+    profile = bank_profile_points(candidate_row, stream_gdf)
+    if profile is None:
+        return None
+    distances, points = profile
+    from core.real_sources import (NC_LIDAR_SOURCE_CRS_EPSG,
+                                   nc_lidar_elevations)
+    try:
+        stateplane = gpd.GeoSeries(points, crs=stream_gdf.crs).to_crs(
+            f"EPSG:{NC_LIDAR_SOURCE_CRS_EPSG}")
+        coords = [(float(p.x), float(p.y)) for p in stateplane]
+    except Exception:
+        return None
+    return _bank_info_from_samples(distances, nc_lidar_elevations(coords))
+
+
+def compute_bank_slopes_nc_lidar(candidates, stream_gdf):
+    """Batch every candidate cross-section into light ArcGIS multipoint calls."""
+    profiles = [bank_profile_points(row, stream_gdf)
+                for _, row in candidates.iterrows()]
+    flat_points = []
+    slices = []
+    for profile in profiles:
+        start = len(flat_points)
+        if profile is not None:
+            flat_points.extend(profile[1])
+        slices.append((start, len(flat_points)))
+    if not flat_points:
+        return [None] * len(profiles)
+    from core.real_sources import (NC_LIDAR_SOURCE_CRS_EPSG,
+                                   nc_lidar_elevations)
+    try:
+        stateplane = gpd.GeoSeries(flat_points, crs=stream_gdf.crs).to_crs(
+            f"EPSG:{NC_LIDAR_SOURCE_CRS_EPSG}")
+        coords = [(float(p.x), float(p.y)) for p in stateplane]
+    except Exception:
+        return [None] * len(profiles)
+    samples = nc_lidar_elevations(coords)
+    out = []
+    for profile, (start, end) in zip(profiles, slices):
+        out.append(None if profile is None else
+                   _bank_info_from_samples(profile[0], samples[start:end]))
+    return out
 
 def compute_bank_slope(candidate_row, candidate_col, dem_array, pixel_size_m):
     """
@@ -236,16 +419,21 @@ def compute_feasibility_features(candidate_row, stream_gdf=None,
     if stream_gdf is not None and not stream_gdf.empty:
         width = safe_call(get_channel_width, point_utm, stream_gdf, nbi_gdf, default=5.0)
 
-    # Bank slope
-    slope = 10.0
-    if dem_array is not None:
-        slope = safe_call(
-            compute_bank_slope,
-            candidate_row.get("pixel_row", 0),
-            candidate_row.get("pixel_col", 0),
-            dem_array, pixel_size_m,
-            default=10.0,
-        )
+    # Bank slope: official statewide NC 3.125-ft lidar profile. Preserve the
+    # documented 10 m 3DEP DEM-gradient fallback when samples are unavailable.
+    slope_info = safe_call(compute_bank_slope_nc_lidar, candidate_row, stream_gdf,
+                           default=None)
+    slope = slope_info["slope_deg"] if slope_info is not None else None
+    if slope is None:
+        slope = 10.0
+        if dem_array is not None:
+            slope = safe_call(
+                compute_bank_slope,
+                candidate_row.get("pixel_row", 0),
+                candidate_row.get("pixel_col", 0),
+                dem_array, pixel_size_m,
+                default=10.0,
+            )
 
     features = {
         "road_access_score": road_access_score(road_dist),
