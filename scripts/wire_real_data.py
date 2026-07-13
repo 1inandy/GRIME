@@ -53,13 +53,13 @@ REAL_SOURCES = {
     "seasonal_cv": "CV of NHDPlus EROM monthly flows qe_01..12 (per COMID)",
     "flood_q10_cfs": "USGS SIR 2014-5030 Table 7 HR1 10% AEP (GRIME DEM drainage area + real impervious)",
     "channel_width_score": "Bieger 2015 Table 3 AHI width W=3.12·DA^0.415 (GRIME DEM drainage area) → shipped width curve",
-    "tri_facility_density": "EPA Envirofacts TRI (Durham Co., sign-fixed) per catchment",
-    "npdes_points": "EPA ECHO NPDES outfalls (bulk) per catchment",
-    "cso_density": "EPA ECHO CSO inventory (truthful 0 — Durham separated sewers)",
+    "tri_facility_density": "EPA DataMap TRI open NC facilities (preferred decimal or packed-DMS recovery) per catchment",
+    "npdes_points": "EPA ECHO active NPDES NPD/GPC/NGP outfalls (bulk) per catchment",
+    "cso_density": "EPA ECHO open CSO/TCS PF outfalls (truthful 0 — Durham separated sewers)",
     "land_ownership": "Durham County parcels PROPERTY_OWNER (public 1.0 / unknown 0.5)",
     "bridge_proximity_bonus": "FHWA/BTS National Bridge Inventory (NTAD) proximity",
     # fix-pass-2 Phase 1/2 additions (same shipped curves as the region runner):
-    "superfund_score": "EPA Envirofacts SEMS state=NC (sign-fixed, georeferenced sites), "
+    "superfund_score": "EPA DataMap SEMS active state=NC sites (non-archived, georeferenced), "
                        "shipped 500 m inverse-distance curve",
     "protected_area_score": "USGS PAD-US 4.1 NC state clip (local GDB, retrieved 2026-07-10), "
                             "shipped designation-weighted proximity curve",
@@ -139,11 +139,12 @@ def fetch_and_wire(gdf, do_fetch=True):
 
     # ── one-shot point layers ──
     print("Fetching TRI / NPDES / CSO / NBI point layers (cached)...")
-    tri_pts = rs.tri_points_durham()
-    npdes_pts = rs.npdes_outfall_points(BBOX)
-    cso_pts = rs.cso_points_nc(BBOX)
+    tri_pts = rs.tri_facility_points("NC", BBOX)
+    npdes_pts = rs.npdes_outfall_points(BBOX, state_abbrs=("NC",))
+    cso_pts = rs.cso_outfall_points(BBOX, state_abbrs=("NC",))
     nbi_pts = rs.nbi_bridge_points(BBOX)
-    print(f"  TRI={len(tri_pts)} · NPDES={len(npdes_pts)} · "
+    print(f"  TRI={'fetch-fail' if tri_pts is None else len(tri_pts)} · "
+          f"NPDES={'dl-fail' if npdes_pts is None else len(npdes_pts)} · "
           f"CSO={'dl-fail' if cso_pts is None else len(cso_pts)} · NBI={len(nbi_pts)}")
 
     def to_utm_points(pts):
@@ -227,11 +228,11 @@ def fetch_and_wire(gdf, do_fetch=True):
             real_counts["channel_width_score"] += 1
 
         # generation point densities (constructs unchanged: count-in-catchment)
-        if len(tri_utm):
+        if tri_pts is not None:
             in_c = tri_utm[tri_utm.within(disc)]
             new["tri_facility_density"][i] = round(len(in_c) / max(area, 0.01), 4)
             real_counts["tri_facility_density"] += 1
-        if len(npdes_utm):
+        if npdes_pts is not None:
             new["npdes_points"][i] = int(npdes_utm.within(disc).sum())
             real_counts["npdes_points"] += 1
         if cso_pts is not None:  # download succeeded → a real count (0 for Durham)
@@ -307,7 +308,13 @@ def fetch_and_wire(gdf, do_fetch=True):
         }
 
     for k, src in REAL_SOURCES.items():
-        prov[k] = {"kind": "real", "source": src, "n_real": real_counts[k], "n_sites": n}
+        if real_counts[k] > 0:
+            prov[k] = {"kind": "real", "source": src,
+                       "n_real": real_counts[k], "n_sites": n}
+        else:
+            prov[k] = {"kind": "fallback", "source": src,
+                       "reason": "source unavailable or unusable; preserved prior fallback",
+                       "n_real": 0, "n_sites": n}
     prov["bank_slope_score"].update({
         "n_nc_lidar_3_125ft": sum(info is not None for info in bank_lidar),
         "n_3dep_10m_fallback": sum(info is None for info in bank_lidar),

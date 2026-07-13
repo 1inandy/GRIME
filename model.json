@@ -179,12 +179,12 @@
     "superfund_score": {
       "formula": "sum over sites of 1 / (1 + (d_m / half_decay_m)^2)",
       "half_decay_m": 500.0,
-      "source": "EPA Envirofacts SEMS (envirofacts_site), georeferenced sites, state-filtered"
+      "source": "EPA DataMap SEMS (sems.envirofacts_site), non-archived georeferenced sites, state-filtered"
     },
     "cso_density": {
       "formula": "sum over sites of 1 / (1 + (d_m / half_decay_m)^2)",
       "half_decay_m": 500.0,
-      "source": "EPA ECHO CSO inventory (national bulk) \u2014 same shared inverse-distance curve"
+      "source": "EPA ECHO CSO inventory (national bulk), open CSO/TCS PF_LAT/PF_LON outfalls \u2014 same shared inverse-distance curve"
     },
     "litter_complaint_density": {
       "formula": "sum over complaints of 1 / (1 + (distance_to_catchment_m / half_decay_m)^2) / catchment_area_km2",
@@ -209,7 +209,7 @@
         "State Wildlife": 0.6,
         "Local Park": 0.3
       },
-      "source": "USGS PAD-US 4.1 state clip (local GDB), designation matched on the descriptive d_Des_Tp"
+      "source": "USGS PAD-US 4.1 state clip (local GDB preferred; official combined-inventory FeatureServer fallback), designation matched on d_Des_Tp/Des_Tp"
     },
     "water_intake_score": {
       "formula": "sum over intakes within max_dist_km of exp(-d_km / decay_km)",

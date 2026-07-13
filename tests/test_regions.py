@@ -166,6 +166,14 @@ def test_litter_sources_configured_only_where_public(config):
     }
 
 
+def test_cross_state_national_inventory_config(config):
+    by_slug = {region["slug"]: region for region in config["regions"]}
+    assert by_slug["new-york-city"]["source_states"] == ["NY", "NJ"]
+    assert all(
+        region.get("source_states", [region["state"]]) == [region["state"]]
+        for region in config["regions"] if region["slug"] != "new-york-city")
+
+
 def test_charlotte_litter_exact_filter_and_coordinates(monkeypatch):
     seen = []
 
