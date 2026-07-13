@@ -370,7 +370,13 @@ def estimate_beach_distance_km(lat, lon):
 # ── 6.6 Tourism / Recreation Value ──────────────────────────────────
 
 def get_tourism_amenity_density(candidate_point_utm, radius_km=2, bbox=None, utm_crs=UTM_CRS):
-    """Count parks, trails, and recreation amenities from OSM (bbox-cached)."""
+    """Count parks, trails, and recreation amenities from OSM.
+
+    A supplied ``bbox`` is fetched once and cached for all candidates.  If that
+    real-source query fails, return ``None`` so the caller can record its
+    documented fallback.  Do not turn a source outage into a guessed urban
+    amenity value or fan it out into one Overpass query per candidate.
+    """
     feats = _bbox_osm_features(bbox, {"leisure": True, "tourism": True}, "tourism",
                                utm_crs=utm_crs)
     if feats is not None:
@@ -378,11 +384,13 @@ def get_tourism_amenity_density(candidate_point_utm, radius_km=2, bbox=None, utm
             return 0.0
         near = feats[feats.intersects(candidate_point_utm.buffer(radius_km * 1000))]
         return len(near) / max(radius_km ** 2 * math.pi, 1)
-    # No bbox / fetch failed → per-point OSM query.
+    if bbox is not None:
+        return None
+    # Legacy callers without a bbox may still make one real per-point query.
     try:
         import osmnx as ox
         pt_wgs = gpd.GeoDataFrame(
-            {"geometry": [candidate_point_utm]}, crs=UTM_CRS
+            {"geometry": [candidate_point_utm]}, crs=utm_crs
         ).to_crs(WGS84).geometry.iloc[0]
 
         amenities = ox.features_from_point(
@@ -392,7 +400,7 @@ def get_tourism_amenity_density(candidate_point_utm, radius_km=2, bbox=None, utm
         )
         return len(amenities) / max(radius_km ** 2 * math.pi, 1)
     except Exception:
-        return 1.0  # assume some amenities in urban area
+        return None
 
 
 # ── Aggregate Impact Features ────────────────────────────────────────
@@ -440,7 +448,7 @@ def compute_impact_features(candidate_row, intakes_gdf=None, bbox=None):
         "estuary_dist_km": estimate_estuary_distance_km(lat, lon),
         "beach_dist_km": estimate_beach_distance_km(lat, lon),  # H5: distinct reference
         "tourism_amenity_density": safe_call(
-            get_tourism_amenity_density, point_utm, bbox=bbox, default=1.0
+            get_tourism_amenity_density, point_utm, bbox=bbox, default=0.0
         ),
         "superfund_score": safe_call(
             superfund_proximity_score, point_utm, bbox, default=0.0

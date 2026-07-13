@@ -59,7 +59,8 @@ Protocol reconstruction (Waterkeepers re-run):
       (this is exactly what FIX_PLAN_2 phases change — the point of the re-run);
     - scoring by the shipped compute_composite_score with default weights;
     - PRIMARY metric ("recovered_any_score_80m"): at least one hard-gate-
-      surviving (deployable) candidate within BUFFER_M = 80 m of the trap.
+      surviving model candidate within BUFFER_M = 80 m of the trap. This is
+      not field confirmation of permits, anchoring, access, or deployment.
       Distance is Euclidean in the region UTM — a permissive stand-in for the
       paper's "along-channel" buffer (Euclidean <= along-channel for
       on-network points).
@@ -382,7 +383,7 @@ def waterkeepers_recall(label, only=None):
     out = CACHE / f"waterkeepers_recall_{label}.json"
     out.write_text(json.dumps(summary, indent=1) + "\n")
     print(f"\nWaterkeepers recall [{label}]: PRIMARY {n_any80}/{len(results)} "
-          f"(deployable candidate within {BUFFER_M:.0f} m); diagnostic "
+          f"(post-hard-gate model candidate within {BUFFER_M:.0f} m); diagnostic "
           f"{n_rec}/{len(results)} also composite >= {HIGH_SCORE:.0f}; "
           f"paper: {PAPER_FIGURES['waterkeepers_recall']}")
     print(f"wrote {out}")

@@ -56,11 +56,14 @@ def _configure_osmnx():
     ox.settings.overpass_rate_limit = True
     ox.settings.requests_timeout = 300
     # Operational knob (fix-pass-2): point osmnx at an alternate Overpass
-    # mirror (e.g. https://overpass.kumi.systems/api/interpreter — the same
-    # mirror the explorer already races) when the default endpoint is
+    # mirror base (e.g. https://overpass.kumi.systems/api — OSMnx appends
+    # /interpreter itself) when the default endpoint is
     # rate-limiting a long batch. No default change; opt-in via env.
     _ep = os.environ.get("GRIME_OVERPASS_ENDPOINT")
     if _ep:
+        _ep = _ep.rstrip("/")
+        if _ep.endswith("/interpreter"):
+            _ep = _ep.removesuffix("/interpreter")
         ox.settings.overpass_endpoint = _ep
     _configure_osmnx._done = True
 
@@ -525,6 +528,9 @@ def wire_region_parameters(cands, region):
             0.0, ("no public surface-intake layer wired outside NC (SWAP layer is NC-only)"
                   if region["state"] != "NC" else
                   "NC OneMap SWAP intake layer unreachable for this run — documented fallback"))
+    if counts["tourism_amenity_density"] == 0:
+        fallback_notes["tourism_amenity_density"] = (
+            0.0, "OSM leisure/tourism query unavailable — documented fallback")
     for p, (val, why) in fallback_notes.items():
         cols[p] = [val] * n
         mark(p, "fallback", why)
