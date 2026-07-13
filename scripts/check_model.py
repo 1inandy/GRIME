@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 import geopandas as gpd
+import numpy as np
 from shapely.geometry import LineString, Point
 
 from core.scoring import SUB_SCORE_WEIGHTS, apply_hard_gates
@@ -29,7 +30,13 @@ from core.flow import (
     velocity_transport_favorability,
 )
 from core.impact import IMPACT_WEIGHTS as IMPACT_W
-from core.feasibility import FEASIBILITY_WEIGHTS, channel_width_score, get_channel_width
+from core.feasibility import (
+    BANK_XS_BANK_LIMIT_M, BANK_XS_CENTER_SEARCH_M, BANK_XS_HALF_WIDTH_M,
+    BANK_XS_NATIVE_SPACING_M, BANK_XS_START_OFFSET_M,
+    BANK_XS_TANGENT_REACH_M, BANK_XS_WINDOW_M, FEASIBILITY_WEIGHTS,
+    bank_slope_from_profile, bank_slope_score, channel_width_score,
+    get_channel_width,
+)
 from core.pipeline import generate_candidates
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -97,6 +104,43 @@ def main():
     for w, exp in cw_checks:
         if not approx(channel_width_score(w), exp):
             errors.append(f"channel_width_score({w})={channel_width_score(w)} != {exp}")
+
+    # 5b) frozen bank-slope score curve + the high-resolution input metric.
+    bs_checks = [(0.0, 1.0), (14.999, 1.0), (15.0, 0.5),
+                 (29.999, 0.5), (30.0, 0.2), (44.999, 0.2), (45.0, 0.1)]
+    for slope, exp in bs_checks:
+        got = bank_slope_score(slope)
+        if not approx(got, exp):
+            errors.append(f"bank_slope_score({slope})={got} != {exp}")
+    bsi = m["bank_slope_input"]
+    from core.real_sources import (FT_TO_M, NC_LIDAR_NATIVE_RESOLUTION_FT,
+                                   NC_LIDAR_SOURCE_CRS_EPSG)
+    bank_constants = {
+        "source_resolution_ft": NC_LIDAR_NATIVE_RESOLUTION_FT,
+        "source_resolution_m": NC_LIDAR_NATIVE_RESOLUTION_FT * FT_TO_M,
+        "source_crs_epsg": NC_LIDAR_SOURCE_CRS_EPSG,
+        "profile_half_width_m": BANK_XS_HALF_WIDTH_M,
+        "flow_direction_reach_m": 2 * BANK_XS_TANGENT_REACH_M,
+        "center_search_m": BANK_XS_CENTER_SEARCH_M,
+        "rolling_run_m": BANK_XS_WINDOW_M,
+        "bank_search_m": BANK_XS_BANK_LIMIT_M,
+        "start_offset_m": BANK_XS_START_OFFSET_M,
+    }
+    for name, got in bank_constants.items():
+        expected = float(bsi[name])
+        if not approx(float(got), expected, 1e-9):
+            errors.append(f"bank_slope_input.{name}: code {got} != model {expected}")
+    d = np.linspace(0.0, 2 * BANK_XS_HALF_WIDTH_M, 101)
+    mid = BANK_XS_HALF_WIDTH_M
+    asymmetric = np.where(
+        d < mid, (mid - d) * math.tan(math.radians(10.0)),
+        (d - mid) * math.tan(math.radians(30.0)))
+    got = bank_slope_from_profile(d, asymmetric)
+    if got is None or not approx(got, 20.0, 0.05):
+        errors.append(f"bank_slope profile metric asymmetric 10/30 deg={got} != 20")
+    flat = bank_slope_from_profile(d, np.zeros_like(d))
+    if flat is None or not approx(flat, 0.0):
+        errors.append(f"bank_slope profile metric flat={flat} != 0")
 
     # 6) velocity transport-favorability Gaussian (Flow-side, M5) — previously
     # undocumented in model.json and unguarded, so its constants could drift
@@ -274,7 +318,8 @@ def main():
             print("  -", e)
         sys.exit(1)
     print(f"model.json matches code: {n} parameters; validated param+subscore weights, "
-          "runoff formula, velocity feasibility/transport curves, channel-width curve, "
+          "runoff formula, velocity feasibility/transport curves, channel-width and "
+          "bank-slope curves/input metric, "
           "hard gates, spacing + occlusion constants (pipeline & explorer), the "
           "width-order fallback, the impact proximity curves "
           "(superfund/cso inverse-distance, PAD-US designation weights, intake decay), "
