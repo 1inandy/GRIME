@@ -1014,7 +1014,7 @@ and the width-order fallback.
 2. Leopold, L.B. (1964). *Fluvial Processes in Geomorphology.*
 3. Manning, R. (1891). *On the flow of water in open channels and pipes.*
 
-Project story and build narrative: [dashboard/docs/Overview.md](dashboard/docs/Overview.md). Full technical documentation with figures: [dashboard/docs/documentation.md](dashboard/docs/documentation.md). Scientific validation of the model against the interception literature: [RESEARCH_VALIDATION.md](RESEARCH_VALIDATION.md).
+Project story and build narrative: [dashboard/docs/Overview.md](dashboard/docs/Overview.md). Full technical documentation with figures: [dashboard/docs/documentation.md](dashboard/docs/documentation.md).
 
 ### B. Glossary
 
