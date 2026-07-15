@@ -118,8 +118,8 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
   <div class="nav-right">
     <a href="../">Home</a>
     <a href="../explore/">Explorer</a>
-    <a href="Overview.md">Overview (md)</a>
-    <a href="GRIME-Models.pdf">Models (PDF)</a>
+    <a href="/docs/static/Overview.md">Overview (md)</a>
+    <a href="/docs/static/GRIME-Models.pdf">Models (PDF)</a>
     <span class="nav-badge">v4</span>
   </div>
 </nav>
@@ -252,7 +252,7 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
     <span class="kw">return</span> df.sort_values(<span class="st">"composite_score"</span>, ascending=<span class="kw">False</span>)</pre>
 
   <div class="wl-fig">
-    <img src="dashboard/docs/exports/07_score_landscape.png" alt="Composite score landscape S(gen, impact)">
+    <img src="/docs/static/exports/07_score_landscape.png" alt="Composite score landscape S(gen, impact)">
     <div class="wl-caption">Composite score surface S(Generation, Impact) with Flow=50, Feasibility=70 held constant · Wolfram Language</div>
   </div>
 </div>
@@ -318,7 +318,7 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
   </div>
 
   <div class="wl-fig">
-    <img src="dashboard/docs/exports/05_manning_velocity_field.png" alt="Manning velocity 3D field">
+    <img src="/docs/static/exports/05_manning_velocity_field.png" alt="Manning velocity 3D field">
     <div class="wl-caption">V(width, slope) velocity field · Color = feasibility zone · Red plane = hard gate at 3.0 m/s · Wolfram Language</div>
   </div>
 </div>
@@ -368,11 +368,11 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
   <div class="callout"><strong>Why greedy beats static percentile:</strong> A static top-N% cut would keep two candidates on the same stream — both scored before occlusion. The greedy approach recognizes that #2's value drops by 65% after #1 is placed. The re-sort after each placement captures this dynamic revaluation.</div>
 
   <div class="wl-fig">
-    <img src="dashboard/docs/exports/04_occlusion_surface.png" alt="3D occlusion decay surface">
+    <img src="/docs/static/exports/04_occlusion_surface.png" alt="3D occlusion decay surface">
     <div class="wl-caption">Upstream occlusion decay surface (1−η)^k · Color gradient red→teal = remaining trash load · Wolfram Language</div>
   </div>
   <div class="wl-fig gif-fig">
-    <img src="dashboard/docs/exports/03_debris_transport.gif" alt="Debris transport simulation">
+    <img src="/docs/static/exports/03_debris_transport.gif" alt="Debris transport simulation">
     <div class="wl-caption">Particle debris transport simulation · 150 particles · Yellow = flowing · Red = caught at net · 3 nets at 25%, 55%, 80% river length</div>
   </div>
 </div>
@@ -475,11 +475,11 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
 
   <div class="wl-row">
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/11_scored_terrain.png" alt="Scored terrain static">
+      <img src="/docs/static/exports/11_scored_terrain.png" alt="Scored terrain static">
       <div class="wl-caption">Static view · Glowing spheres = candidates</div>
     </div>
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/02_particle_flow.png" alt="Particle flow traces">
+      <img src="/docs/static/exports/02_particle_flow.png" alt="Particle flow traces">
       <div class="wl-caption">50 water particles traced downhill to channels</div>
     </div>
   </div>
@@ -520,11 +520,11 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
 
   <div class="wl-row">
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/06_dirichlet_simplex.png" alt="Dirichlet simplex static">
+      <img src="/docs/static/exports/06_dirichlet_simplex.png" alt="Dirichlet simplex static">
       <div class="wl-caption">Static simplex view · Color = weight mix</div>
     </div>
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/06_weight_distributions.png" alt="Weight distributions">
+      <img src="/docs/static/exports/06_weight_distributions.png" alt="Weight distributions">
       <div class="wl-caption">Histogram overlay of 4 weight dimensions</div>
     </div>
   </div>
@@ -561,33 +561,33 @@ candidates = extract_candidates(streams, spacing=<span class="num">200</span>)  
 
   <div class="wl-row">
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/01_terrain_3d.png" alt="Watershed terrain">
+      <img src="/docs/static/exports/01_terrain_3d.png" alt="Watershed terrain">
       <div class="wl-caption">Watershed terrain · Flow accumulation carves channels · Wolfram Language</div>
     </div>
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/01_flow_accumulation.png" alt="Flow accumulation heatmap">
+      <img src="/docs/static/exports/01_flow_accumulation.png" alt="Flow accumulation heatmap">
       <div class="wl-caption">Log₁₀ flow accumulation · Brighter = more upstream drainage</div>
     </div>
   </div>
 
   <div class="wl-row">
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/08_durham_terrain_3d.png" alt="Durham 3D terrain">
+      <img src="/docs/static/exports/08_durham_terrain_3d.png" alt="Durham 3D terrain">
       <div class="wl-caption">Durham, NC · 3D terrain model</div>
     </div>
     <div class="wl-fig">
-      <img src="dashboard/docs/exports/08_durham_relief.png" alt="Durham relief plot">
+      <img src="/docs/static/exports/08_durham_relief.png" alt="Durham relief plot">
       <div class="wl-caption">Durham, NC · Elevation relief plot</div>
     </div>
   </div>
 
   <div class="wl-fig">
-    <img src="dashboard/docs/exports/10_cauchy_influence_field.png" alt="CSO influence field">
+    <img src="/docs/static/exports/10_cauchy_influence_field.png" alt="CSO influence field">
     <div class="wl-caption">CSO influence field · Cauchy kernel 1/(1+(d/h)²) · h=500m · 3D dome visualization</div>
   </div>
 
   <div class="wl-fig">
-    <img src="dashboard/docs/exports/09_ej_surface.png" alt="EJ index surface">
+    <img src="/docs/static/exports/09_ej_surface.png" alt="EJ index surface">
     <div class="wl-caption">Environmental Justice Index surface · EJ = (0.4·P_d + 0.3·P_m + 0.3·P_i)/100 · P_discharge=80</div>
   </div>
 </div>
