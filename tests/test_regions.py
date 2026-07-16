@@ -267,7 +267,9 @@ def test_nbi_paged_failure_discards_partial_pages(monkeypatch):
     assert all("OBJECTID" in call["outFields"] for call in calls)
 
 
-def test_nbi_paged_successful_empty_is_real_empty(monkeypatch):
+def test_nbi_paged_successful_empty_is_real_empty(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        rg, "_cache_path", lambda *a, **k: tmp_path / "not-cached.json")
     monkeypatch.setattr(
         rg, "cached_get_json",
         lambda *a, **k: {"features": [], "exceededTransferLimit": False})
@@ -284,6 +286,21 @@ def test_nbi_paged_page_cap_is_unknown(monkeypatch):
         }}], "exceededTransferLimit": True})
     assert rg.nbi_bridge_points_paged(
         (-79.05, 35.90, -78.75, 36.05), page=1, max_pages=1) is None
+
+
+def test_nbi_reuses_complete_legacy_single_page_cache(monkeypatch, tmp_path):
+    cached = tmp_path / "legacy.json"
+    cached.write_text(json.dumps({
+        "features": [{"attributes": {
+            "LATDD": 36.0, "LONGDD": -78.9,
+        }}],
+    }))
+    monkeypatch.setattr(rg, "_cache_path", lambda *a, **k: cached)
+    monkeypatch.setattr(
+        rg, "cached_get_json",
+        lambda *a, **k: pytest.fail("complete legacy cache must avoid network"))
+    assert rg.nbi_bridge_points_paged(
+        (-79.05, 35.90, -78.75, 36.05), page=2000) == [(36.0, -78.9)]
 
 
 def test_complete_padus_failure_discards_partial_states(monkeypatch):
@@ -346,6 +363,91 @@ def test_complete_padus_merges_all_local_states(monkeypatch):
         (-74.1, 40.6, -73.9, 40.8), "EPSG:32618", ("NY", "NJ"))
     assert list(got["designation"]) == ["NY", "NJ"]
     assert source == "state GDB"
+
+
+def test_measured_provenance_never_calls_zero_measurements_real():
+    import scripts.run_regions as rr
+
+    prov = {}
+    rr.record_measured_provenance(
+        prov, "flow_velocity_ms", "EROM + DEM", 0, 7,
+        "shipped 0.5 m/s default used")
+    assert prov["flow_velocity_ms"] == {
+        "kind": "fallback",
+        "source": "EROM + DEM",
+        "reason": "shipped 0.5 m/s default used",
+        "n_real": 0,
+        "n_fallback": 7,
+        "n_sites": 7,
+    }
+
+    rr.record_measured_provenance(
+        prov, "flow_velocity_ms", "EROM + DEM", 5, 7,
+        "shipped 0.5 m/s default used")
+    assert prov["flow_velocity_ms"]["kind"] == "real"
+    assert prov["flow_velocity_ms"]["n_real"] == 5
+    assert prov["flow_velocity_ms"]["n_fallback"] == 2
+    assert "0.5 m/s" in prov["flow_velocity_ms"]["fallback_reason"]
+
+
+def test_output_provenance_repair_is_metadata_only():
+    import copy
+    import scripts.run_regions as rr
+
+    doc = {
+        "features": [{"geometry": {"coordinates": [-78.9, 36.0]},
+                      "properties": {"rank": 1, "composite_score": 42.0}}],
+        "provenance": {"parameters": {
+            "flow_velocity_ms": {
+                "kind": "real", "source": "EROM + DEM",
+                "n_real": 0, "n_sites": 3,
+            },
+            "velocity_transport_favorability": {
+                "kind": "derived", "source": "velocity curve",
+                "n_real": 0, "n_sites": 3,
+            },
+            "impervious_pct": {
+                "kind": "real", "source": "StreamCat",
+                "n_real": 2, "n_sites": 3,
+            },
+            "flood_q10_cfs": {
+                "kind": "real", "source": "SIR regression",
+                "n_real": 3, "n_sites": 3,
+            },
+        }},
+    }
+    feature_before = copy.deepcopy(doc["features"])
+    rr.normalize_output_provenance(doc)
+    assert doc["features"] == feature_before
+    assert doc["provenance"]["parameters"]["flow_velocity_ms"]["kind"] == "fallback"
+    assert doc["provenance"]["parameters"]["flow_velocity_ms"]["n_fallback"] == 3
+    assert doc["provenance"]["parameters"][
+        "velocity_transport_favorability"]["n_fallback"] == 3
+    assert doc["provenance"]["parameters"][
+        "flood_q10_cfs"]["n_impervious_fallback"] == 1
+
+
+def test_start_after_scope_is_strictly_later():
+    import scripts.run_regions as rr
+
+    cfg = [
+        {"slug": "a", "tier": "metro"},
+        {"slug": "b", "tier": "metro"},
+        {"slug": "c", "tier": "town"},
+    ]
+    scoped = rr.scope_supervisor_regions(cfg, start_after="b")
+    assert [r["slug"] for r in scoped] == ["c"]
+    with pytest.raises(ValueError, match="unknown --start-after"):
+        rr.scope_supervisor_regions(cfg, start_after="missing")
+
+
+def test_flagship_declares_provenance_for_all_27_parameters():
+    from core.scoring import ALL_PARAMS
+    import scripts.wire_real_data as wr
+
+    declared = set(wr.REAL_SOURCES) | set(wr.FALLBACK_REASONS) | set(
+        wr.INHERITED_SOURCES)
+    assert declared == set(ALL_PARAMS)
 
 
 # ── API endpoints (fixture region, offline) ──────────────────────────
