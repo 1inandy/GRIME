@@ -22,6 +22,7 @@ Region-honesty rules implemented:
 """
 from __future__ import annotations
 
+import json
 import math
 
 import geopandas as gpd
@@ -31,7 +32,7 @@ import requests
 from shapely.geometry import Point
 
 from core import census_api_key
-from core.real_sources import cached_get_json, KM2_TO_MI2
+from core.real_sources import cached_get_json, KM2_TO_MI2, _cache_path
 
 WGS84 = "EPSG:4326"
 
@@ -227,6 +228,13 @@ def nbi_bridge_points_paged(bbox, page=2000, max_pages=10):
     w, s, e, n = bbox
     out = []
     for i in range(max_pages):
+        legacy_params = {
+            "where": "1=1", "geometry": f"{w},{s},{e},{n}",
+            "geometryType": "esriGeometryEnvelope", "inSR": "4326", "outSR": "4326",
+            "outFields": "LATDD,LONGDD,LAT_016,LONG_017",
+            "returnGeometry": "false", "f": "json",
+            "resultRecordCount": page, "resultOffset": i * page,
+        }
         params = {
             "where": "1=1", "geometry": f"{w},{s},{e},{n}",
             "geometryType": "esriGeometryEnvelope", "inSR": "4326", "outSR": "4326",
@@ -235,7 +243,25 @@ def nbi_bridge_points_paged(bbox, page=2000, max_pages=10):
             "orderByFields": "OBJECTID",
             "resultRecordCount": page, "resultOffset": i * page,
         }
-        j = cached_get_json(url, params, kind="nbi", timeout=90)
+        # Reuse a previously verified single-page cache from the pre-pagination
+        # runner when available. A short page with no transfer-limit flag is
+        # complete regardless of ordering; full/multi-page results still use
+        # the stable OBJECTID-ordered query below.
+        j = None
+        legacy_key = url + "?" + json.dumps(legacy_params, sort_keys=True)
+        legacy_cache = _cache_path("nbi", legacy_key)
+        if i == 0 and legacy_cache.exists():
+            try:
+                candidate = json.loads(legacy_cache.read_text())
+                legacy_features = candidate.get("features")
+                if (isinstance(legacy_features, list)
+                        and len(legacy_features) < page
+                        and candidate.get("exceededTransferLimit") is not True):
+                    j = candidate
+            except Exception:
+                pass
+        if j is None:
+            j = cached_get_json(url, params, kind="nbi", timeout=90)
         if not isinstance(j, dict) or not isinstance(j.get("features"), list):
             return None
         feats = j["features"]
