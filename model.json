@@ -168,7 +168,7 @@
   },
   "parameter_notes": {
     "_comment": "Status notes on parameters whose values are structurally constant or unpopulated in practice. The per-run varying/constant split is stamped into the output geojson's top-level 'provenance' block by scripts/score_candidates.py.",
-    "bridge_proximity_bonus": "Requires an NBI bridges layer that no shipped entry point supplies, so it evaluates to the 0.0 fallback (constant) and the constant-column drop renormalizes its weight away. Unpopulated \u2014 not a live driver of shipped scores.",
+    "bridge_proximity_bonus": "The flagship and region runners use FHWA/BTS National Bridge Inventory points with a 50 m proximity threshold. A confirmed complete empty inventory yields a real computed 0.0; a failed or truncated NBI query uses the documented 0.0 fallback, and the constant-column drop renormalizes its weight away.",
     "impervious_pct": "NLCD imperviousness is fetched as a whole-bbox raster mean, so it is identical for every candidate within a run by construction (fallback 35.0 when the fetch fails).",
     "runoff_coeff_C": "Derived from impervious_pct (C = 0.05 + 0.009*I), so it is constant whenever impervious_pct is.",
     "seasonal_cv": "Inverted in scoring: steadier flow scores higher.",
