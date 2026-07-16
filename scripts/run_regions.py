@@ -99,6 +99,36 @@ INDEX = OUT_DIR / "index.json"
 
 PROTECTED = {"candidates.geojson", "candidates_v2.geojson", "places.json"}
 
+MEASURED_FALLBACK_REASONS = {
+    "population_density": (
+        "Census block-group geometry or population was unavailable at this site; "
+        "value remains null and is removed by constant-column handling"),
+    "ej_index": (
+        "Census block-group demographic inputs were unavailable at this site; "
+        "value remains null and is removed by constant-column handling"),
+    "impervious_pct": (
+        "NLDI/StreamCat did not return a snap-compatible catchment value; "
+        "value remains null and is removed by constant-column handling"),
+    "runoff_coeff_C": (
+        "source impervious_pct was unavailable; derived value remains null"),
+    "usgs_mean_q_cfs": (
+        "NHDPlus EROM was unavailable or failed the drainage-area snap guard; "
+        "value remains null"),
+    "seasonal_cv": (
+        "NHDPlus monthly EROM was unavailable or failed the drainage-area "
+        "snap guard; value remains null"),
+    "flow_velocity_ms": (
+        "EROM/DEM continuity input unavailable; shipped 0.5 m/s default used"),
+    "velocity_feasibility": (
+        "derived from the shipped 0.5 m/s velocity fallback"),
+    "land_ownership": (
+        "no containing parcel owner returned; shipped unknown ownership 0.5 used"),
+    "road_density_km_km2": (
+        "OSM drive-network measurement unavailable; value remains null"),
+    "road_access_score": (
+        "OSM drive-network measurement unavailable; value remains null"),
+}
+
 
 
 def _json_safe(obj):
@@ -203,6 +233,103 @@ def catchment_disc(pt_utm, area_km2):
     area_km2 = area_km2 or 1.0
     radius_m = max(500.0, (max(area_km2, 0.01) / np.pi) ** 0.5 * 1000.0)
     return pt_utm.buffer(radius_m)
+
+
+def record_measured_provenance(prov, param, source, n_real, n_sites,
+                               fallback_reason):
+    """Record a measured source without ever calling zero measurements real.
+
+    A source may populate only part of a candidate batch (for example, some
+    NLDI snaps lack EROM attributes). Keep that source live when at least one
+    site is measured, but disclose the per-site fallback count and reason.
+    When no site is measured, the whole parameter is an explicit fallback.
+    """
+    n_real = int(n_real or 0)
+    n_sites = int(n_sites)
+    if n_real <= 0:
+        prov[param] = {
+            "kind": "fallback",
+            "source": source,
+            "reason": fallback_reason,
+            "n_real": 0,
+            "n_fallback": n_sites,
+            "n_sites": n_sites,
+        }
+        return
+    prov[param] = {
+        "kind": "real",
+        "source": source,
+        "n_real": n_real,
+        "n_sites": n_sites,
+    }
+    if n_real < n_sites:
+        prov[param].update({
+            "n_fallback": n_sites - n_real,
+            "fallback_reason": fallback_reason,
+        })
+
+
+def normalize_output_provenance(doc):
+    """Backfill fallback disclosure in an already-scored region document.
+
+    This is metadata-only: it never changes a feature value, rank, score, or
+    geometry. It makes outputs written before a resumed batch use the same
+    provenance contract as workers launched after the resume.
+    """
+    provenance = doc.get("provenance") or {}
+    params = provenance.get("parameters") or {}
+    for param, reason in MEASURED_FALLBACK_REASONS.items():
+        entry = params.get(param)
+        if not isinstance(entry, dict):
+            continue
+        n_sites = int(entry.get("n_sites") or 0)
+        n_real = int(entry.get("n_real") or 0)
+        if entry.get("kind") == "real" and n_real <= 0:
+            entry["kind"] = "fallback"
+            entry["reason"] = reason
+        if n_real < n_sites:
+            entry["n_fallback"] = n_sites - n_real
+            if entry.get("kind") == "real":
+                entry["fallback_reason"] = reason
+    flow = params.get("flow_velocity_ms") or {}
+    transport = params.get("velocity_transport_favorability")
+    if isinstance(transport, dict):
+        n_sites = int(transport.get("n_sites") or flow.get("n_sites") or 0)
+        n_real = int(transport.get("n_real") or flow.get("n_real") or 0)
+        transport["n_real"] = n_real
+        if n_real < n_sites:
+            transport["n_fallback"] = n_sites - n_real
+            transport["fallback_reason"] = MEASURED_FALLBACK_REASONS[
+                "flow_velocity_ms"]
+    flood = params.get("flood_q10_cfs")
+    impervious = params.get("impervious_pct")
+    if isinstance(flood, dict) and isinstance(impervious, dict):
+        n_sites = int(flood.get("n_sites") or 0)
+        n_imp_real = int(impervious.get("n_real") or 0)
+        if n_imp_real < n_sites:
+            flood["n_impervious_fallback"] = n_sites - n_imp_real
+            flood["impervious_fallback_reason"] = (
+                "StreamCat imperviousness unavailable; the existing regression-"
+                "input fallback of 0.0% impervious was used and is disclosed here")
+    return doc
+
+
+def repair_region_provenance():
+    """Normalize provenance metadata for every existing nonzero region file."""
+    repaired = 0
+    for path in sorted(OUT_DIR.glob("*.geojson")):
+        doc = json.loads(path.read_text())
+        if not doc.get("features"):
+            continue
+        before = json.dumps(doc.get("provenance"), sort_keys=True)
+        normalize_output_provenance(doc)
+        after = json.dumps(doc.get("provenance"), sort_keys=True)
+        if after != before:
+            path.write_text(
+                json.dumps(_json_safe(doc), indent=1, sort_keys=True,
+                           allow_nan=False) + "\n")
+            repaired += 1
+    print(f"[repair-provenance] normalized {repaired} region files", flush=True)
 
 
 def complete_padus_inventory(bbox, utm_crs, source_states):
@@ -515,6 +642,7 @@ def wire_region_parameters(cands, region):
     # OUT for missing data). Apply the model's own documented fallback constants
     # instead, so gates only ever fire on real values — matching shipped behavior.
     n_vel_fb = 0
+    n_owner_fb = 0
     for i in range(n):
         if np.isnan(cols["flow_velocity_ms"][i]):
             cols["flow_velocity_ms"][i] = 0.5            # shipped compute_flow_features default
@@ -522,6 +650,7 @@ def wire_region_parameters(cands, region):
             n_vel_fb += 1
         if parcels_on and np.isnan(cols["land_ownership"][i]):
             cols["land_ownership"][i] = 0.5              # shipped "unknown" ownership
+            n_owner_fb += 1
     if n_vel_fb:
         log(slug, f"  velocity fallback (0.5 m/s, shipped default) for {n_vel_fb} sites lacking EROM/snap")
 
@@ -663,7 +792,17 @@ def wire_region_parameters(cands, region):
     for p, src in real_sources_doc.items():
         if src is None or p in prov:
             continue
-        mark(p, "real", src, n_real=counts.get(p, 0))
+        record_measured_provenance(
+            prov, p, src, counts.get(p, 0), n,
+            MEASURED_FALLBACK_REASONS.get(
+                p, f"{src} returned no usable per-site measurement"),
+        )
+    if "flow_velocity_ms" in prov:
+        prov["flow_velocity_ms"]["n_fallback"] = n_vel_fb
+    if "velocity_feasibility" in prov:
+        prov["velocity_feasibility"]["n_fallback"] = n_vel_fb
+    if parcels_on and "land_ownership" in prov:
+        prov["land_ownership"]["n_fallback"] = n_owner_fb
     if "bank_slope_score" in prov:
         prov["bank_slope_score"].update({
             "n_nc_lidar_3_125ft": sum(v is not None for v in bank_lidar),
@@ -921,6 +1060,21 @@ def run_worker(args):
     upsert(load_index(), entry)
 
 
+def scope_supervisor_regions(regions, tier=None, start_after=None, limit=None):
+    """Apply deterministic supervisor scope/resume filters."""
+    scoped = list(regions)
+    if tier:
+        scoped = [r for r in scoped if r.get("tier", "metro") == tier]
+    if start_after:
+        slugs = [r["slug"] for r in scoped]
+        if start_after not in slugs:
+            raise ValueError(f"unknown --start-after slug {start_after}")
+        scoped = scoped[slugs.index(start_after) + 1:]
+    if limit:
+        scoped = scoped[:limit]
+    return scoped
+
+
 def supervise(args):
     """Supervisor mode: iterate the config, run each region as a SUBPROCESS with a
     hard wall-clock timeout, gentle inter-region pacing + jitter (Overpass is the
@@ -930,11 +1084,12 @@ def supervise(args):
     import subprocess
 
     cfg = json.loads(CONFIG.read_text())
-    regions = cfg["regions"]
-    if args.tier:
-        regions = [r for r in regions if r.get("tier", "metro") == args.tier]
-    if args.limit:
-        regions = regions[:args.limit]
+    try:
+        regions = scope_supervisor_regions(
+            cfg["regions"], getattr(args, "tier", None),
+            getattr(args, "start_after", None), getattr(args, "limit", None))
+    except ValueError as exc:
+        sys.exit(str(exc))
     timeout = args.timeout
     pace_lo, pace_hi = args.pace, args.pace + args.jitter
 
@@ -1012,9 +1167,15 @@ def main():
     ap.add_argument("--pace", type=float, default=4.0, help="min inter-region sleep seconds")
     ap.add_argument("--jitter", type=float, default=6.0, help="added random pacing seconds")
     ap.add_argument("--no-retry", action="store_true")
+    ap.add_argument("--start-after", default=None,
+                    help="supervisor: resume scoped config strictly after this slug")
+    ap.add_argument("--repair-provenance", action="store_true",
+                    help="metadata-only: normalize provenance in existing outputs")
     args = ap.parse_args()
 
-    if args.supervise:
+    if args.repair_provenance:
+        repair_region_provenance()
+    elif args.supervise:
         supervise(args)
     elif args.only:
         run_worker(args)
