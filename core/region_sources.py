@@ -218,7 +218,9 @@ def nbi_bridge_points_paged(bbox, page=2000, max_pages=10):
     """NBI bridge points in bbox from the NTAD feature service, paged (big-city
     bboxes exceed one 2000-record page). The service's LATDD/LONGDD fields are
     decimal degrees; LAT_016/LONG_017 are the raw NBI DMS strings (DDMMSSss) —
-    prefer the decimal fields and fall back to a DMS parse."""
+    prefer the decimal fields and fall back to a DMS parse. Returns ``None``
+    when any page fails or the safety page cap is exhausted, so callers never
+    mistake a truncated inventory for a real zero."""
     from core.real_sources import _dms_to_dd
     url = ("https://services.arcgis.com/xOi1kZaI0eWDREZv/arcgis/rest/services/"
            "NTAD_National_Bridge_Inventory/FeatureServer/0/query")
@@ -228,12 +230,15 @@ def nbi_bridge_points_paged(bbox, page=2000, max_pages=10):
         params = {
             "where": "1=1", "geometry": f"{w},{s},{e},{n}",
             "geometryType": "esriGeometryEnvelope", "inSR": "4326", "outSR": "4326",
-            "outFields": "LATDD,LONGDD,LAT_016,LONG_017",
+            "outFields": "OBJECTID,LATDD,LONGDD,LAT_016,LONG_017",
             "returnGeometry": "false", "f": "json",
+            "orderByFields": "OBJECTID",
             "resultRecordCount": page, "resultOffset": i * page,
         }
         j = cached_get_json(url, params, kind="nbi", timeout=90)
-        feats = (j or {}).get("features", [])
+        if not isinstance(j, dict) or not isinstance(j.get("features"), list):
+            return None
+        feats = j["features"]
         for feat in feats:
             a = feat.get("attributes", {})
             lat = lon = None
@@ -251,8 +256,11 @@ def nbi_bridge_points_paged(bbox, page=2000, max_pages=10):
                 lon = -lon
             if s - 0.2 <= lat <= n + 0.2 and w - 0.2 <= lon <= e + 0.2:
                 out.append((lat, lon))
-        if len(feats) < page:
+        exceeded = j.get("exceededTransferLimit")
+        if exceeded is False or (exceeded is None and len(feats) < page):
             break
+    else:
+        return None
     return out
 
 
