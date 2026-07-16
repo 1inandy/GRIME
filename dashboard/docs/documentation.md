@@ -741,7 +741,7 @@ The Feasibility sub-score determines whether a net can physically be installed, 
 | `velocity_feasibility` | 0.20 | Manning's Eq. |
 | `land_ownership` | 0.15 | USGS PAD-US |
 | `bank_slope_score` | 0.10 | DEM |
-| `bridge_proximity_bonus` | 0.10 | OSM |
+| `bridge_proximity_bonus` | 0.10 | FHWA/BTS National Bridge Inventory |
 
 Fewer than 5% of OpenStreetMap waterways have explicit width tags, so GRIME uses a heuristic estimator based on waterway type (`ditch` → 1.5m, `stream` → 4m, `canal` → 8m, `river` → 15–40m depending on stream order).
 
@@ -1200,4 +1200,3 @@ The dashboard puts GRIME's methodology in anyone's hands, anywhere in the world,
 ```Mathematica
 Export["filename.png", %, ImageResolution -> 144]
 ```
-

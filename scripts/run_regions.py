@@ -205,6 +205,38 @@ def catchment_disc(pt_utm, area_km2):
     return pt_utm.buffer(radius_m)
 
 
+def complete_padus_inventory(bbox, utm_crs, source_states):
+    """Load a complete PAD-US inventory for every state touching a region.
+
+    Prefer the versioned state packages. If any package is unavailable, query
+    the official nationwide service for the *whole* bbox. A failed nationwide
+    query returns ``None`` even when one local state package succeeded: scoring
+    a partial cross-state inventory would turn missing polygons into false
+    computed absences.
+    """
+    frames = []
+    missing = []
+    for state in source_states:
+        frame = rs.padus_protected_gdf(
+            bbox, utm_crs, state_abbr=state)
+        if frame is None:
+            missing.append(state)
+        else:
+            frames.append(frame)
+    if missing:
+        remote = padus_protected_gdf_remote(bbox, utm_crs)
+        if remote is None:
+            return None, (
+                "unavailable complete inventory "
+                f"({','.join(missing)} state package missing; service failed)"
+            )
+        return remote, "USGS feature service"
+    if not frames:
+        return None, "unavailable complete inventory (no state package loaded)"
+    return (gpd.GeoDataFrame(pd.concat(frames, ignore_index=True), crs=utm_crs),
+            "state GDB")
+
+
 def wire_region_parameters(cands, region):
     """Attach all 27 parameters to the candidate GeoDataFrame (region UTM).
     Returns (gdf, provenance_dict). Real where fetchable; NaN/documented
@@ -250,12 +282,17 @@ def wire_region_parameters(cands, region):
     npdes = rg.to_utm_points(npdes_raw or [], utm)
     cso_raw = rs.cso_outfall_points(bbox, state_abbrs=source_states)
     cso = rg.to_utm_points(cso_raw or [], utm)
-    nbi_pts = rg.to_utm_points(rg.nbi_bridge_points_paged(bbox), utm)
-    nbi_gdf = gpd.GeoDataFrame(geometry=nbi_pts, crs=utm) if len(nbi_pts) else None
+    nbi_raw = rg.nbi_bridge_points_paged(bbox)
+    nbi_pts = rg.to_utm_points(nbi_raw or [], utm)
+    # A successful empty inventory is real and scores a real 0.0 at every
+    # candidate. Source failure stays distinguishable as None.
+    nbi_gdf = (gpd.GeoDataFrame(geometry=nbi_pts, crs=utm)
+               if nbi_raw is not None else None)
     log(slug, f"  states={source_states_label} "
               f"TRI={'fetch-fail' if tri_raw is None else len(tri)} "
               f"NPDES={'dl-fail' if npdes_raw is None else len(npdes)} "
-              f"CSO={'dl-fail' if cso_raw is None else len(cso)} NBI={len(nbi_pts)}")
+              f"CSO={'dl-fail' if cso_raw is None else len(cso)} "
+              f"NBI={'fetch-fail' if nbi_raw is None else len(nbi_pts)}")
 
     litter_key = region.get("litter_source")
     litter_raw = rg.municipal_litter_points(litter_key, bbox) if litter_key else None
@@ -272,27 +309,8 @@ def wire_region_parameters(cands, region):
     sems = rg.to_utm_points(sems_raw or [], utm)
     # Prefer versioned state GDBs. When any required package is unavailable,
     # query USGS's official PAD-US combined-inventory service for the whole bbox.
-    padus_frames = []
-    padus_missing = []
-    for state in source_states:
-        frame = rs.padus_protected_gdf(bbox, utm, state_abbr=state)
-        if frame is None:
-            padus_missing.append(state)
-        else:
-            padus_frames.append(frame)
-    padus_source_kind = "state GDB"
-    if padus_missing:
-        padus = padus_protected_gdf_remote(bbox, utm)
-        padus_source_kind = "USGS feature service"
-        if padus is None and padus_frames:
-            padus = gpd.GeoDataFrame(pd.concat(padus_frames, ignore_index=True),
-                                     crs=utm)
-            padus_source_kind = (
-                f"partial state GDB ({','.join(padus_missing)} unavailable; "
-                "service failed)")
-    else:
-        padus = (gpd.GeoDataFrame(pd.concat(padus_frames, ignore_index=True), crs=utm)
-                 if padus_frames else None)
+    padus, padus_source_kind = complete_padus_inventory(
+        bbox, utm, source_states)
     # Drinking-water intakes: NC OneMap SWAP surface intakes; the shipped curve
     # integrates to 50 km, so fetch a 0.5-deg-padded bbox.
     intakes_gdf = None
@@ -538,6 +556,15 @@ def wire_region_parameters(cands, region):
     if counts["tourism_amenity_density"] == 0:
         fallback_notes["tourism_amenity_density"] = (
             0.0, "OSM leisure/tourism query unavailable — documented fallback")
+    if counts["road_density_km_km2"] == 0:
+        fallback_notes["road_density_km_km2"] = (
+            np.nan, "OSM drive-network query unavailable — documented null fallback")
+    if counts["road_access_score"] == 0:
+        fallback_notes["road_access_score"] = (
+            np.nan, "OSM drive-network query unavailable — documented null fallback")
+    if nbi_raw is None:
+        fallback_notes["bridge_proximity_bonus"] = (
+            0.0, "FHWA/BTS NBI query unavailable — documented 0.0 fallback")
     for p, (val, why) in fallback_notes.items():
         cols[p] = [val] * n
         mark(p, "fallback", why)
