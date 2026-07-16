@@ -75,6 +75,47 @@ FALLBACK_REASONS = {
     "litter_complaint_density": "Durham One Call 311 endpoint dead / not machine-readable",
 }
 
+# These parameters are intentionally carried unchanged from the June 2026
+# live flagship. This pass re-scores the same frozen 147 sites; it does not
+# silently relabel their existing live measurements as newly fetched.
+INHERITED_SOURCES = {
+    "population_density": (
+        "inherited unchanged from the June 2026 live flagship: Census ACS "
+        "2022 B01003 block-group population, area-weighted to the candidate "
+        "catchment"),
+    "road_density_km_km2": (
+        "inherited unchanged from the June 2026 live flagship: OSM drive-network "
+        "edge length clipped to the candidate catchment"),
+    "flow_velocity_ms": (
+        "inherited unchanged from the June 2026 live flagship: Manning/continuity "
+        "velocity from the 10 m 3DEP DEM, D8 flow grid, channel width, and "
+        "discharge input"),
+    "stream_order": (
+        "inherited unchanged from the June 2026 live flagship: DEM stream-network "
+        "confluence-degree heuristic"),
+    "catchment_area_km2": (
+        "inherited unchanged from the June 2026 live flagship: 10 m USGS 3DEP "
+        "D8 flow accumulation"),
+    "ej_index": (
+        "inherited unchanged from the June 2026 live flagship: Census ACS "
+        "C17002+B03002 low-income/people-of-color demographic index"),
+    "estuary_dist_km": (
+        "inherited unchanged from the June 2026 live flagship: haversine distance "
+        "to the Pamlico Sound estuary reference"),
+    "beach_dist_km": (
+        "inherited unchanged from the June 2026 live flagship: haversine distance "
+        "to the Wrightsville Beach recreational reference"),
+    "tourism_amenity_density": (
+        "inherited unchanged from the June 2026 live flagship: OSM leisure/tourism "
+        "features within 2 km"),
+    "road_access_score": (
+        "inherited unchanged from the June 2026 live flagship: nearest OSM "
+        "drive-network node distance through the shipped access curve"),
+    "velocity_feasibility": (
+        "derived from inherited flow_velocity_ms through the shipped device-"
+        "operability step curve"),
+}
+
 
 def _catchment_disc_utm(point_utm, area_km2):
     """The model's own per-candidate catchment proxy (core.scoring
@@ -323,6 +364,15 @@ def fetch_and_wire(gdf, do_fetch=True):
     })
     for k, reason in FALLBACK_REASONS.items():
         prov[k] = {"kind": "fallback", "reason": reason, "n_sites": n}
+    for k, source in INHERITED_SOURCES.items():
+        prov[k] = {
+            "kind": "derived" if k == "velocity_feasibility" else "real",
+            "source": source,
+            "n_real": n,
+            "n_sites": n,
+        }
+    assert set(ALL_PARAMS) <= set(prov), (
+        "every scored parameter must carry source or fallback provenance")
     # P0 Option A: name the SCORED form of velocity so the two velocity
     # constructs are distinguishable (see model.json curves.* and
     # documentation.md "Why velocity appears twice").
