@@ -247,6 +247,107 @@ def test_litter_distance_to_catchment_decay_and_failure(monkeypatch):
     assert rg.municipal_litter_points("raleigh_ask", (-1, -1, 1, 1)) is None
 
 
+def test_nbi_paged_failure_discards_partial_pages(monkeypatch):
+    """A later NTAD failure makes the whole inventory unknown, never partial."""
+    calls = []
+
+    def fake(url, params, **kwargs):
+        calls.append(params)
+        if params["resultOffset"] == 0:
+            return {"features": [{"attributes": {
+                "OBJECTID": 1, "LATDD": 36.0, "LONGDD": -78.9,
+            }}], "exceededTransferLimit": True}
+        return None
+
+    monkeypatch.setattr(rg, "cached_get_json", fake)
+    assert rg.nbi_bridge_points_paged(
+        (-79.05, 35.90, -78.75, 36.05), page=1) is None
+    assert [call["resultOffset"] for call in calls] == [0, 1]
+    assert all(call["orderByFields"] == "OBJECTID" for call in calls)
+    assert all("OBJECTID" in call["outFields"] for call in calls)
+
+
+def test_nbi_paged_successful_empty_is_real_empty(monkeypatch):
+    monkeypatch.setattr(
+        rg, "cached_get_json",
+        lambda *a, **k: {"features": [], "exceededTransferLimit": False})
+    assert rg.nbi_bridge_points_paged(
+        (-79.05, 35.90, -78.75, 36.05)) == []
+
+
+def test_nbi_paged_page_cap_is_unknown(monkeypatch):
+    """A full final page cannot be reported as a complete inventory."""
+    monkeypatch.setattr(
+        rg, "cached_get_json",
+        lambda *a, **k: {"features": [{"attributes": {
+            "OBJECTID": 1, "LATDD": 36.0, "LONGDD": -78.9,
+        }}], "exceededTransferLimit": True})
+    assert rg.nbi_bridge_points_paged(
+        (-79.05, 35.90, -78.75, 36.05), page=1, max_pages=1) is None
+
+
+def test_complete_padus_failure_discards_partial_states(monkeypatch):
+    """A cross-state service outage cannot turn one local state into 'all'."""
+    import geopandas as gpd
+    import scripts.run_regions as rr
+    from shapely.geometry import Point
+
+    local = gpd.GeoDataFrame(
+        {"designation": ["State Park"]}, geometry=[Point(0, 0)],
+        crs="EPSG:32618")
+    monkeypatch.setattr(
+        rr.rs, "padus_protected_gdf",
+        lambda bbox, crs, state_abbr: local if state_abbr == "NY" else None)
+    monkeypatch.setattr(rr, "padus_protected_gdf_remote", lambda *a, **k: None)
+
+    got, source = rr.complete_padus_inventory(
+        (-74.1, 40.6, -73.9, 40.8), "EPSG:32618", ("NY", "NJ"))
+    assert got is None
+    assert "NJ state package missing" in source and "service failed" in source
+
+
+def test_complete_padus_remote_replaces_partial_states(monkeypatch):
+    import geopandas as gpd
+    import scripts.run_regions as rr
+    from shapely.geometry import Point
+
+    local = gpd.GeoDataFrame(
+        {"designation": ["Local Park"]}, geometry=[Point(0, 0)],
+        crs="EPSG:32618")
+    remote = gpd.GeoDataFrame(
+        {"designation": ["Remote Park"]}, geometry=[Point(1, 1)],
+        crs="EPSG:32618")
+    monkeypatch.setattr(
+        rr.rs, "padus_protected_gdf",
+        lambda bbox, crs, state_abbr: local if state_abbr == "NY" else None)
+    monkeypatch.setattr(
+        rr, "padus_protected_gdf_remote", lambda *a, **k: remote)
+
+    got, source = rr.complete_padus_inventory(
+        (-74.1, 40.6, -73.9, 40.8), "EPSG:32618", ("NY", "NJ"))
+    assert list(got["designation"]) == ["Remote Park"]
+    assert source == "USGS feature service"
+
+
+def test_complete_padus_merges_all_local_states(monkeypatch):
+    import geopandas as gpd
+    import scripts.run_regions as rr
+    from shapely.geometry import Point
+
+    def local(bbox, crs, state_abbr):
+        return gpd.GeoDataFrame(
+            {"designation": [state_abbr]}, geometry=[Point(0, 0)], crs=crs)
+
+    monkeypatch.setattr(rr.rs, "padus_protected_gdf", local)
+    monkeypatch.setattr(
+        rr, "padus_protected_gdf_remote",
+        lambda *a, **k: pytest.fail("complete local states must not query remote"))
+    got, source = rr.complete_padus_inventory(
+        (-74.1, 40.6, -73.9, 40.8), "EPSG:32618", ("NY", "NJ"))
+    assert list(got["designation"]) == ["NY", "NJ"]
+    assert source == "state GDB"
+
+
 # ── API endpoints (fixture region, offline) ──────────────────────────
 
 @pytest.fixture()
