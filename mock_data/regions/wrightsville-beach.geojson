@@ -1,0 +1,38 @@
+{
+ "features": [],
+ "note": "GRIME region 'Wrightsville Beach, NC' \u2014 real-data pipeline produced 0 deployable candidate sites. no waterway above the 2 km\u00b2 channel threshold in this bbox. This is an honest zero (the model targets small urban waterways and does not force sites where none qualify), not a failure.",
+ "provenance": {
+  "candidates_pre_gate": 0,
+  "constant": [],
+  "hard_gate_removed": 0,
+  "n_parameters": 27,
+  "parameters": {},
+  "varying": [],
+  "zero_reason": "no waterway above the 2 km\u00b2 channel threshold in this bbox"
+ },
+ "region": {
+  "bbox": [
+   -77.8207,
+   34.1942,
+   -77.7752,
+   34.2318
+  ],
+  "center": [
+   -77.797924,
+   34.212991
+  ],
+  "flood_method": "sir2014_hr4",
+  "name": "Wrightsville Beach, NC",
+  "notes": "NC Coastal Plain (SIR 2014-5030 HR4; I24H50Y from NOAA Atlas 14 at region center)",
+  "slug": "wrightsville-beach",
+  "state": "NC",
+  "utm_epsg": 32618,
+  "width_curve": {
+   "a": 2.22,
+   "b": 0.363,
+   "code": "APL",
+   "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+  }
+ },
+ "type": "FeatureCollection"
+}

@@ -1,0 +1,47 @@
+{
+ "features": [],
+ "note": "GRIME region 'Carolina Beach, NC' \u2014 real-data pipeline produced 0 deployable candidate sites. all 1 candidate sites removed by the hard gates (velocity/width/ownership) \u2014 no deployable site in this bbox. This is an honest zero (the model targets small urban waterways and does not force sites where none qualify), not a failure.",
+ "provenance": {
+  "candidates_pre_gate": 1,
+  "constant": [],
+  "hard_gate_removed": 1,
+  "n_parameters": 27,
+  "parameters": {},
+  "stream_mask": {
+   "buffer_m": 150.0,
+   "pre_mask": 1,
+   "removed": 0,
+   "sources": [
+    "osm-overpass (all waterway ways)",
+    "usgs-nhdplus flowlines"
+   ]
+  },
+  "varying": [],
+  "zero_reason": "all 1 candidate sites removed by the hard gates (velocity/width/ownership) \u2014 no deployable site in this bbox"
+ },
+ "region": {
+  "bbox": [
+   -77.9299,
+   34.0169,
+   -77.8696,
+   34.0668
+  ],
+  "center": [
+   -77.899788,
+   34.041874
+  ],
+  "flood_method": "sir2014_hr4",
+  "name": "Carolina Beach, NC",
+  "notes": "NC Coastal Plain (SIR 2014-5030 HR4; I24H50Y from NOAA Atlas 14 at region center)",
+  "slug": "carolina-beach",
+  "state": "NC",
+  "utm_epsg": 32618,
+  "width_curve": {
+   "a": 2.22,
+   "b": 0.363,
+   "code": "APL",
+   "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+  }
+ },
+ "type": "FeatureCollection"
+}

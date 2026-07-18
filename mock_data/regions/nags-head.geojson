@@ -1,0 +1,47 @@
+{
+ "features": [],
+ "note": "GRIME region 'Nags Head, NC' \u2014 real-data pipeline produced 0 deployable candidate sites. all 16 DEM candidate sites lie >150 m from any mapped OSM/NHD waterway (stream mask). This is an honest zero (the model targets small urban waterways and does not force sites where none qualify), not a failure.",
+ "provenance": {
+  "candidates_pre_gate": 0,
+  "constant": [],
+  "hard_gate_removed": 0,
+  "n_parameters": 27,
+  "parameters": {},
+  "stream_mask": {
+   "buffer_m": 150.0,
+   "pre_mask": 16,
+   "removed": 16,
+   "sources": [
+    "osm-overpass (all waterway ways)",
+    "usgs-nhdplus flowlines"
+   ]
+  },
+  "varying": [],
+  "zero_reason": "all 16 DEM candidate sites lie >150 m from any mapped OSM/NHD waterway (stream mask)"
+ },
+ "region": {
+  "bbox": [
+   -75.6764,
+   35.9065,
+   -75.575,
+   35.9886
+  ],
+  "center": [
+   -75.625685,
+   35.947529
+  ],
+  "flood_method": "sir2014_hr4",
+  "name": "Nags Head, NC",
+  "notes": "NC Coastal Plain (SIR 2014-5030 HR4; I24H50Y from NOAA Atlas 14 at region center)",
+  "slug": "nags-head",
+  "state": "NC",
+  "utm_epsg": 32618,
+  "width_curve": {
+   "a": 2.22,
+   "b": 0.363,
+   "code": "APL",
+   "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+  }
+ },
+ "type": "FeatureCollection"
+}

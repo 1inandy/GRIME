@@ -10,8 +10,9 @@
    },
    "properties": {
     "accumulation": 45956.0,
-    "bank_slope_deg": 0.2,
+    "bank_slope_deg": 1.96,
     "bank_slope_score": 1.0,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
     "beach_dist_km": 135.91,
     "bridge_proximity_bonus": 0.0,
     "catchment_area_km2": 4.576,
@@ -34,7 +35,7 @@
     "litter_complaint_density": 0.0,
     "lon": -79.2053,
     "navigable_dist_m": null,
-    "npdes_points": null,
+    "npdes_points": 0,
     "pixel_col": 73.0,
     "pixel_row": 269.0,
     "population_density": 32.8,
@@ -52,7 +53,7 @@
     "stream_order": 1,
     "superfund_score": 0.0,
     "tourism_amenity_density": 0.1592,
-    "tri_facility_density": null,
+    "tri_facility_density": 0.0,
     "usgs_mean_q_cfs": null,
     "velocity_feasibility": 1.0,
     "water_intake_score": 0.1972
@@ -69,8 +70,9 @@
    },
    "properties": {
     "accumulation": 26817.0,
-    "bank_slope_deg": 0.56,
+    "bank_slope_deg": 5.2,
     "bank_slope_score": 1.0,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
     "beach_dist_km": 135.53,
     "bridge_proximity_bonus": 0.0,
     "catchment_area_km2": 2.6702,
@@ -93,7 +95,7 @@
     "litter_complaint_density": 0.0,
     "lon": -79.2031,
     "navigable_dist_m": null,
-    "npdes_points": null,
+    "npdes_points": 0,
     "pixel_col": 91.0,
     "pixel_row": 335.0,
     "population_density": 32.8,
@@ -111,7 +113,7 @@
     "stream_order": 1,
     "superfund_score": 0.0,
     "tourism_amenity_density": 0.1592,
-    "tri_facility_density": null,
+    "tri_facility_density": 0.0,
     "usgs_mean_q_cfs": null,
     "velocity_feasibility": 1.0,
     "water_intake_score": 0.195
@@ -150,9 +152,14 @@
   "parameters": {
    "bank_slope_score": {
     "kind": "real",
+    "n_3dep_10m_fallback": 0,
+    "n_nc_lidar_3_125ft": 2,
     "n_real": 2,
     "n_sites": 2,
-    "source": "region DEM gradient (3x3)"
+    "source": "NC OneMap / NC DPS DEM03 statewide lidar-derived 3.125-ft (0.953 m) elevations (perpendicular 50 m transect; robust 5 m bank-rise metric); unavailable profiles use the region 10 m 3DEP DEM-gradient fallback",
+    "source_mosaics": [
+     "Robeson_Ground_3ft"
+    ]
    },
    "beach_dist_km": {
     "kind": "real",
@@ -182,7 +189,7 @@
     "kind": "real",
     "n_real": 2,
     "n_sites": 2,
-    "source": "EPA ECHO CSO inventory (national bulk), Cauchy proximity"
+    "source": "EPA ECHO open CSO/TCS outfall PF coordinates states=NC, Cauchy proximity"
    },
    "ej_index": {
     "kind": "real",
@@ -197,25 +204,32 @@
     "source": "haversine to region ref: Pamlico Sound (shipped NC reference)"
    },
    "flood_q10_cfs": {
+    "impervious_fallback_reason": "StreamCat imperviousness unavailable; the existing regression-input fallback of 0.0% impervious was used and is disclosed here",
     "kind": "real",
+    "n_impervious_fallback": 2,
     "n_real": 2,
     "n_sites": 2,
     "source": "USGS SIR 2014-5030 Table 7 HR4 (NC Coastal Plain; I24H50Y from NOAA Atlas 14 at region center)"
    },
    "flow_velocity_ms": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 2,
     "n_real": 0,
     "n_sites": 2,
+    "reason": "EROM/DEM continuity input unavailable; shipped 0.5 m/s default used",
     "source": "Manning (region DEM/D8) blended with EROM continuity (shipped M4 logic)"
    },
    "impervious_pct": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 2,
     "n_real": 0,
     "n_sites": 2,
+    "reason": "NLDI/StreamCat did not return a snap-compatible catchment value; value remains null and is removed by constant-column handling",
     "source": "EPA StreamCat pctimp2019 (per NHDPlus watershed)"
    },
    "land_ownership": {
     "kind": "real",
+    "n_fallback": 0,
     "n_real": 2,
     "n_sites": 2,
     "source": "NC OneMap statewide parcels (NC Parcels Transformer) ownname"
@@ -224,7 +238,7 @@
     "kind": "fallback",
     "n_real": 0,
     "n_sites": 2,
-    "source": "no machine-readable 311/litter source for this region"
+    "source": "no public machine-readable litter/illegal-dumping feed for this region"
    },
    "navigable_dist_m": {
     "kind": "real",
@@ -234,9 +248,9 @@
    },
    "npdes_points": {
     "kind": "real",
-    "n_real": 0,
+    "n_real": 2,
     "n_sites": 2,
-    "source": "EPA ECHO NPDES outfalls (national bulk), per catchment"
+    "source": "EPA ECHO active NPDES outfalls states=NC (types NPD/GPC/NGP; statuses ADC/EFF/EXP), per catchment"
    },
    "population_density": {
     "kind": "real",
@@ -248,7 +262,7 @@
     "kind": "real",
     "n_real": 2,
     "n_sites": 2,
-    "source": "USGS PAD-US 4.1 NC state clip (local GDB, retrieved 2026-07-10), shipped designation-weighted proximity curve"
+    "source": "USGS PAD-US 4.1 state GDB; states=NC; shipped designation-weighted proximity curve"
    },
    "road_access_score": {
     "kind": "real",
@@ -263,15 +277,19 @@
     "source": "OSM drive network (osmnx, cached) clipped per catchment"
    },
    "runoff_coeff_C": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 2,
     "n_real": 0,
     "n_sites": 2,
+    "reason": "source impervious_pct was unavailable; derived value remains null",
     "source": "derived from real impervious_pct (C=0.05+0.009*I)"
    },
    "seasonal_cv": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 2,
     "n_real": 0,
     "n_sites": 2,
+    "reason": "NHDPlus monthly EROM was unavailable or failed the drainage-area snap guard; value remains null",
     "source": "CV of NHDPlus EROM monthly flows per COMID"
    },
    "stream_order": {
@@ -284,7 +302,7 @@
     "kind": "real",
     "n_real": 2,
     "n_sites": 2,
-    "source": "EPA Envirofacts SEMS state=NC (sign-fixed, georeferenced sites), shipped 500 m inverse-distance curve"
+    "source": "EPA DataMap SEMS active sites states=NC (non-archived, georeferenced), shipped 500 m inverse-distance curve"
    },
    "tourism_amenity_density": {
     "kind": "real",
@@ -294,24 +312,30 @@
    },
    "tri_facility_density": {
     "kind": "real",
-    "n_real": 0,
+    "n_real": 2,
     "n_sites": 2,
-    "source": "EPA Envirofacts TRI state=NC (sign-fixed), per catchment"
+    "source": "EPA DataMap TRI open facilities states=NC (preferred decimal or packed-DMS recovery), per catchment"
    },
    "usgs_mean_q_cfs": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 2,
     "n_real": 0,
     "n_sites": 2,
+    "reason": "NHDPlus EROM was unavailable or failed the drainage-area snap guard; value remains null",
     "source": "NHDPlus EROM qe_ma per COMID (snap-guarded)"
    },
    "velocity_feasibility": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 2,
     "n_real": 0,
     "n_sites": 2,
+    "reason": "derived from the shipped 0.5 m/s velocity fallback",
     "source": "shipped step curve on the computed velocity"
    },
    "velocity_transport_favorability": {
+    "fallback_reason": "EROM/DEM continuity input unavailable; shipped 0.5 m/s default used",
     "kind": "derived",
+    "n_fallback": 2,
     "n_real": 0,
     "n_sites": 2,
     "source": "scored form of flow_velocity_ms inside the Flow family \u2014 peaked Gaussian exp(-((v-0.9)/0.6)^2), model.json curves.velocity_transport_favorability; construct: transport/delivery favorability, deliberately distinct from velocity_feasibility (device operability)"
