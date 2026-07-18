@@ -63,8 +63,11 @@ def test_dirichlet_reproduces_the_paper_figure_from_the_paper_tag(tmp_path):
 
 
 def test_dirichlet_on_the_shipped_flagship_stays_stable():
-    """The re-scored flagship (24/27 live) must remain at least as rank-stable
-    as the paper baseline demanded — the fix-pass-2 receipt measured 96.5%."""
+    """The re-scored flagship (25/27 varying) must retain strong rank stability.
+
+    The final Fix 3 receipt measured 94.1%; this executable floor remains the
+    broader >=90% stability requirement rather than a fixture-specific number.
+    """
     r = vp.dirichlet_stability(n=2000, seed=vp.DIRICHLET_SEED)
     assert r["n_candidates"] == 147
     assert r["mean_pct"] >= 90.0
