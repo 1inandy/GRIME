@@ -450,6 +450,39 @@ def test_flagship_declares_provenance_for_all_27_parameters():
     assert declared == set(ALL_PARAMS)
 
 
+def test_flagship_partial_provenance_is_explicit_and_metadata_only():
+    import scripts.wire_real_data as wr
+
+    prov = {
+        "land_ownership": {
+            "kind": "real", "source": "Durham parcels",
+            "n_real": 2, "n_sites": 3,
+        },
+        "litter_complaint_density": {
+            "kind": "fallback", "reason": "no feed", "n_sites": 3,
+        },
+        "navigable_dist_m": {
+            "kind": "real", "source": "computed absence", "n_sites": 3,
+        },
+        "flow_velocity_ms": {
+            "kind": "real", "source": "inherited", "n_real": 3,
+            "n_sites": 3,
+        },
+        "velocity_transport_favorability": {
+            "kind": "derived", "source": "velocity curve", "n_sites": 3,
+        },
+    }
+    before_sources = {k: v.get("source") for k, v in prov.items()}
+    wr.normalize_flagship_provenance(prov, 3)
+    assert prov["land_ownership"]["n_fallback"] == 1
+    assert "parcel" in prov["land_ownership"]["fallback_reason"].lower()
+    assert prov["litter_complaint_density"]["n_real"] == 0
+    assert prov["litter_complaint_density"]["n_fallback"] == 3
+    assert prov["navigable_dist_m"]["n_real"] == 3
+    assert prov["velocity_transport_favorability"]["n_real"] == 3
+    assert {k: v.get("source") for k, v in prov.items()} == before_sources
+
+
 # ── API endpoints (fixture region, offline) ──────────────────────────
 
 @pytest.fixture()

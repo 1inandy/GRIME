@@ -1,0 +1,704 @@
+{
+ "features": [
+  {
+   "geometry": {
+    "coordinates": [
+     -80.306545,
+     35.241203
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 98998.0,
+    "bank_slope_deg": 8.41,
+    "bank_slope_score": 1.0,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
+    "beach_dist_km": 256.97,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 9.8723,
+    "channel_width_m": 8.07,
+    "channel_width_score": 1.0,
+    "composite_score": 62.0125,
+    "cso_density": 0.0,
+    "ej_index": 0.3427,
+    "elevation_m": 116.0021,
+    "estuary_dist_km": 387.57,
+    "feasibility_score": 61.6883,
+    "flood_q10_cfs": 1054.94,
+    "flow_score": 74.0946,
+    "flow_velocity_ms": 0.1117,
+    "generation_score": 34.3519,
+    "impact_score": 79.7667,
+    "impervious_pct": 2.75,
+    "land_ownership": 0.5,
+    "lat": 35.2412,
+    "litter_complaint_density": 0.0,
+    "lon": -80.3065,
+    "navigable_dist_m": null,
+    "npdes_points": 1,
+    "pixel_col": 538.0,
+    "pixel_row": 143.0,
+    "population_density": 67.2,
+    "position_along": 0.5,
+    "protected_area_score": 4.9283,
+    "rank": 1,
+    "road_access_m": 375.1,
+    "road_access_score": 0.8,
+    "road_density_km_km2": 0.943,
+    "robustness_pct": 100.0,
+    "runoff_coeff_C": 0.0747,
+    "seasonal_cv": 0.5015,
+    "segment_id": 3,
+    "segment_length_m": 633.382,
+    "stream_order": 3,
+    "superfund_score": 0.0,
+    "tourism_amenity_density": 0.0,
+    "tri_facility_density": 0.0,
+    "usgs_mean_q_cfs": 23.307,
+    "velocity_feasibility": 0.7,
+    "water_intake_score": 0.7914
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -80.325665,
+     35.241484
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 46919.0,
+    "bank_slope_deg": 7.63,
+    "bank_slope_score": 1.0,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
+    "beach_dist_km": 258.55,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 4.6789,
+    "channel_width_m": 5.92,
+    "channel_width_score": 1.0,
+    "composite_score": 57.496,
+    "cso_density": 0.0,
+    "ej_index": 0.1801,
+    "elevation_m": 134.708,
+    "estuary_dist_km": 389.31,
+    "feasibility_score": 61.6883,
+    "flood_q10_cfs": 652.09,
+    "flow_score": 36.9999,
+    "flow_velocity_ms": 0.1066,
+    "generation_score": 66.6667,
+    "impact_score": 63.3092,
+    "impervious_pct": 5.24,
+    "land_ownership": 0.5,
+    "lat": 35.2415,
+    "litter_complaint_density": 0.0,
+    "lon": -80.3257,
+    "navigable_dist_m": null,
+    "npdes_points": 1,
+    "pixel_col": 363.0,
+    "pixel_row": 138.0,
+    "population_density": 104.5,
+    "position_along": 0.25,
+    "protected_area_score": 4.9418,
+    "rank": 2,
+    "road_access_m": 487.5,
+    "road_access_score": 0.8,
+    "road_density_km_km2": 2.172,
+    "robustness_pct": 100.0,
+    "runoff_coeff_C": 0.0972,
+    "seasonal_cv": 0.4602,
+    "segment_id": 2,
+    "segment_length_m": 4153.5257,
+    "stream_order": 3,
+    "superfund_score": 0.0,
+    "tourism_amenity_density": 0.557,
+    "tri_facility_density": 0.0,
+    "usgs_mean_q_cfs": 3.303,
+    "velocity_feasibility": 0.7,
+    "water_intake_score": 0.742
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -80.311072,
+     35.240953
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 26047.0,
+    "bank_slope_deg": 4.77,
+    "bank_slope_score": 1.0,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
+    "beach_dist_km": 257.33,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 2.5975,
+    "channel_width_m": 4.64,
+    "channel_width_score": 1.0,
+    "composite_score": 55.4149,
+    "cso_density": 0.0,
+    "ej_index": 0.3077,
+    "elevation_m": 119.9135,
+    "estuary_dist_km": 387.98,
+    "feasibility_score": 100.0,
+    "flood_q10_cfs": 381.83,
+    "flow_score": 41.3943,
+    "flow_velocity_ms": 0.5,
+    "generation_score": 21.5923,
+    "impact_score": 78.6287,
+    "impervious_pct": null,
+    "land_ownership": 0.5,
+    "lat": 35.241,
+    "litter_complaint_density": 0.0,
+    "lon": -80.3111,
+    "navigable_dist_m": null,
+    "npdes_points": 0,
+    "pixel_col": 496.0,
+    "pixel_row": 143.0,
+    "population_density": 75.4,
+    "position_along": 0.5,
+    "protected_area_score": 4.9466,
+    "rank": 3,
+    "road_access_m": 129.0,
+    "road_access_score": 1.0,
+    "road_density_km_km2": 1.444,
+    "robustness_pct": 100.0,
+    "runoff_coeff_C": null,
+    "seasonal_cv": null,
+    "segment_id": 0,
+    "segment_length_m": 484.5942,
+    "stream_order": 3,
+    "superfund_score": 0.0,
+    "tourism_amenity_density": 0.2387,
+    "tri_facility_density": 0.0,
+    "usgs_mean_q_cfs": null,
+    "velocity_feasibility": 1.0,
+    "water_intake_score": 0.778
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -80.312398,
+     35.250424
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 66843.0,
+    "bank_slope_deg": 17.14,
+    "bank_slope_score": 0.5,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
+    "beach_dist_km": 257.9,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 6.6657,
+    "channel_width_m": 6.86,
+    "channel_width_score": 1.0,
+    "composite_score": 50.754,
+    "cso_density": 0.0,
+    "ej_index": 0.3029,
+    "elevation_m": 119.6924,
+    "estuary_dist_km": 388.14,
+    "feasibility_score": 22.7273,
+    "flood_q10_cfs": 851.41,
+    "flow_score": 44.3073,
+    "flow_velocity_ms": 0.044,
+    "generation_score": 48.1126,
+    "impact_score": 72.7809,
+    "impervious_pct": 5.24,
+    "land_ownership": 0.5,
+    "lat": 35.2504,
+    "litter_complaint_density": 0.0,
+    "lon": -80.3124,
+    "navigable_dist_m": null,
+    "npdes_points": 1,
+    "pixel_col": 483.0,
+    "pixel_row": 41.0,
+    "population_density": 74.8,
+    "position_along": 0.75,
+    "protected_area_score": 4.9362,
+    "rank": 4,
+    "road_access_m": 307.2,
+    "road_access_score": 0.8,
+    "road_density_km_km2": 0.777,
+    "robustness_pct": 100.0,
+    "runoff_coeff_C": 0.0972,
+    "seasonal_cv": 0.4602,
+    "segment_id": 2,
+    "segment_length_m": 4153.5257,
+    "stream_order": 3,
+    "superfund_score": 0.0,
+    "tourism_amenity_density": 0.0,
+    "tri_facility_density": 0.0,
+    "usgs_mean_q_cfs": 3.303,
+    "velocity_feasibility": 0.3,
+    "water_intake_score": 0.7922
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -80.334169,
+     35.208603
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 34133.0,
+    "bank_slope_deg": 6.05,
+    "bank_slope_score": 1.0,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
+    "beach_dist_km": 257.69,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 3.4038,
+    "channel_width_m": 5.19,
+    "channel_width_score": 1.0,
+    "composite_score": 44.5216,
+    "cso_density": 0.0,
+    "ej_index": 0.4681,
+    "elevation_m": 131.9466,
+    "estuary_dist_km": 389.98,
+    "feasibility_score": 38.961,
+    "flood_q10_cfs": 505.85,
+    "flow_score": 18.9953,
+    "flow_velocity_ms": 0.1111,
+    "generation_score": 55.5529,
+    "impact_score": 57.5425,
+    "impervious_pct": 4.43,
+    "land_ownership": 0.5,
+    "lat": 35.2086,
+    "litter_complaint_density": 0.0,
+    "lon": -80.3342,
+    "navigable_dist_m": null,
+    "npdes_points": 1,
+    "pixel_col": 288.0,
+    "pixel_row": 506.0,
+    "population_density": 36.6,
+    "position_along": 0.5,
+    "protected_area_score": 4.5462,
+    "rank": 5,
+    "road_access_m": 645.3,
+    "road_access_score": 0.6,
+    "road_density_km_km2": 0.993,
+    "robustness_pct": 100.0,
+    "runoff_coeff_C": 0.0899,
+    "seasonal_cv": 0.4876,
+    "segment_id": 5,
+    "segment_length_m": 1666.2077,
+    "stream_order": 1,
+    "superfund_score": 0.0,
+    "tourism_amenity_density": 0.557,
+    "tri_facility_density": 0.2938,
+    "usgs_mean_q_cfs": 6.281,
+    "velocity_feasibility": 0.7,
+    "water_intake_score": 0.6653
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -80.361715,
+     35.231019
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 28345.0,
+    "bank_slope_deg": 7.86,
+    "bank_slope_score": 1.0,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
+    "beach_dist_km": 261.01,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 2.8266,
+    "channel_width_m": 4.8,
+    "channel_width_score": 1.0,
+    "composite_score": 26.7531,
+    "cso_density": 0.0,
+    "ej_index": 0.3972,
+    "elevation_m": 153.6836,
+    "estuary_dist_km": 392.55,
+    "feasibility_score": 38.961,
+    "flood_q10_cfs": 419.9,
+    "flow_score": 14.6338,
+    "flow_velocity_ms": 0.1135,
+    "generation_score": 34.3445,
+    "impact_score": 23.1574,
+    "impervious_pct": 1.79,
+    "land_ownership": 0.5,
+    "lat": 35.231,
+    "litter_complaint_density": 0.0,
+    "lon": -80.3617,
+    "navigable_dist_m": null,
+    "npdes_points": 1,
+    "pixel_col": 33.0,
+    "pixel_row": 259.0,
+    "population_density": 85.8,
+    "position_along": 0.5,
+    "protected_area_score": 4.5928,
+    "rank": 6,
+    "road_access_m": 509.8,
+    "road_access_score": 0.6,
+    "road_density_km_km2": 0.674,
+    "robustness_pct": 0.0,
+    "runoff_coeff_C": 0.0661,
+    "seasonal_cv": 0.4697,
+    "segment_id": 1,
+    "segment_length_m": 2457.6538,
+    "stream_order": 1,
+    "superfund_score": 0.0,
+    "tourism_amenity_density": 0.0,
+    "tri_facility_density": 0.0,
+    "usgs_mean_q_cfs": 6.036,
+    "velocity_feasibility": 0.7,
+    "water_intake_score": 0.6488
+   },
+   "type": "Feature"
+  },
+  {
+   "geometry": {
+    "coordinates": [
+     -80.363663,
+     35.210472
+    ],
+    "type": "Point"
+   },
+   "properties": {
+    "accumulation": 22623.0,
+    "bank_slope_deg": 8.77,
+    "bank_slope_score": 1.0,
+    "bank_slope_source": "nc-dps-lidar-dem03-cross-section",
+    "beach_dist_km": 260.22,
+    "bridge_proximity_bonus": 0.0,
+    "catchment_area_km2": 2.256,
+    "channel_width_m": 4.37,
+    "channel_width_score": 1.0,
+    "composite_score": 21.3651,
+    "cso_density": 0.0,
+    "ej_index": 0.4681,
+    "elevation_m": 135.1723,
+    "estuary_dist_km": 392.66,
+    "feasibility_score": 38.961,
+    "flood_q10_cfs": 352.36,
+    "flow_score": 8.3927,
+    "flow_velocity_ms": 0.1186,
+    "generation_score": 22.6267,
+    "impact_score": 22.1158,
+    "impervious_pct": 1.48,
+    "land_ownership": 0.5,
+    "lat": 35.2105,
+    "litter_complaint_density": 0.0,
+    "lon": -80.3637,
+    "navigable_dist_m": null,
+    "npdes_points": 3,
+    "pixel_col": 15.0,
+    "pixel_row": 487.0,
+    "population_density": 36.6,
+    "position_along": 0.5,
+    "protected_area_score": 4.516,
+    "rank": 7,
+    "road_access_m": 734.4,
+    "road_access_score": 0.6,
+    "road_density_km_km2": 0.058,
+    "robustness_pct": 0.0,
+    "runoff_coeff_C": 0.0633,
+    "seasonal_cv": 0.4564,
+    "segment_id": 4,
+    "segment_length_m": 502.1434,
+    "stream_order": 1,
+    "superfund_score": 0.0,
+    "tourism_amenity_density": 0.0,
+    "tri_facility_density": 0.0,
+    "usgs_mean_q_cfs": 2.047,
+    "velocity_feasibility": 0.7,
+    "water_intake_score": 0.6111
+   },
+   "type": "Feature"
+  }
+ ],
+ "note": "GRIME region 'Oakboro, NC' \u2014 real-data pipeline (DEM\u2192streams\u2192candidates\u2192stream mask (sites confined to \u00b1150 m of mapped OSM/NHD waterways)\u2192region-appropriate real parameters\u2192shipped scoring, math unchanged). Width curve: Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands. Flood: SIR 2014-5030 HR1. NC Piedmont (DEQ physiography polygon)",
+ "provenance": {
+  "candidates_pre_gate": 7,
+  "constant": [
+   "bridge_proximity_bonus",
+   "channel_width_score",
+   "cso_density",
+   "land_ownership",
+   "litter_complaint_density",
+   "superfund_score"
+  ],
+  "gated_navigable": 0,
+  "hard_gate_removed": 0,
+  "n_parameters": 27,
+  "parameters": {
+   "bank_slope_score": {
+    "kind": "real",
+    "n_3dep_10m_fallback": 0,
+    "n_nc_lidar_3_125ft": 7,
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "NC OneMap / NC DPS DEM03 statewide lidar-derived 3.125-ft (0.953 m) elevations (perpendicular 50 m transect; robust 5 m bank-rise metric); unavailable profiles use the region 10 m 3DEP DEM-gradient fallback",
+    "source_mosaics": [
+     "Stanly_Ground_3ft"
+    ]
+   },
+   "beach_dist_km": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "haversine to region ref: Wrightsville Beach (shipped NC reference)"
+   },
+   "bridge_proximity_bonus": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "FHWA/BTS NBI (NTAD), 50 m proximity"
+   },
+   "catchment_area_km2": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "DEM flow accumulation (pipeline)"
+   },
+   "channel_width_score": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "Bieger 2015 AHI width curve on DEM drainage area \u2192 shipped width curve"
+   },
+   "cso_density": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "EPA ECHO open CSO/TCS outfall PF coordinates states=NC, Cauchy proximity"
+   },
+   "ej_index": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "Census ACS C17002+B03002 two-component demographic index, percentile-ranked within region"
+   },
+   "estuary_dist_km": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "haversine to region ref: Pamlico Sound (shipped NC reference)"
+   },
+   "flood_q10_cfs": {
+    "impervious_fallback_reason": "StreamCat imperviousness unavailable; the existing regression-input fallback of 0.0% impervious was used and is disclosed here",
+    "kind": "real",
+    "n_impervious_fallback": 1,
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "USGS SIR 2014-5030 Table 7 HR1 (NC Piedmont)"
+   },
+   "flow_velocity_ms": {
+    "fallback_reason": "EROM/DEM continuity input unavailable; shipped 0.5 m/s default used",
+    "kind": "real",
+    "n_fallback": 1,
+    "n_real": 6,
+    "n_sites": 7,
+    "source": "Manning (region DEM/D8) blended with EROM continuity (shipped M4 logic)"
+   },
+   "impervious_pct": {
+    "fallback_reason": "NLDI/StreamCat did not return a snap-compatible catchment value; value remains null and is removed by constant-column handling",
+    "kind": "real",
+    "n_fallback": 1,
+    "n_real": 6,
+    "n_sites": 7,
+    "source": "EPA StreamCat pctimp2019 (per NHDPlus watershed)"
+   },
+   "land_ownership": {
+    "kind": "real",
+    "n_fallback": 0,
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "NC OneMap statewide parcels (NC Parcels Transformer) ownname"
+   },
+   "litter_complaint_density": {
+    "kind": "fallback",
+    "n_real": 0,
+    "n_sites": 7,
+    "source": "no public machine-readable litter/illegal-dumping feed for this region"
+   },
+   "navigable_dist_m": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "USACE/BTS NWN (NTAD): no navigable segment within this bbox (+2 km) \u2014 computed absence, gate passes all sites"
+   },
+   "npdes_points": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "EPA ECHO active NPDES outfalls states=NC (types NPD/GPC/NGP; statuses ADC/EFF/EXP), per catchment"
+   },
+   "population_density": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "Census ACS 2022 B01003 block groups (bbox, multi-county), area-weighted"
+   },
+   "protected_area_score": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "USGS PAD-US 4.1 state GDB; states=NC; shipped designation-weighted proximity curve"
+   },
+   "road_access_score": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "OSM drive network nearest-node distance"
+   },
+   "road_density_km_km2": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "OSM drive network (osmnx, cached) clipped per catchment"
+   },
+   "runoff_coeff_C": {
+    "fallback_reason": "source impervious_pct was unavailable; derived value remains null",
+    "kind": "real",
+    "n_fallback": 1,
+    "n_real": 6,
+    "n_sites": 7,
+    "source": "derived from real impervious_pct (C=0.05+0.009*I)"
+   },
+   "seasonal_cv": {
+    "fallback_reason": "NHDPlus monthly EROM was unavailable or failed the drainage-area snap guard; value remains null",
+    "kind": "real",
+    "n_fallback": 1,
+    "n_real": 6,
+    "n_sites": 7,
+    "source": "CV of NHDPlus EROM monthly flows per COMID"
+   },
+   "stream_order": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "DEM stream-network confluence heuristic (pipeline)"
+   },
+   "superfund_score": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "EPA DataMap SEMS active sites states=NC (non-archived, georeferenced), shipped 500 m inverse-distance curve"
+   },
+   "tourism_amenity_density": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "OSM leisure/tourism features per 2 km radius"
+   },
+   "tri_facility_density": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "EPA DataMap TRI open facilities states=NC (preferred decimal or packed-DMS recovery), per catchment"
+   },
+   "usgs_mean_q_cfs": {
+    "fallback_reason": "NHDPlus EROM was unavailable or failed the drainage-area snap guard; value remains null",
+    "kind": "real",
+    "n_fallback": 1,
+    "n_real": 6,
+    "n_sites": 7,
+    "source": "NHDPlus EROM qe_ma per COMID (snap-guarded)"
+   },
+   "velocity_feasibility": {
+    "fallback_reason": "derived from the shipped 0.5 m/s velocity fallback",
+    "kind": "real",
+    "n_fallback": 1,
+    "n_real": 6,
+    "n_sites": 7,
+    "source": "shipped step curve on the computed velocity"
+   },
+   "velocity_transport_favorability": {
+    "fallback_reason": "EROM/DEM continuity input unavailable; shipped 0.5 m/s default used",
+    "kind": "derived",
+    "n_fallback": 1,
+    "n_real": 6,
+    "n_sites": 7,
+    "source": "scored form of flow_velocity_ms inside the Flow family \u2014 peaked Gaussian exp(-((v-0.9)/0.6)^2), model.json curves.velocity_transport_favorability; construct: transport/delivery favorability, deliberately distinct from velocity_feasibility (device operability)"
+   },
+   "water_intake_score": {
+    "kind": "real",
+    "n_real": 7,
+    "n_sites": 7,
+    "source": "NC OneMap / NC DEQ SWAP public water supply sources (source_typ='Surface Water'), shipped exp(-d/10km) curve"
+   }
+  },
+  "stream_mask": {
+   "buffer_m": 150.0,
+   "pre_mask": 7,
+   "removed": 0,
+   "sources": [
+    "osm-overpass (all waterway ways)",
+    "usgs-nhdplus flowlines"
+   ]
+  },
+  "varying": [
+   "bank_slope_score",
+   "beach_dist_km",
+   "catchment_area_km2",
+   "ej_index",
+   "estuary_dist_km",
+   "flood_q10_cfs",
+   "flow_velocity_ms",
+   "impervious_pct",
+   "npdes_points",
+   "population_density",
+   "protected_area_score",
+   "road_access_score",
+   "road_density_km_km2",
+   "runoff_coeff_C",
+   "seasonal_cv",
+   "stream_order",
+   "tourism_amenity_density",
+   "tri_facility_density",
+   "usgs_mean_q_cfs",
+   "velocity_feasibility",
+   "water_intake_score"
+  ]
+ },
+ "region": {
+  "bbox": [
+   -80.3653,
+   35.2031,
+   -80.3031,
+   35.2539
+  ],
+  "beach_ref": {
+   "label": "Wrightsville Beach (shipped NC reference)",
+   "lat": 34.21,
+   "lon": -77.79
+  },
+  "center": [
+   -80.334202,
+   35.228471
+  ],
+  "estuary_ref": {
+   "label": "Pamlico Sound (shipped NC reference)",
+   "lat": 35.05,
+   "lon": -76.05
+  },
+  "flood_method": "sir2014_hr1",
+  "name": "Oakboro, NC",
+  "notes": "NC Piedmont (DEQ physiography polygon)",
+  "slug": "oakboro",
+  "state": "NC",
+  "utm_epsg": 32617,
+  "width_curve": {
+   "a": 3.12,
+   "b": 0.415,
+   "code": "AHI",
+   "source": "Bieger et al. 2015 JAWRA Table 3, Appalachian Highlands"
+  }
+ },
+ "type": "FeatureCollection"
+}

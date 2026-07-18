@@ -15,6 +15,8 @@ HARD CONSTRAINTS honored here:
 
 Run:  python3 scripts/wire_real_data.py            # fetch (cached) + re-score
       python3 scripts/wire_real_data.py --no-fetch # re-score from cache only
+      python3 scripts/wire_real_data.py --repair-provenance
+                                                    # metadata only; no re-score
 """
 import argparse
 import json
@@ -38,6 +40,7 @@ from core.feasibility import (bank_slope_score, bridge_proximity_bonus,
                               channel_width_score, compute_bank_slopes_nc_lidar)
 from core.scoring import compute_composite_score, ALL_PARAMS
 from core import real_sources as rs
+from core import region_sources as rg
 
 IN = Path("mock_data/candidates.geojson")
 OUT = Path("mock_data/candidates_v2.geojson")
@@ -116,6 +119,79 @@ INHERITED_SOURCES = {
         "operability step curve"),
 }
 
+PARTIAL_FALLBACK_REASONS = {
+    "land_ownership": (
+        "Durham parcel lookup returned no containing owner at these sites; "
+        "the existing documented unknown-ownership value 0.5 was preserved"),
+    "usgs_mean_q_cfs": (
+        "NHDPlus EROM was unavailable or failed the drainage-area snap guard "
+        "at these sites; the existing documented flow fallback was preserved"),
+    "bank_slope_score": (
+        "the native-resolution NC lidar profile was unavailable at these sites; "
+        "the existing real 10 m 3DEP gradient value was preserved"),
+}
+
+
+def normalize_flagship_provenance(prov, n):
+    """Make every flagship source receipt a complete per-site partition.
+
+    This changes metadata only. Partial real sources remain real, but disclose
+    exactly how many sites retained a documented fallback and why. A zero-real
+    source can never be labelled real. Computed/derived receipts receive the
+    same explicit counts so downstream audits do not have to infer them.
+    """
+    flow_real = int((prov.get("flow_velocity_ms") or {}).get("n_real") or n)
+    for param, entry in prov.items():
+        if not isinstance(entry, dict):
+            continue
+        entry["n_sites"] = int(entry.get("n_sites") or n)
+        n_sites = entry["n_sites"]
+        if "n_real" not in entry:
+            if entry.get("kind") == "fallback":
+                entry["n_real"] = 0
+            elif param == "velocity_transport_favorability":
+                entry["n_real"] = flow_real
+            else:
+                # Navigability computed absence and other derived receipts apply
+                # to every site when their source is healthy.
+                entry["n_real"] = n_sites
+        n_real = int(entry.get("n_real") or 0)
+        entry["n_real"] = n_real
+        if entry.get("kind") == "real" and n_real <= 0:
+            entry["kind"] = "fallback"
+            entry.setdefault(
+                "reason", "source returned no usable per-site measurement; "
+                "the existing documented fallback was preserved")
+        if entry.get("kind") == "fallback":
+            entry["n_fallback"] = n_sites
+            entry.setdefault(
+                "reason", "source unavailable or unusable; the existing "
+                "documented fallback was preserved")
+        elif n_real < n_sites:
+            entry["n_fallback"] = n_sites - n_real
+            entry.setdefault(
+                "fallback_reason",
+                PARTIAL_FALLBACK_REASONS.get(
+                    param,
+                    "source returned no usable value at these sites; the "
+                    "existing documented fallback was preserved"))
+    return prov
+
+
+def repair_flagship_provenance(path=OUT):
+    """Normalize an existing generated flagship without touching features."""
+    if not path.exists():
+        raise SystemExit(f"cannot repair missing flagship output: {path}")
+    doc = json.loads(path.read_text())
+    features_before = json.dumps(doc.get("features"), sort_keys=True)
+    params = doc.get("provenance", {}).get("parameters", {})
+    normalize_flagship_provenance(params, len(doc.get("features", [])))
+    assert json.dumps(doc.get("features"), sort_keys=True) == features_before
+    from scripts.run_regions import _json_safe
+    path.write_text(json.dumps(
+        _json_safe(doc), indent=1, sort_keys=True, allow_nan=False) + "\n")
+    print(f"Normalized flagship provenance metadata only → {path}")
+
 
 def _catchment_disc_utm(point_utm, area_km2):
     """The model's own per-candidate catchment proxy (core.scoring
@@ -183,10 +259,11 @@ def fetch_and_wire(gdf, do_fetch=True):
     tri_pts = rs.tri_facility_points("NC", BBOX)
     npdes_pts = rs.npdes_outfall_points(BBOX, state_abbrs=("NC",))
     cso_pts = rs.cso_outfall_points(BBOX, state_abbrs=("NC",))
-    nbi_pts = rs.nbi_bridge_points(BBOX)
+    nbi_pts = rg.nbi_bridge_points_paged(BBOX)
     print(f"  TRI={'fetch-fail' if tri_pts is None else len(tri_pts)} · "
           f"NPDES={'dl-fail' if npdes_pts is None else len(npdes_pts)} · "
-          f"CSO={'dl-fail' if cso_pts is None else len(cso_pts)} · NBI={len(nbi_pts)}")
+          f"CSO={'dl-fail' if cso_pts is None else len(cso_pts)} · "
+          f"NBI={'fetch-fail' if nbi_pts is None else len(nbi_pts)}")
 
     def to_utm_points(pts):
         if not pts:
@@ -197,7 +274,7 @@ def fetch_and_wire(gdf, do_fetch=True):
     tri_utm = to_utm_points(tri_pts)
     npdes_utm = to_utm_points(npdes_pts)
     cso_utm = to_utm_points(cso_pts or [])
-    nbi_utm = to_utm_points(nbi_pts)
+    nbi_utm = to_utm_points(nbi_pts or [])
 
     # fix-pass-2 Phase 1/2 impact layers (same fetchers as the region runner)
     print("Fetching SEMS / PAD-US / SWAP intake layers (cached)...")
@@ -281,9 +358,10 @@ def fetch_and_wire(gdf, do_fetch=True):
             real_counts["cso_density"] += 1
 
         # feasibility: bridge proximity (existing 0.2/0.0 function, real NBI)
-        if len(nbi_utm):
+        if nbi_pts is not None:
             gdf_nbi = gpd.GeoDataFrame(geometry=nbi_utm, crs=UTM_CRS)
-            new["bridge_proximity_bonus"][i] = bridge_proximity_bonus(pt, gdf_nbi)
+            new["bridge_proximity_bonus"][i] = (
+                bridge_proximity_bonus(pt, gdf_nbi) if len(gdf_nbi) else 0.0)
             real_counts["bridge_proximity_bonus"] += 1
 
         # Candidate-only high-resolution bank cross-section; if any profile is
@@ -384,6 +462,7 @@ def fetch_and_wire(gdf, do_fetch=True):
                    "feeds velocity_feasibility and the 3.0 m/s hard gate"),
         "n_sites": n,
     }
+    normalize_flagship_provenance(prov, n)
     return enriched, prov
 
 
@@ -391,7 +470,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-fetch", action="store_true",
                     help="re-score from the disk cache only (offline)")
+    ap.add_argument("--repair-provenance", action="store_true",
+                    help="metadata-only: normalize the existing v2 output")
     args = ap.parse_args()
+
+    if args.repair_provenance:
+        repair_flagship_provenance()
+        return
 
     if OUT.resolve() == IN.resolve():
         sys.exit("REFUSING: output path is the frozen live dataset")

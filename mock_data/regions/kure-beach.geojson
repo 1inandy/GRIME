@@ -1,0 +1,47 @@
+{
+ "features": [],
+ "note": "GRIME region 'Kure Beach, NC' \u2014 real-data pipeline produced 0 deployable candidate sites. all 3 DEM candidate sites lie >150 m from any mapped OSM/NHD waterway (stream mask). This is an honest zero (the model targets small urban waterways and does not force sites where none qualify), not a failure.",
+ "provenance": {
+  "candidates_pre_gate": 0,
+  "constant": [],
+  "hard_gate_removed": 0,
+  "n_parameters": 27,
+  "parameters": {},
+  "stream_mask": {
+   "buffer_m": 150.0,
+   "pre_mask": 3,
+   "removed": 3,
+   "sources": [
+    "osm-overpass (all waterway ways)",
+    "usgs-nhdplus flowlines"
+   ]
+  },
+  "varying": [],
+  "zero_reason": "all 3 DEM candidate sites lie >150 m from any mapped OSM/NHD waterway (stream mask)"
+ },
+ "region": {
+  "bbox": [
+   -77.9293,
+   33.9813,
+   -77.8858,
+   34.0174
+  ],
+  "center": [
+   -77.90758,
+   33.999336
+  ],
+  "flood_method": "sir2014_hr4",
+  "name": "Kure Beach, NC",
+  "notes": "NC Coastal Plain (SIR 2014-5030 HR4; I24H50Y from NOAA Atlas 14 at region center)",
+  "slug": "kure-beach",
+  "state": "NC",
+  "utm_epsg": 32618,
+  "width_curve": {
+   "a": 2.22,
+   "b": 0.363,
+   "code": "APL",
+   "source": "Bieger et al. 2015 JAWRA Table 3, Atlantic Plain"
+  }
+ },
+ "type": "FeatureCollection"
+}

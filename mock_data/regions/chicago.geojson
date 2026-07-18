@@ -12,13 +12,14 @@
     "accumulation": 26949.0,
     "bank_slope_deg": 0.39,
     "bank_slope_score": 1.0,
+    "bank_slope_source": "usgs-3dep-10m-gradient-fallback",
     "beach_dist_km": 15.77,
     "bridge_proximity_bonus": 0.0,
     "catchment_area_km2": 2.6872,
     "channel_width_m": 3.62,
     "channel_width_score": 1.0,
     "composite_score": 50.0,
-    "cso_density": 0.039,
+    "cso_density": 4.5549,
     "ej_index": 0.5458,
     "elevation_m": 179.9661,
     "estuary_dist_km": 8.54,
@@ -39,7 +40,7 @@
     "pixel_row": 1112.0,
     "population_density": 2105.4,
     "position_along": 0.5,
-    "protected_area_score": 0.0,
+    "protected_area_score": 164.1795,
     "rank": 1,
     "road_access_m": 88.9,
     "road_access_score": 1.0,
@@ -50,9 +51,9 @@
     "segment_id": 23,
     "segment_length_m": 1625.0786,
     "stream_order": 1,
-    "superfund_score": 1.3472,
+    "superfund_score": 1.3352,
     "tourism_amenity_density": 15.3585,
-    "tri_facility_density": 3.3492,
+    "tri_facility_density": 2.2328,
     "usgs_mean_q_cfs": null,
     "velocity_feasibility": 1.0,
     "water_intake_score": 0.0
@@ -98,9 +99,12 @@
   "parameters": {
    "bank_slope_score": {
     "kind": "real",
+    "n_3dep_10m_fallback": 1,
+    "n_nc_lidar_3_125ft": 0,
     "n_real": 1,
     "n_sites": 1,
-    "source": "region DEM gradient (3x3)"
+    "source": "USGS 3DEP 10 m DEM local gradient; NC lidar source is outside this region",
+    "source_mosaics": []
    },
    "beach_dist_km": {
     "kind": "real",
@@ -130,7 +134,7 @@
     "kind": "real",
     "n_real": 1,
     "n_sites": 1,
-    "source": "EPA ECHO CSO inventory (national bulk), Cauchy proximity"
+    "source": "EPA ECHO open CSO/TCS outfall PF coordinates states=IL, Cauchy proximity"
    },
    "ej_index": {
     "kind": "real",
@@ -145,25 +149,32 @@
     "source": "haversine to region ref: Lake Michigan shoreline (receiving water; Great Lakes basin, not an ocean estuary)"
    },
    "flood_q10_cfs": {
+    "impervious_fallback_reason": "StreamCat imperviousness unavailable; the existing regression-input fallback of 0.0% impervious was used and is disclosed here",
     "kind": "fallback",
+    "n_impervious_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
     "source": "flood regression not valid here (Great Lakes basin: receiving water is Lake Michigan, not an ...) \u2014 NaN, dropped by constant-column handling"
    },
    "flow_velocity_ms": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
+    "reason": "EROM/DEM continuity input unavailable; shipped 0.5 m/s default used",
     "source": "Manning (region DEM/D8) blended with EROM continuity (shipped M4 logic)"
    },
    "impervious_pct": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
+    "reason": "NLDI/StreamCat did not return a snap-compatible catchment value; value remains null and is removed by constant-column handling",
     "source": "EPA StreamCat pctimp2019 (per NHDPlus watershed)"
    },
    "land_ownership": {
     "kind": "fallback",
+    "n_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
     "source": "no parcel integration outside NC (statewide layer is NC OneMap) \u2014 unknown 0.5"
@@ -172,19 +183,19 @@
     "kind": "fallback",
     "n_real": 0,
     "n_sites": 1,
-    "source": "no machine-readable 311/litter source for this region"
+    "source": "no public machine-readable litter/illegal-dumping feed for this region"
    },
    "navigable_dist_m": {
-    "kind": "real",
-    "n_real": 1,
+    "kind": "fallback",
+    "n_real": 0,
     "n_sites": 1,
-    "source": "USACE/BTS NWN (NTAD): no navigable segment within this bbox (+2 km) \u2014 computed absence, gate passes all sites"
+    "source": "no USACE NWN clip covering state=IL \u2014 navigability gate inert"
    },
    "npdes_points": {
     "kind": "real",
     "n_real": 1,
     "n_sites": 1,
-    "source": "EPA ECHO NPDES outfalls (national bulk), per catchment"
+    "source": "EPA ECHO active NPDES outfalls states=IL (types NPD/GPC/NGP; statuses ADC/EFF/EXP), per catchment"
    },
    "population_density": {
     "kind": "real",
@@ -193,10 +204,10 @@
     "source": "Census ACS 2022 B01003 block groups (bbox, multi-county), area-weighted"
    },
    "protected_area_score": {
-    "kind": "fallback",
-    "n_real": 0,
+    "kind": "real",
+    "n_real": 1,
     "n_sites": 1,
-    "source": "no local PAD-US 4.1 clip for this state (NC-only download)"
+    "source": "USGS PAD-US 4.1 USGS feature service; states=IL; shipped designation-weighted proximity curve"
    },
    "road_access_score": {
     "kind": "real",
@@ -211,15 +222,19 @@
     "source": "OSM drive network (osmnx, cached) clipped per catchment"
    },
    "runoff_coeff_C": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
+    "reason": "source impervious_pct was unavailable; derived value remains null",
     "source": "derived from real impervious_pct (C=0.05+0.009*I)"
    },
    "seasonal_cv": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
+    "reason": "NHDPlus monthly EROM was unavailable or failed the drainage-area snap guard; value remains null",
     "source": "CV of NHDPlus EROM monthly flows per COMID"
    },
    "stream_order": {
@@ -232,7 +247,7 @@
     "kind": "real",
     "n_real": 1,
     "n_sites": 1,
-    "source": "EPA Envirofacts SEMS state=IL (sign-fixed, georeferenced sites), shipped 500 m inverse-distance curve"
+    "source": "EPA DataMap SEMS active sites states=IL (non-archived, georeferenced), shipped 500 m inverse-distance curve"
    },
    "tourism_amenity_density": {
     "kind": "real",
@@ -244,22 +259,28 @@
     "kind": "real",
     "n_real": 1,
     "n_sites": 1,
-    "source": "EPA Envirofacts TRI state=IL (sign-fixed), per catchment"
+    "source": "EPA DataMap TRI open facilities states=IL (preferred decimal or packed-DMS recovery), per catchment"
    },
    "usgs_mean_q_cfs": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
+    "reason": "NHDPlus EROM was unavailable or failed the drainage-area snap guard; value remains null",
     "source": "NHDPlus EROM qe_ma per COMID (snap-guarded)"
    },
    "velocity_feasibility": {
-    "kind": "real",
+    "kind": "fallback",
+    "n_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
+    "reason": "derived from the shipped 0.5 m/s velocity fallback",
     "source": "shipped step curve on the computed velocity"
    },
    "velocity_transport_favorability": {
+    "fallback_reason": "EROM/DEM continuity input unavailable; shipped 0.5 m/s default used",
     "kind": "derived",
+    "n_fallback": 1,
     "n_real": 0,
     "n_sites": 1,
     "source": "scored form of flow_velocity_ms inside the Flow family \u2014 peaked Gaussian exp(-((v-0.9)/0.6)^2), model.json curves.velocity_transport_favorability; construct: transport/delivery favorability, deliberately distinct from velocity_feasibility (device operability)"
