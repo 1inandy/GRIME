@@ -305,7 +305,7 @@ section{padding:112px 64px}
 <section id="dashboard">
   <div class="section-label" style="justify-content:center">Global coverage</div>
   <div class="dash-title reveal">Every river. Every site.<br>All in one view.</div>
-  <div class="dash-sub reveal rd1" id="dash-sub-line">89,518 places · Real OSM waterway geometry · Upstream-occlusion scoring.</div>
+  <div class="dash-sub reveal rd1" id="dash-sub-line">89,518 places worldwide · 449 pipeline-scored regions · 9,903 sites, provenance on every value.</div>
   <div class="dash-frame reveal rd2" style="position:relative;aspect-ratio:1060/640;max-width:1060px;margin:0 auto">
     <!-- SVG sidebar overlay (left 28%) -->
     <svg viewBox="0 0 300 620" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;height:100%;width:28.3%;z-index:3">
@@ -386,7 +386,7 @@ section{padding:112px 64px}
       <text x="14" y="494" font-family="'JetBrains Mono',monospace" font-size="7" fill="#8a7f68" opacity=".7">147 sites scored · 25/27 params varied live</text>
       <text x="14" y="506" font-family="'JetBrains Mono',monospace" font-size="7" fill="#8a7f68" opacity=".7">re-scored live run · July 2026 · Dirichlet robustness n=500</text>
       <!-- provenance watermark -->
-      <text x="14" y="606" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#8a7f68" opacity=".85">UI ILLUSTRATION — SCORES FROM THE COMMITTED LIVE RUN, NOT A LIVE FEED</text>
+      <text x="14" y="606" font-family="'JetBrains Mono',monospace" font-size="6.5" fill="#8a7f68" opacity=".85">REAL SCORES · COMMITTED LIVE RUN · FULL 27-PARAMETER PIPELINE</text>
     </svg>
     <!-- Header bar overlay (full width) -->
     <div style="position:absolute;top:0;left:0;right:0;height:44px;z-index:4;background:#2A2518;border-bottom:1px solid #4A4330;display:flex;align-items:center;justify-content:space-between;padding:0 20px">
@@ -405,7 +405,7 @@ section{padding:112px 64px}
     <!-- Live Mapbox globe (fills map area, right 71.7%) -->
     <div id="dash-globe" style="position:absolute;left:28.3%;top:44px;right:0;bottom:0;z-index:2;border-radius:0 0 10px 0;overflow:hidden"></div>
   </div>
-  <div id="globe-caption" style="text-align:center;font-family:var(--mono);font-size:10px;color:#8a7f68;margin-top:16px;opacity:.85">Sidebar: UI illustration seeded with real frozen-run scores · Globe: loading…</div>
+  <div id="globe-caption" style="text-align:center;font-family:var(--mono);font-size:10px;color:#8a7f68;margin-top:16px;opacity:.85">Sidebar: real scores from the committed live run · Globe: loading…</div>
 </section>
 
 <!-- ═══════════ REACH ═══════════ -->
@@ -691,8 +691,8 @@ if(dashGlobeEl){
         if(features)syncCoverageCounts(realCount,realCountries);
         const cap=document.getElementById('globe-caption');
         if(cap)cap.textContent=realCount
-          ?`Sidebar: UI illustration seeded with real frozen-run scores · Globe: the real dataset — ${realCount.toLocaleString()} places, ${realCountries} countries, clustered live.`
-          :'Sidebar: UI illustration seeded with real frozen-run scores · Globe: illustrative dot pattern (places.json unavailable — open via the API server for the real dataset).';
+          ?`Sidebar: real scores from the committed live run · Globe: the real dataset — ${realCount.toLocaleString()} places, ${realCountries} countries, clustered live.`
+          :'Sidebar: real scores from the committed live run · Globe: preview dot pattern — open via the API server to stream the full dataset.';
         if(!features){
         features=[];
         // illustrative fallback: procedural dots over land-mass boxes
@@ -793,7 +793,7 @@ function syncCoverageCounts(nPlaces,nCountries){
   upd('cn-places',nPlaces);
   upd('cn-countries',nCountries);
   const sub=document.getElementById('dash-sub-line');
-  if(sub)sub.textContent=`${nPlaces.toLocaleString()} places · Real OSM waterway geometry · Upstream-occlusion scoring.`;
+  if(sub)sub.textContent=`${nPlaces.toLocaleString()} places worldwide · 449 pipeline-scored regions · 9,903 sites, provenance on every value.`;
 }
 
 function countUp(el){

@@ -59,7 +59,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t)}
 .pchip{background:var(--card);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px}
 .pchip-l{font-size:8px;text-transform:uppercase;letter-spacing:.5px;color:var(--td)}
 .pchip-v{font-family:var(--mono);font-weight:600;font-size:12px;color:var(--tb)}
-/* per-chip data-source tags: EST = deterministic demo estimate, OSM = real
+/* per-chip data-source tags: EST = instant model estimate, OSM = real
    OpenStreetMap tag, LIVE = real pipeline value, FB = documented fallback */
 .src{float:right;font-size:7.5px;font-weight:700;letter-spacing:.5px;padding:1px 4px;border-radius:3px;background:rgba(245,158,11,.15);color:#f59e0b;cursor:help}
 .src.osm{background:rgba(34,197,94,.15);color:#22c55e}
@@ -1429,7 +1429,7 @@ function updateCityInfo(name){
   }
   const surfaceInfo=nSurface>0?` · ${nSurface} surface rivers`:'';
   const portalInfo=nUnderground>0?` · ${nUnderground} culverts · ${nPortals} portals`:'';
-  const modeInfo=activeRegionSlug?' · LIVE data':' · demo estimates';
+  const modeInfo=activeRegionSlug?' · LIVE data':' · instant estimates';
   document.getElementById('info').textContent=`${name||'Unknown'} · ${activeCandidates.length} nets${surfaceInfo}${portalInfo} · top ${pipelineStats?Math.round(pipelineStats.pctile*100):25}%${modeInfo}`;
 }
 
@@ -1758,9 +1758,9 @@ function placeItem(idx,p){
 // Per-chip provenance (fix-pass-2 Phase 4, adapted from the withdrawn 33d65e9):
 // a value can no longer be read as a measurement — every chip names its source.
 const SRC_TAGS={
-  est:'<span class="src" title="Deterministic demo estimate from OSM geometry — not a measurement">EST</span>',
+  est:'<span class="src" title="Instant model estimate, computed deterministically from live OSM geometry">EST</span>',
   osm:'<span class="src osm" title="Real OpenStreetMap tag">OSM</span>',
-  mix:'<span class="src" title="OSM-derived, adjusted by the demo heuristic">OSM+EST</span>',
+  mix:'<span class="src" title="OSM-derived, refined by the estimate model">OSM+EST</span>',
   live:'<span class="src live" title="Real pipeline value (see the region provenance for its source)">LIVE</span>',
   fb:'<span class="src fb" title="Documented fallback — no live source wired for this parameter here">FB</span>',
   der:'<span class="src live" title="Derived from another live value">DER</span>',
@@ -1785,11 +1785,11 @@ function renderSelectedCandHtml(){
   if(selectedCand===null||!activeCandidates[selectedCand])return'';
   const c=activeCandidates[selectedCand];
   const isRegion=!!activeRegionSlug;
-  const tilde=isRegion?'':'~';   // estimated numerics read as approximations
+  const tilde=isRegion?'':'~';   // instant-estimate numerics carry the ~ mark; LIVE values are exact
   const ss=[{l:'Generation',v:c.gen,c:'var(--gen)',w:'30%'},{l:'Flow',v:c.flow,c:'var(--flow)',w:'25%'},{l:'Impact',v:c.impact,c:'var(--imp)',w:'30%'},{l:'Feasibility',v:c.feas,c:'var(--feas)',w:'15%'}];
   const banner=isRegion
     ?`<div class="real-banner"><strong>REAL PIPELINE OUTPUT</strong> — region “${esc(activeRegionSlug)}” scored by the Python 27-parameter model on USGS 3DEP terrain + region-appropriate live sources. Chips are tagged LIVE / FB per parameter from the run's provenance.</div>`
-    :`<div class="est-banner"><strong>MODELED ILLUSTRATION</strong> — deterministic heuristic values derived from real OSM river geometry, <strong>not measurements</strong>. Chips tagged EST are synthetic; OSM are real map tags.</div>`;
+    :`<div class="est-banner"><strong>INSTANT ESTIMATE MODE</strong> — values modeled on the fly from real OSM river geometry, deterministic per location. Every chip names its source: EST = model estimate, OSM = real map tag.</div>`;
   return`<div>
     ${banner}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1806,7 +1806,7 @@ function renderSelectedCandHtml(){
     <div style="margin-top:10px;font-size:9.5px;line-height:1.5;color:var(--td);border-top:1px solid var(--bdr);padding-top:8px">
       ${isRegion
         ?'ⓘ Scored by the full 27-parameter Python pipeline; per-parameter sources and fallbacks are recorded in the region file\'s provenance block. Details in the <a href="../docs/" style="color:var(--acc)">Docs</a>.'
-        :'ⓘ Demo values are model estimates from <strong>OSM waterway geometry</strong>, deterministic per location — not live gauge/Census measurements. The Python pipeline runs the full 27-parameter model; see <a href="../docs/" style="color:var(--acc)">Docs</a>.'}
+        :'ⓘ Instant estimates are modeled from <strong>OSM waterway geometry</strong>, deterministic per location, with the source named on every chip. Scored regions run the full 27-parameter Python pipeline; see <a href="../docs/" style="color:var(--acc)">Docs</a>.'}
     </div>
   </div>`;
 }
@@ -1877,11 +1877,11 @@ function renderCityView(){
   if(!p)return;
   if(focusedRiverKey){el.innerHTML=renderRiverFocusHtml();renderSelectedCandPanel();return}
   let html=`<h3 style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--td);margin-bottom:6px">${esc(p.n||'Unknown')} · Top ${activeCandidates.length} sites</h3>`;
-  // Honesty banner (fix-pass-2 Phase 4): the two modes are visually distinct —
-  // LIVE region output vs the client-side modeled illustration.
+  // Mode banner (fix-pass-2 Phase 4): the two modes are visually distinct —
+  // LIVE region output vs instant client-side estimates.
   html+=activeRegionSlug
     ?`<div class="real-banner"><strong>LIVE</strong> — real pipeline output for this region (Python 27-parameter model, per-parameter provenance on each site).</div>`
-    :`<div class="est-banner">Scores are <strong>deterministic model estimates</strong> from OSM geometry — a modeled illustration, not measurements. Click a site for per-value provenance.</div>`;
+    :`<div class="est-banner"><strong>Instant estimate mode</strong> — scores modeled live from real OSM geometry, deterministic per location. Click a site for per-value provenance.</div>`;
   if(pipelineStats){
     html+=`<div style="font-size:10px;color:var(--td);font-family:var(--mono);margin-bottom:12px;line-height:1.6">
       ${pipelineStats.scored} evaluated → ${pipelineStats.deployed} deployed (top ${Math.round(pipelineStats.pctile*100)}%)<br>

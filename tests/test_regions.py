@@ -582,7 +582,7 @@ def test_tourism_source_failure_is_none_not_assumed(monkeypatch):
 def test_overpass_env_accepts_interpreter_url(monkeypatch):
     """The operator knob normalizes an interpreter URL to the base URL OSMnx
     1.x expects, preventing a silent /interpreter/interpreter endpoint."""
-    import osmnx as ox
+    ox = pytest.importorskip("osmnx")  # requirements-full dep; CI installs the light set
     import scripts.run_regions as rr
 
     monkeypatch.delattr(rr._configure_osmnx, "_done", raising=False)

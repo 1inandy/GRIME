@@ -5,6 +5,8 @@ Video - https://www.youtube.com/watch?v=GsYtVGVTPWM
 
 GRIME is a multi-parameter optimization system that identifies optimal locations for deploying trash interception barriers ("nets") on urban waterways. It evaluates candidate sites across **27 geospatial parameters** organized into **6 parameter families**, producing **4 sub-scores** that combine into a single composite ranking per candidate location.
 
+**Shipping today (July 2026):** **449** pipeline-scored North Carolina regions serving **9,903** candidate sites, a 147-site Durham flagship with **25/27 parameters varying live**, per-value provenance on every number the API serves, and a **94.1%** Dirichlet-robustness result on the regenerated flagship — receipts in [VALIDATION_LOG.md](VALIDATION_LOG.md).
+
 **What makes it technically interesting:**
 - A two-level weighted scoring architecture (parameters → sub-scores → composite) that is both interpretable and tunable
 - Hydrological pipeline built on real DEM data: pit-filling → depression-filling → flat resolution → D8 flow direction → flow accumulation → stream extraction
