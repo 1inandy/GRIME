@@ -236,6 +236,51 @@ def test_build_features_passes_computed_velocity_to_feasibility(monkeypatch):
     assert seen == [2.4]
 
 
+def test_build_features_passes_generated_impervious_to_flow(monkeypatch):
+    import core.scoring as scoring
+
+    seen = []
+    monkeypatch.setattr(scoring, "get_discharge_stats", lambda: {
+        "mean_q_cfs": 1.0, "median_q_cfs": 1.0, "peak_q_cfs": 1.0,
+        "max_q_cfs": 1.0, "cv": 1.0, "high_flow_days": 1,
+        "n_peak_records": 1,
+    })
+    monkeypatch.setattr(scoring, "get_drinking_water_intakes", lambda: gpd.GeoDataFrame())
+    monkeypatch.setattr(
+        scoring, "compute_generation_features",
+        lambda *args, **kwargs: {
+            **{k: 1.0 for k in GENERATION_WEIGHTS},
+            "impervious_pct": 70.0,
+        },
+    )
+
+    def fake_flow(row, **kwargs):
+        seen.append(row.get("impervious_pct"))
+        return {
+            "usgs_mean_q_cfs": 1.0, "flow_velocity_ms": 1.0, "stream_order": 2,
+            "catchment_area_km2": 1.0, "flood_q10_cfs": 1.0,
+            "seasonal_cv": 1.0, "runoff_coeff_C": 0.68,
+        }
+
+    monkeypatch.setattr(scoring, "compute_flow_features", fake_flow)
+    monkeypatch.setattr(scoring, "compute_feasibility_features", lambda *args, **kwargs: {
+        "road_access_score": 1.0, "channel_width_score": 1.0,
+        "velocity_feasibility": 1.0, "land_ownership": 1.0,
+        "bank_slope_score": 1.0, "bridge_proximity_bonus": 0.0,
+    })
+    monkeypatch.setattr(
+        scoring, "compute_impact_features",
+        lambda *args, **kwargs: {k: 1.0 for k in IMPACT_WEIGHTS},
+    )
+
+    candidates = gpd.GeoDataFrame([{
+        "geometry": Point(700000, 4000000), "lat": 36.0, "lon": -79.0,
+        "catchment_area_km2": 1.0,
+    }], crs="EPSG:32617")
+    scoring.build_all_features(candidates, (-79.1, 35.9, -78.8, 36.1))
+    assert seen == [70.0]
+
+
 def test_candidate_detail_keyed_on_rank_survives_resort(monkeypatch):
     """H4 regression: detail lookup is keyed on the stable `rank` property, so a
     sorted/filtered list request can never remap which site a detail id means
