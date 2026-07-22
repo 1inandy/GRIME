@@ -180,8 +180,12 @@ def compute_composite_score(candidates_df):
 
 def sensitivity_analysis(candidates_df, n_perturbations=50):
     """
-    Monte Carlo weight perturbation — assess ranking stability.
-    Returns DataFrame showing how often each site appears in top 5.
+    Monte Carlo weight perturbation for the runtime per-site display metric.
+
+    Returns a DataFrame showing how often each site appears in the top 5. This
+    `robustness_pct` column is intentionally stricter than the paper-validation
+    metric in scripts/validate_paper.py, which measures baseline top-10 sites'
+    retention in the top 25 across 10,000 seeded draws.
     """
     baseline = compute_composite_score(candidates_df)
 

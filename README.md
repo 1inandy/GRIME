@@ -312,14 +312,14 @@ where di is the distance in km. Intakes within 10km get weight ≈0.37, within 5
 
 ### 5.7 Sensitivity analysis via Dirichlet perturbation
 
-To assess whether the top-ranked sites are robust to weight uncertainty, the system performs Monte Carlo sensitivity analysis:
+GRIME uses two related, deliberately separate robustness receipts:
 
-1. Sample N = 50 perturbed weight vectors from a Dirichlet distribution: ω' ~ Dir(α), where α = 10 × [0.30, 0.25, 0.30, 0.15]
-2. The α scaling factor (×10) controls perturbation magnitude — higher α concentrates samples closer to the baseline weights
-3. For each perturbed weight vector, recompute composite scores and record which sites appear in the top 5
-4. The **robustness percentage** for each site is: (count of times in top 5) / N × 100%
+1. **Runtime per-site `robustness_pct`:** `core.scoring.sensitivity_analysis()` samples N perturbed weight vectors from a Dirichlet distribution, recomputes scores, and records how often each candidate appears in the top 5. This is the strict per-site field stored in served GeoJSON.
+2. **Paper-validation top-25 stability:** `scripts/validate_paper.py --dirichlet` measures whether the baseline top 10 candidates remain inside the top 25 across 10,000 seeded draws. This is the broader paper-style stability receipt.
 
-A site with robustness > 80% is ranked highly regardless of reasonable weight changes. A site at 30% is sensitive to weight assumptions.
+Both use ω' ~ Dir(α), where α = 10 × [0.30, 0.25, 0.30, 0.15]. The α scaling factor controls perturbation magnitude: higher α concentrates samples closer to the baseline weights.
+
+The two percentages should not be compared directly. A site can have low top-5 `robustness_pct` while the overall leading pool still has high top-25 stability.
 
 ### 5.8 Haversine distance (placement spacing)
 
@@ -483,9 +483,10 @@ the shipped live dataset) and writes an actual rank-stability histogram to
 `dashboard/docs/exports/robustness_hist.png` (not a synthetic mock). On that demo
 set, the top 4 sites retain a top-5 position in **81–99 %** of perturbed-weight
 runs. The shipped live 147-site dataset stores its own per-site `robustness_pct`
-from the n = 200 run that produced it: the leading site retains top-5 in **82 %**
-of draws, only 23 of 147 sites ever enter the top 5 (the rest report 0 %), so
-top-5 membership is confined to a small stable pool while the exact order within
+from the n = 200 run that produced it: the rank-1 site retains top-5 in **7.5 %**
+of draws, the maximum stored top-5 retention is **82 %**, and only 23 of 147 sites
+ever enter the top 5 (the rest report 0 %), so top-5 membership is confined to a
+small stable pool while the exact order within
 it is weight-sensitive at the margin.
 
 **Field-validation candidates (roadmap).** The top sites the model flags — South
