@@ -516,7 +516,7 @@ td code{font-family:var(--mono);font-size:12px;color:var(--acc);background:var(-
     baseline[<span class="st">"robustness_pct"</span>] = top5_counts / n_perturbations * <span class="num">100</span>
     <span class="kw">return</span> baseline</pre>
 
-  <p>A site with <span class="hl">robustness > 80%</span> is ranked highly regardless of reasonable weight changes. A site at 30% is sensitive to weight assumptions — its position depends on the exact weighting.</p>
+  <p>This runtime <span class="hl">robustness_pct</span> is a strict top-5 membership metric for each served candidate. The paper-validation receipt is separate: <code>scripts/validate_paper.py --dirichlet</code> measures whether the baseline top 10 stay inside the top 25 across 10,000 seeded draws.</p>
 
   <div class="wl-row">
     <div class="wl-fig">

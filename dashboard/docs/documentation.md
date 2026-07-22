@@ -1028,7 +1028,7 @@ Each blue dot is a sampled weight vector. The red star is the baseline. The clou
 
 ### Robustness Scoring
 
-For each of 50 sampled weight vectors, the composite score is recomputed for all candidates and the top 5 are recorded. A site's **robustness** is the fraction of perturbations where it appears in the top 5:
+For the runtime display metric, the composite score is recomputed for all candidates and the top 5 are recorded for each sampled weight vector. A site's **robustness_pct** is the fraction of perturbations where it appears in the top 5:
 
 $$\text{Robustness}(i) = \frac{1}{M} \sum_{m=1}^{M} \mathbb{1}\!\left[i \in \text{Top}_5^{(m)}\right]$$
 
@@ -1074,10 +1074,12 @@ Histogram[robustness,
 > draws over the offline demo candidate set) and is written to
 > `dashboard/docs/exports/robustness_hist.png`. On the shipped live 147-site
 > dataset, the stored `robustness_pct` values (n = 200 run) show the same shape:
-> only 23 of 147 sites ever enter the top 5 (the rest report 0%), with the
-> leading site at 82%.
+> only 23 of 147 sites ever enter the top 5 (the rest report 0%). The rank-1
+> site has 7.5% top-5 retention, while the maximum stored top-5 retention is 82%.
 
-Most sites have low robustness (they rank highly only under specific weight assumptions). The small cluster at the high end represents robust recommendations — sites that are genuinely good regardless of how you weight generation vs. impact vs. feasibility.
+The paper-validation receipt is a different, broader metric: `scripts/validate_paper.py --dirichlet` checks whether the baseline top 10 stay inside the top 25 across 10,000 seeded draws.
+
+Most sites have low top-5 robustness because exact membership in the first five ranks is sensitive to small weight changes. This does not contradict a high top-25 stability result for the broader leading pool.
 
 We can also visualize rank stability across all perturbations as a heatmap:
 
