@@ -23,6 +23,17 @@ env/
 .DS_Store
 */.DS_Store
 
+# Local AI/agent assistant artifacts
+.codex/
+.agents/
+CLAUDE.md
+AGENTS.md
+.cursor/
+.copilot/
+codex-*.md
+claude-*.md
+openai-*.md
+
 # Stray uvicorn redirect file (see L2)
 /uvicorn
 

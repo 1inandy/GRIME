@@ -51,7 +51,7 @@ most ~80% of on-channel trap positions — the paper's own recall regime (80%,
 81.5%) sits exactly at this geometric ceiling. Rows below compare like-for-like
 (same harness, same bboxes); the paper row is the published anchor.
 
-Stop rule (GPT_SOL_PROMPT standing rule 4): if a step's Waterkeepers recall
+Stop rule (standing validation rule 4): if a step's Waterkeepers recall
 drops below the reconstructed phase-0 baseline of **21/27**, STOP, report, do
 not merge. Dirichlet mean must stay ≥ 94.7±0.5 and
 top-10 rank shifts vs `paper-2026` are recorded every row.
