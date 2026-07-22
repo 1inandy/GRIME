@@ -28,3 +28,6 @@ jobs:
 
       - name: Model drift guard
         run: python scripts/check_model.py
+
+      - name: Dirichlet validation guard
+        run: python scripts/validate_paper.py --dirichlet
