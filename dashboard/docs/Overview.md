@@ -57,11 +57,11 @@ where *dᵢ* is the distance to source *i* and *h* is the half-decay distance (5
 
 We designed a two-level weighted scoring system: 27 parameters aggregate into 4 interpretable sub-scores, which combine via a second weight layer into the composite. This structure has a specific advantage. A city planner can look at a candidate and immediately see "high generation, low feasibility" without needing to parse 27 individual numbers.
 
-To test whether top-ranked sites are robust to our specific weight choices, the system performs Monte Carlo sensitivity analysis. We sample 50 perturbed weight vectors from a Dirichlet distribution:
+To test whether top-ranked sites are robust to our specific weight choices, the system performs Monte Carlo sensitivity analysis. The runtime `robustness_pct` field is a strict per-site top-5 membership metric. The paper-validation receipt is broader: `scripts/validate_paper.py --dirichlet` measures whether the baseline top 10 stay inside the top 25 across 10,000 seeded draws. Both sample perturbed weight vectors from a Dirichlet distribution:
 
 **ω' ~ Dir(α), where α = 10 × [0.30, 0.25, 0.30, 0.15]**
 
-The scaling factor of 10 controls perturbation magnitude, concentrating samples near the baseline weights. For each perturbation, composite scores are recomputed and the top 5 sites are recorded. A site's robustness is the percentage of perturbations where it appears in the top 5. A site with 90% robustness is a confident recommendation. A site at 30% is sensitive to weight assumptions and should be scrutinized.
+The scaling factor of 10 controls perturbation magnitude, concentrating samples near the baseline weights. For each runtime perturbation, composite scores are recomputed and the top 5 sites are recorded. This stricter per-site number should not be compared directly to the top-25 paper-validation percentage.
 
 ### Dashboard
 
