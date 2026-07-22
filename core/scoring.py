@@ -318,11 +318,22 @@ def build_all_features(candidates_gdf, bbox, stream_gdf=None,
     print("  Fetching drinking water intakes...")
     intakes_gdf = safe_call(get_drinking_water_intakes, default=gpd.GeoDataFrame())
 
+    # Generation features are needed before Flow because runoff_coeff_C derives
+    # from impervious_pct inside compute_flow_features().
+    print("  Computing generation features (per candidate)...")
+    for idx, row in df.iterrows():
+        catch_poly = _candidate_catchment_polygon(row)
+        gen_feats = safe_call(
+            compute_generation_features, row, catch_poly, bbox,
+            default={k: 0.5 for k in GENERATION_WEIGHTS},
+        )
+        for k, v in gen_feats.items():
+            df.at[idx, k] = v
+
     # Process each candidate
     for idx, row in df.iterrows():
         if idx % 10 == 0:
             print(f"  Processing candidate {idx + 1}/{len(df)}...")
-
         # Flow features (fastest — local computation; fdir → real downstream slope)
         flow_feats = compute_flow_features(
             row, dem_array=dem_array, dem_transform=dem_transform,
@@ -340,17 +351,6 @@ def build_all_features(candidates_gdf, bbox, stream_gdf=None,
             dem_array=dem_array, bbox=bbox,
         )
         for k, v in feas_feats.items():
-            df.at[idx, k] = v
-
-    # Generation features — PER CANDIDATE (C2), on each candidate's own catchment.
-    print("  Computing generation features (per candidate)...")
-    for idx, row in df.iterrows():
-        catch_poly = _candidate_catchment_polygon(row)
-        gen_feats = safe_call(
-            compute_generation_features, row, catch_poly, bbox,
-            default={k: 0.5 for k in GENERATION_WEIGHTS},
-        )
-        for k, v in gen_feats.items():
             df.at[idx, k] = v
 
     print("  Computing impact features...")
