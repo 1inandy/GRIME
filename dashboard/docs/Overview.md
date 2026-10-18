@@ -1,10 +1,10 @@
 ## Inspiration
 
-When Abhav visited his dad's small river town in India, he noticed a problem that stopped him mid-step. The river that had supported the community for years, the one his dad grew up swimming in and families still washed clothes with, was choked with pollution. Plastic waste bobbed against the bank, with the current carrying it farther into town. And this film of waste stretched downstream as far as he could see.
+For us, the problem started close to home. Ellerbe Creek runs through Durham, North Carolina, on its way to Falls Lake, which supplies drinking water for much of the Triangle. After storms, we watched what the city washed into it: bottles, bags, and wrappers snagged on roots and piled against culverts, with more carried downstream before anyone could reach it.
 
-The locals weren't ignoring it, but they couldn't fix it either. The river was too wide to entirely block, the current too strong for makeshift barriers, and no one could tell them where intervention would actually make a difference. Nets that were tried downstream tore within weeks, while those upstream sat in the wrong spots entirely.
+Then, visiting relatives in India and China, we saw the same problem at a far larger scale. Rivers that whole communities depend on, where families still wash clothes, were choked with plastic, and the current carried it through town and downstream as far as we could see. The people living there weren't ignoring it, but they couldn't fix it either. The rivers were too wide to block entirely, the currents too strong for makeshift barriers, and no one could tell them where intervention would actually make a difference. Where nets had been tried, some tore in the current while others sat in the wrong spots entirely.
 
-That experience stuck with him, and data shows how this problem isn't just localized: over 1,000 rivers worldwide carry roughly 80% of ocean-bound riverine plastic — Meijer et al. (2021) attribute the 80% cumulative figure to 1,656 rivers — most of them too irregular for conventional netting. The question then became:
+From a Durham creek to rivers in India and China, the scale changed but the problem didn't, and the data shows how far it reaches: over 1,000 rivers worldwide carry roughly 80% of ocean-bound riverine plastic — Meijer et al. (2021) attribute the 80% cumulative figure to 1,656 rivers — most of them too irregular for conventional netting. The question then became:
 
 > **If we can't net every river, and the nets you do place keep failing, how do you decide where your limited resources will capture the most plastic?**
 

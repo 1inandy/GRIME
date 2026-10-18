@@ -2,7 +2,7 @@
 
 Welcome to the GRIME documentation! GRIME is a multi-parameter optimization engine for identifying optimal trash interception net placements in waterways, anywhere on Earth. It extends the WaterGate flood-analysis framework (Anand, Cheng, Rose, 2023) from 3 parameters to 27, redirecting a hydrological model toward trash accumulation prediction and net deployment optimization.
 
-GRIME was inspired by firsthand experience with river pollution in India — rivers choked with plastic waste, communities unable to determine where intervention would actually make a difference. Over 1,000 rivers worldwide carry ~80% of ocean-bound riverine plastic (Meijer et al. 2021 attribute the 80% figure to 1,656 rivers), and GRIME answers the question: *if you can't net every river, where should your limited resources go?*
+GRIME was inspired by river pollution our team saw firsthand, on Ellerbe Creek near Durham and on rivers in India and China during visits to family: waterways choked with plastic waste, communities unable to determine where intervention would actually make a difference. Over 1,000 rivers worldwide carry ~80% of ocean-bound riverine plastic (Meijer et al. 2021 attribute the 80% figure to 1,656 rivers), and GRIME answers the question: *if you can't net every river, where should your limited resources go?*
 
 The project is currently being developed at the **North Carolina School of Science and Mathematics** and is designed for use by municipal stormwater services, environmental nonprofits, and organizations like The Ocean Cleanup.
 
