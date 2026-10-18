@@ -23,7 +23,7 @@ GRIME is a multi-parameter optimization engine that identifies the best location
 
 These combine into a single composite score from 0 to 100 via a two-level weighted architecture (detailed in the scoring section below). Sites where deployment is physically impossible, because of channels too wide to span, currents too fast for anchoring, or confirmed private land, are eliminated by hard gates before scoring begins. The model also explicitly weights environmental justice through a demographic index reconstructed from live Census ACS data (EPA decommissioned EJSCREEN in 2025), prioritizing sites that serve overburdened communities.
 
-The system works in two modes. The **research pipeline** ingests real 10m elevation data from USGS 3DEP, runs a full computational hydrology pipeline to extract stream networks, then scores every candidate point using live data from federal APIs where available (USGS, EPA, Census; anything unfetchable falls back to documented constants that the per-run provenance block reports). The **interactive dashboard** lets anyone click on any of 89,518 places across 239 countries, fetches real waterway geometry from OpenStreetMap, generates and scores net placements client-side, and renders color-coded results on a Mapbox map in under 5 seconds.
+The system works in two modes. The **research pipeline** ingests real 10m elevation data from USGS 3DEP, runs a full computational hydrology pipeline to extract stream networks, then scores every candidate point using live data from federal APIs where available (USGS, EPA, Census; anything unfetchable falls back to documented constants that the per-run provenance block reports). The **interactive dashboard** lets anyone click on any of 89,518 places across 239 countries and territories, fetches real waterway geometry from OpenStreetMap, generates and scores net placements client-side, and renders color-coded results on a Mapbox map in under 5 seconds.
 
 The output is a ranked list of deployment sites with sub-score breakdowns and parameter evidence for each one.
 
@@ -84,7 +84,7 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 **pysheds on Windows.** The DEM hydrology pipeline depends on `pysheds`, `rasterio`, and `fiona`, all of which have C dependencies that frequently fail to compile on Windows. We solved it by building the dashboard as a fully independent client-side system that bypasses `pysheds` entirely, using OSM waterway data and client-side scoring instead.
 
-**No ground truth.** There is no public dataset of correct trash net placements. Every weight in the model is set by informed heuristic and literature, not optimization. We partially addressed this with the Dirichlet sensitivity analysis: if a site ranks highly across 50 different weight perturbations, it's probably a genuinely good location regardless of our specific weight choices.
+**Thin ground truth.** There is no public dataset of correct trash net placements, so every weight in the model comes from literature and informed heuristics, not optimization. Instead, we tested the rankings against the closest real records we could find (see Accomplishments below) and stress-tested the weights with a Dirichlet sensitivity analysis: across 10,000 random weight draws, Durham's top-10 sites stay in the top 25 in 94.1% of draws on average.
 
 **OSM data coverage is uneven.** OpenStreetMap has excellent waterway data in the US and Europe but highly variable coverage in developing nations, exactly the places that need trash interception most.
 
@@ -94,7 +94,9 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 ## Accomplishments that we're proud of
 
-**Global coverage, not a single demo.** The dashboard works for 89,518 places in 239 countries. Click Lagos, click Jakarta, click Durham: it fetches real waterway data and scores candidate sites in seconds.
+**Checked against real trap sites.** Waterkeepers Carolina publishes where its member groups have installed trash traps across North Carolina. In a reproducible statewide re-run, GRIME places a candidate within 80 m of 21 of those 27 sites (our June 2026 paper reported 22). On Ellerbe Creek, the paper's shortlist came within 80 m of 8 of the 10 recurring debris hotspots the local watershed association has logged since 2014. Receipts for every figure are in `VALIDATION_LOG.md`.
+
+**Global coverage, not a single demo.** The dashboard works for 89,518 places in 239 countries and territories. Click Lagos, click Jakarta, click Durham: it fetches real waterway data and scores candidate sites in seconds.
 
 **Reproducible by design.** Every data source we use is free (Census ACS needs a free, instant API key; the rest are keyless). The offline demo dataset regenerates deterministically with zero network; the live scored datasets are shipped as frozen artifacts because re-running them needs the network-bound pipeline, a Census key, and the one-time bulk downloads recorded in `cache/*/PROVENANCE.txt`.
 
@@ -116,11 +118,15 @@ The frontend is a single `index.html` file using Mapbox GL JS with a 7MB places 
 
 ## What's next for GRIME (Garbage River Interception & Modeling Engine)
 
-**Ground-truth validation.** Partner with Durham Stormwater Services and The Ocean Cleanup to validate rankings against real deployment data and refine weights via Bayesian optimization (the scaffold for which is already implemented in `core/scoring.py`).
+**Precision, not just recall.** Both validations ask whether GRIME re-finds places where traps already are. Next is a blinded review: two people rate top-, middle- and bottom-ranked candidates in Durham and Raleigh without seeing the scores, then we field-check a random sample and report how many high-scoring empty sites would really work.
+
+**A monitored pilot.** One city or watershed group installs a trap at a site from a GRIME shortlist and logs cleanouts and bypass. That gives us our first numbers in kilograms and lets us calibrate the 0.65 capture efficiency the occlusion model assumes today.
+
+**More places, more users.** Test the full model outside North Carolina, starting where siting decisions are already required (California's Trash Amendments give permittees until December 2030), and work with municipal stormwater teams on how GRIME's shortlists fit the way they actually choose sites. As ground truth grows, refine the weights with the Bayesian optimization scaffold already in `core/scoring.py`.
 
 **Real-time discharge integration.** Connect to USGS real-time gauge feeds so the model adjusts scores dynamically as storm events shift conditions.
 
-**Temporal modeling.** Add seasonal variation so the system recommends _when_ to deploy, not just _where_.
+**Storm-aware scoring.** Most river plastic moves in storm pulses, and today's scores are static. Public cleanout records let us test storm-weighted scoring, and seasonal variation would tell crews _when_ to deploy, not just _where_.
 
 **Multi-city normalized scoring.** Build a global normalization framework so organizations can compare sites across cities and countries.
 

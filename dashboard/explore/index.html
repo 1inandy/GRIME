@@ -1660,10 +1660,10 @@ function showStats(){
   const n=places.length;
   document.getElementById('stats').innerHTML=`
     <div class="stat"><div class="stat-v">${n.toLocaleString()}</div><div class="stat-l">Cities</div></div>
-    <div class="stat"><div class="stat-v">${cc.size}</div><div class="stat-l">Countries</div></div>
+    <div class="stat"><div class="stat-v">${cc.size}</div><div class="stat-l">Countries &amp; terr.</div></div>
     <div class="stat"><div class="stat-v">27</div><div class="stat-l">Params</div></div>
     <div class="stat"><div class="stat-v">∞</div><div class="stat-l">On-demand</div></div>`;
-  document.getElementById('info').textContent=`${n.toLocaleString()} cities · ${cc.size} countries`;
+  document.getElementById('info').textContent=`${n.toLocaleString()} cities · ${cc.size} countries & territories`;
   document.getElementById('sidebar-title').textContent='Global coverage';
 }
 
@@ -2021,9 +2021,8 @@ async function init(){
   places=await loadPlaces();
   places=places.filter(p=>p&&p.n&&p.c&&p.la!=null&&p.lo!=null);
   const n=places.length.toLocaleString();
-  const cc=new Set(places.map(p=>p.c)).size;
   document.getElementById('load-msg').textContent=`${n} cities loaded`;
-  document.getElementById('search').placeholder=`Search ${n} cities across ${cc} countries...`;
+  document.getElementById('search').placeholder=`Search ${n} cities worldwide...`;
   document.getElementById('loading').style.display='none';
   document.getElementById('app').classList.add('ready');
   map.resize();

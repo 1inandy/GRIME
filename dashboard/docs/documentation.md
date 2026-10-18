@@ -4,7 +4,7 @@ Welcome to the GRIME documentation! GRIME is a multi-parameter optimization engi
 
 GRIME was inspired by river pollution our team saw firsthand, on Ellerbe Creek near Durham and on rivers in India and China during visits to family: waterways choked with plastic waste, communities unable to determine where intervention would actually make a difference. Over 1,000 rivers worldwide carry ~80% of ocean-bound riverine plastic (Meijer et al. 2021 attribute the 80% figure to 1,656 rivers), and GRIME answers the question: *if you can't net every river, where should your limited resources go?*
 
-The project is currently being developed at the **North Carolina School of Science and Mathematics** and is designed for use by municipal stormwater services, environmental nonprofits, and organizations like The Ocean Cleanup.
+The project started at the **North Carolina School of Science and Mathematics** and is designed for use by municipal stormwater services, environmental nonprofits, and organizations like The Ocean Cleanup.
 
 <!-- Hero images — uncomment once generated:
 <p align="center">
@@ -26,7 +26,7 @@ The project is currently being developed at the **North Carolina School of Scien
 > plots of pipeline output. Where a real, reproducible counterpart exists it is
 > called out in the text (e.g. `scripts/robustness_report.py`).
 
-Effective trash interception in waterways requires solving a site-selection problem: given a finite budget for nets, where should they go to capture the most debris while remaining physically installable and equitable? GRIME addresses this through a 27-parameter scoring engine organized into a two-level weighted architecture. Parameters span six families — population & land use, industrial discharge, hydrology, downstream consequence, environmental justice, and physical feasibility — and aggregate into four interpretable sub-scores (Generation, Flow, Impact, Feasibility) before combining into a single composite score from 0 to 100. Hard gates eliminate physically impossible sites before scoring begins. A Dirichlet-based Monte Carlo sensitivity analysis tests whether top-ranked sites are robust to weight assumptions. The system operates in two modes: a research pipeline using real 10m USGS elevation data and several federal APIs, and an interactive dashboard covering 89,518 places across 239 countries using OpenStreetMap data and client-side scoring.
+Effective trash interception in waterways requires solving a site-selection problem: given a finite budget for nets, where should they go to capture the most debris while remaining physically installable and equitable? GRIME addresses this through a 27-parameter scoring engine organized into a two-level weighted architecture. Parameters span six families — population & land use, industrial discharge, hydrology, downstream consequence, environmental justice, and physical feasibility — and aggregate into four interpretable sub-scores (Generation, Flow, Impact, Feasibility) before combining into a single composite score from 0 to 100. Hard gates eliminate physically impossible sites before scoring begins. A Dirichlet-based Monte Carlo sensitivity analysis tests whether top-ranked sites are robust to weight assumptions. The system operates in two modes: a research pipeline using real 10m USGS elevation data and several federal APIs, and an interactive dashboard covering 89,518 places across 239 countries and territories using OpenStreetMap data and client-side scoring.
 
 # Table of Contents
 
@@ -1154,7 +1154,7 @@ From this DEM, the pipeline extracts streams, generates candidates every 200m, q
 
 ## Application: Global Dashboard
 
-The interactive dashboard lets anyone click on any of 89,518 places across 239 countries. When a city is selected:
+The interactive dashboard lets anyone click on any of 89,518 places across 239 countries and territories. When a city is selected:
 
 1. An **Overpass API** query fetches real waterway geometry from OpenStreetMap
 2. Candidate sites are placed every 200m along each waterway using Haversine spacing
