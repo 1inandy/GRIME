@@ -7,13 +7,15 @@ GRIME is a multi-parameter optimization system that identifies optimal locations
 
 **Shipping today (July 2026):** **449** pipeline-scored North Carolina regions serving **9,903** candidate sites, a 147-site Durham flagship with **25/27 parameters varying live**, per-value provenance on every number the API serves, and a **94.1%** Dirichlet-robustness result on the regenerated flagship — receipts in [VALIDATION_LOG.md](VALIDATION_LOG.md).
 
+**Validation:** in a reproducible statewide re-run, GRIME places a candidate within 80 m of **21 of 27** Waterkeepers Carolina trap sites (the June 2026 SJWP paper reported 22/27), and the paper's shortlist came within 80 m of **8 of 10** recurring debris hotspots on Ellerbe Creek. Method, misses and the exact matching rule are in [VALIDATION_LOG.md](VALIDATION_LOG.md).
+
 **What makes it technically interesting:**
 - A two-level weighted scoring architecture (parameters → sub-scores → composite) that is both interpretable and tunable
 - Hydrological pipeline built on real DEM data: pit-filling → depression-filling → flat resolution → D8 flow direction → flow accumulation → stream extraction
 - Manning's equation applied to estimate flow velocity from DEM slope and channel geometry, with feasibility gates that eliminate sites where deployment is physically impossible
 - Monte Carlo sensitivity analysis via Dirichlet-perturbed weight vectors to assess ranking robustness
 - Three-phase candidate placement algorithm: spatial constraint satisfaction → full-parameter scoring → population-scaled risk-percentile filtering
-- On-demand real waterway geometry from OpenStreetMap's Overpass API for 89,518 places across 239 countries
+- On-demand real waterway geometry from OpenStreetMap's Overpass API for 89,518 places across 239 countries and territories
 
 **Scope:** Site selection modeling and scoring. GRIME does not design the physical trap, predict trash composition, or model individual debris trajectories.
 
@@ -143,7 +145,7 @@ graph TD
 | Landing page | `dashboard/index.html` | Marketing/overview page (hero globe, dataset globe, illustrative UI mock) |
 | Map explorer | `dashboard/explore/index.html` | Interactive map: on-demand OSM waterway fetching, client-side demo scoring, real-pipeline overlay for the Durham pilot |
 | Scored dataset | `mock_data/candidates.geojson` | Frozen live-pipeline output (147 Durham sites) served by the API |
-| Places Database | `mock_data/places.json` | 89,518 place records across 239 countries (~6MB compact JSON) |
+| Places Database | `mock_data/places.json` | 89,518 place records across 239 countries and territories (~6MB compact JSON) |
 
 > **About the places database.** The 89,518 records come from `geonamescache` (real
 > cities/towns with population ≥ 100) plus procedurally generated nearby townships
@@ -676,7 +678,7 @@ grime/
 │   └── docs/                   # Rendered documentation + figures
 ├── mock_data/
 │   ├── candidates.geojson      # Frozen live-pipeline output (147 sites) — API serves this
-│   └── places.json             # 89,518 places, 239 countries (6MB)
+│   └── places.json             # 89,518 places, 239 countries/territories (6MB)
 ├── scripts/
 │   ├── score_candidates.py     # Offline/live scoring entry point (+ overwrite guard)
 │   ├── check_model.py          # model.json ↔ code drift guard
@@ -1042,4 +1044,4 @@ MIT.
 
 ---
 
-*GRIME · 27 parameters · 6 families · 89,518 places · 239 countries*
+*GRIME · 27 parameters · 6 families · 89,518 places · 239 countries and territories*

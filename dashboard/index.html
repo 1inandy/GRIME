@@ -122,6 +122,16 @@ section{padding:112px 64px}
 .card-body{font-size:14px;color:var(--td);line-height:1.75}
 .card-icon{width:44px;height:44px;margin-bottom:30px}
 
+/* ── VALIDATION ── (reuses the problem-stats grid) */
+#proof{background:var(--bg);border-bottom:1px solid var(--bdr);padding:0}
+#proof .section-label{padding:64px 56px 0;margin-bottom:0}
+#proof .stat-item{padding:48px 56px 56px}
+#proof .stat-num{font-size:clamp(36px,4.6vw,72px)}
+#proof .stat-label{max-width:300px}
+.proof-note{font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--td);opacity:.85;padding:0 56px 44px}
+.proof-note a{color:var(--acc);text-decoration:none}
+.proof-note a:hover{text-decoration:underline}
+
 /* ── DASHBOARD ── */
 #dashboard{background:var(--bg);text-align:center}
 .dash-title{font-family:var(--mono);font-size:clamp(28px,4vw,52px);font-weight:700;color:var(--tb);margin-bottom:14px;line-height:1.1}
@@ -196,6 +206,9 @@ section{padding:112px 64px}
   .reach-item{padding:40px 20px;border-right:none;border-bottom:1px solid var(--bdr)}
   .reach-item:last-child{border-bottom:none}
   #cta{padding:64px 24px}
+  #proof .section-label{padding:48px 24px 0}
+  #proof .stat-item{padding:36px 24px 40px}
+  .proof-note{padding:0 24px 36px}
 }
 </style>
 </head>
@@ -295,10 +308,30 @@ section{padding:112px 64px}
         <line x1="38" y1="8" x2="34" y2="12" stroke="#58B09C" stroke-width="1.5"/>
       </svg>
       <div class="card-num">03 — Collect</div>
-      <div class="card-title">Autonomous Action</div>
-      <div class="card-body">Computer vision classifies debris in real time. The unit fills autonomously, pings operators via LoRa, and resets — closing the loop on waterway trash at scale.</div>
+      <div class="card-title">Field-Ready Sites</div>
+      <div class="card-body">Every shortlisted site clears hard gates (current under 3&nbsp;m/s, a channel 0.5 to 50&nbsp;m wide, no confirmed private land) and is scored on road access, so crews can actually reach the trap to empty it.</div>
     </div>
   </div>
+</section>
+
+<!-- ═══════════ VALIDATION ═══════════ -->
+<section id="proof">
+  <div class="section-label">Validation</div>
+  <div class="stats-grid">
+    <div class="stat-item reveal">
+      <div class="stat-num acc">21/27</div>
+      <div class="stat-label">Waterkeepers Carolina trap sites with a GRIME candidate within 80&nbsp;m in a reproducible statewide re-run (22/27 in our June 2026 paper)</div>
+    </div>
+    <div class="stat-item reveal rd1">
+      <div class="stat-num">8/10</div>
+      <div class="stat-label">Ellerbe Creek debris hotspots, logged by the local watershed association since 2014, with a shortlisted GRIME site within 80&nbsp;m (June 2026 paper)</div>
+    </div>
+    <div class="stat-item reveal rd2">
+      <div class="stat-num acc">94.1%</div>
+      <div class="stat-label">Average share of 10,000 random weight draws in which Durham's top-10 sites stay in the top 25 (Dirichlet robustness test)</div>
+    </div>
+  </div>
+  <div class="proof-note">Method and receipts for every figure: <a href="https://github.com/1inandy/GRIME/blob/main/VALIDATION_LOG.md" target="_blank" rel="noopener">VALIDATION_LOG.md</a></div>
 </section>
 
 <!-- ═══════════ DASHBOARD ═══════════ -->
@@ -320,7 +353,7 @@ section{padding:112px 64px}
       <text x="55" y="79" font-family="'JetBrains Mono',monospace" font-size="6" fill="#8a7f68" text-anchor="middle">CITIES</text>
       <rect x="103" y="50" width="82" height="36" rx="3" fill="#352E1E"/>
       <text x="144" y="67" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#58B09C" text-anchor="middle">239</text>
-      <text x="144" y="79" font-family="'JetBrains Mono',monospace" font-size="6" fill="#8a7f68" text-anchor="middle">COUNTRIES</text>
+      <text x="144" y="79" font-family="'JetBrains Mono',monospace" font-size="6" fill="#8a7f68" text-anchor="middle">COUNTRIES &amp; TERR.</text>
       <rect x="192" y="50" width="94" height="36" rx="3" fill="#352E1E"/>
       <text x="239" y="67" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#58B09C" text-anchor="middle">27</text>
       <text x="239" y="79" font-family="'JetBrains Mono',monospace" font-size="6" fill="#8a7f68" text-anchor="middle">PARAMS</text>
@@ -392,7 +425,7 @@ section{padding:112px 64px}
     <div style="position:absolute;top:0;left:0;right:0;height:44px;z-index:4;background:#2A2518;border-bottom:1px solid #4A4330;display:flex;align-items:center;justify-content:space-between;padding:0 20px">
       <div style="display:flex;align-items:center;gap:16px">
         <span style="font-family:var(--mono);font-size:15px;font-weight:700;color:#f5f0e4"><span style="color:#58B09C">G</span>RIME</span>
-        <span style="font-family:var(--mono);font-size:9px;color:#8a7f68">89,518 places · 239 countries · 27 params</span>
+        <span style="font-family:var(--mono);font-size:9px;color:#8a7f68">89,518 places · 239 countries &amp; territories · 27 params</span>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <span style="font-family:var(--mono);font-size:8px;color:#8a7f68;padding:3px 10px;background:#352E1E;border:1px solid #4A4330;border-radius:3px">Waterways</span>
@@ -418,7 +451,7 @@ section{padding:112px 64px}
     </div>
     <div class="reach-item reveal rd1">
       <div class="reach-val"><span class="cn" id="cn-countries" data-t="239" data-s="">0</span></div>
-      <div class="reach-lbl">Countries in the dataset</div>
+      <div class="reach-lbl">Countries and territories in the dataset</div>
     </div>
     <div class="reach-item reveal rd2">
       <div class="reach-val">top <span class="cn" data-t="25" data-s="%">0</span></div>
@@ -437,7 +470,7 @@ section{padding:112px 64px}
   <a href="explore/" class="cta-btn" style="opacity:1;transform:none">Explore the dashboard →</a>
   <div class="cta-manifest">
     <div class="mf-row"><span class="mf-key">built/</span> 2026 · NC School of Science and Mathematics · Durham, NC · Ellerbe Creek</div>
-    <div class="mf-row"><span class="mf-key">awards/</span> <a class="mf-link" href="https://www.wef.org/sjwp" target="_blank" rel="noopener">US Stockholm Junior Water Prize Winner</a> · <a class="mf-link" href="https://smathhacks.ncssm.edu" target="_blank" rel="noopener">SMathHacks Climate Grand Award Winner</a></div>
+    <div class="mf-row"><span class="mf-key">awards/</span> <a class="mf-link" href="https://www.wef.org/sjwp" target="_blank" rel="noopener">Stockholm Junior Water Prize: 1st in the USA; international finalist, Stockholm 2026</a> · <a class="mf-link" href="https://smathhacks.ncssm.edu" target="_blank" rel="noopener">SMathHacks Climate Impact Grand Prize</a></div>
     <div class="mf-row"><span class="mf-key">dev crew/</span> Andy Lin · Soham Kela · Aarush Jain · Abhav Kunchakuri</div>
     <div class="mf-row"><span class="mf-key">source/</span> <a class="mf-link" href="https://github.com/1inandy/GRIME" target="_blank" rel="noopener"><svg class="gh-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>https://github.com/1inandy/GRIME</a></div>
   </div>
@@ -691,7 +724,7 @@ if(dashGlobeEl){
         if(features)syncCoverageCounts(realCount,realCountries);
         const cap=document.getElementById('globe-caption');
         if(cap)cap.textContent=realCount
-          ?`Sidebar: real scores from the committed live run · Globe: the real dataset — ${realCount.toLocaleString()} places, ${realCountries} countries, clustered live.`
+          ?`Sidebar: real scores from the committed live run · Globe: the real dataset — ${realCount.toLocaleString()} places, ${realCountries} countries and territories, clustered live.`
           :'Sidebar: real scores from the committed live run · Globe: preview dot pattern — open via the API server to stream the full dataset.';
         if(!features){
         features=[];
