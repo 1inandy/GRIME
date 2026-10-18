@@ -11,7 +11,7 @@
   "stack": "heroku-26",
   "env": {
     "MAPBOX_TOKEN": {
-      "description": "A Mapbox public token (pk.*) used by the dashboard.",
+      "description": "A Mapbox public token (pk.*) used by the dashboard. URL-restrict it to the deploy domain; keep the Mapbox account free of payment methods so usage is capped, not billed.",
       "required": true
     },
     "CENSUS_API_KEY": {
