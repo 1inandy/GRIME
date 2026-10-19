@@ -5,9 +5,11 @@ Video - https://www.youtube.com/watch?v=GsYtVGVTPWM
 
 GRIME is a multi-parameter optimization system that identifies optimal locations for deploying trash interception barriers ("nets") on urban waterways. It evaluates candidate sites across **27 geospatial parameters** organized into **6 parameter families**, producing **4 sub-scores** that combine into a single composite ranking per candidate location.
 
-**Shipping today (July 2026):** **449** pipeline-scored North Carolina regions serving **9,903** candidate sites, a 147-site Durham flagship with **25/27 parameters varying live**, per-value provenance on every number the API serves, and a **94.1%** Dirichlet-robustness result on the regenerated flagship — receipts in [VALIDATION_LOG.md](VALIDATION_LOG.md).
+**Live now at [grime.world](https://grime.world):** **449** pipeline-scored North Carolina regions serving **9,903** candidate sites, a 147-site Durham flagship with **25/27 parameters varying live**, per-value provenance on every number the API serves, and a **94.1%** Dirichlet-robustness result on the regenerated flagship — receipts in [VALIDATION_LOG.md](VALIDATION_LOG.md).
 
 **Validation:** in a reproducible statewide re-run, GRIME places a candidate within 80 m of **21 of 27** Waterkeepers Carolina trap sites (the June 2026 SJWP paper reported 22/27), and the paper's shortlist came within 80 m of **8 of 10** recurring debris hotspots on Ellerbe Creek. Method, misses and the exact matching rule are in [VALIDATION_LOG.md](VALIDATION_LOG.md).
+
+**Recognition:** Stockholm Junior Water Prize USA 2026, 1st place nationally (after 1st in North Carolina), and an international finalist at the August 2026 final in Stockholm; SMathHacks 2026 Climate Impact Grand Prize, where GRIME started in March 2026.
 
 **What makes it technically interesting:**
 - A two-level weighted scoring architecture (parameters → sub-scores → composite) that is both interpretable and tunable
