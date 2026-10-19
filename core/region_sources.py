@@ -45,6 +45,11 @@ BIEGER_WIDTH_CURVES = {
     "APL": (2.22, 0.363),   # Atlantic Plain (Coastal Plain incl. Gulf coast)
     "IPL": (2.56, 0.351),   # Interior Plains (Chicago)
     "PMS": (2.76, 0.399),   # Pacific Mountain System (SF, LA)
+    "RMS": (1.24, 0.435),   # Rocky Mountain System
+    "IMP": (1.11, 0.415),   # Intermontane Plateaus
+    # National model. Used for the Laurentian Upland (n=6) and Interior
+    # Highlands (n=7), whose regional fits the paper calls "tentative at best".
+    "USA": (2.70, 0.352),
 }
 
 

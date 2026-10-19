@@ -1024,16 +1024,29 @@ def load_index():
 def save_index(idx):
     idx["generated"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    INDEX.write_text(json.dumps(_json_safe(idx), indent=1, sort_keys=True, allow_nan=False) + "\n")
+    # Atomic replace: a concurrent reader never sees a half-written index.
+    tmp = INDEX.with_suffix(f".json.tmp{os.getpid()}")
+    tmp.write_text(json.dumps(_json_safe(idx), indent=1, sort_keys=True, allow_nan=False) + "\n")
+    os.replace(tmp, INDEX)
 
 
 def upsert(idx, entry):
-    idx["regions"] = [r for r in idx["regions"] if r["slug"] != entry["slug"]]
-    idx["regions"].append(entry)
-    # stable order: config order
-    order = {r["slug"]: i for i, r in enumerate(json.loads(CONFIG.read_text())["regions"])}
-    idx["regions"].sort(key=lambda r: order.get(r["slug"], 999))
-    save_index(idx)
+    # Two supervisors may run at once (e.g. separate tiers), so the
+    # read-modify-write happens under an exclusive lock on a fresh read; the
+    # passed-in idx (always a fresh load_index() at call sites) is superseded.
+    import fcntl
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    lock_path = Path(_ROOT) / "cache" / "regions_index.lock"   # gitignored
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        idx = load_index()
+        idx["regions"] = [r for r in idx["regions"] if r["slug"] != entry["slug"]]
+        idx["regions"].append(entry)
+        # stable order: config order
+        order = {r["slug"]: i for i, r in enumerate(json.loads(CONFIG.read_text())["regions"])}
+        idx["regions"].sort(key=lambda r: order.get(r["slug"], 999))
+        save_index(idx)
 
 
 def run_worker(args):
@@ -1113,11 +1126,12 @@ def supervise(args):
             return r.returncode == 0
         except subprocess.TimeoutExpired:
             log(slug, f"TIMEOUT after {timeout}s — killed, will retry")
+            reg = next(x for x in cfg["regions"] if x["slug"] == slug)
             upsert(load_index(), {
-                "slug": slug, "name": next(x["name"] for x in cfg["regions"] if x["slug"] == slug),
-                "state": "NC", "bbox": next(x["bbox"] for x in cfg["regions"] if x["slug"] == slug),
-                "center": next(x["center"] for x in cfg["regions"] if x["slug"] == slug),
-                "tier": "town", "site_count": 0, "params_varying": 0,
+                "slug": slug, "name": reg["name"],
+                "state": reg.get("state"), "bbox": reg["bbox"],
+                "center": reg["center"],
+                "tier": reg.get("tier", "metro"), "site_count": 0, "params_varying": 0,
                 "scored_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
                 "status": f"failed: timeout>{timeout}s"})
             return False
