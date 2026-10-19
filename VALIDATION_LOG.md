@@ -84,3 +84,37 @@ urban tributaries the DEM/stream-mask pipeline doesn't carry a candidate onto
 (Duffyfield Canal 194 m; Rankin St 630 m; McCumbers 586 m; Squash Branch
 362 m) — the same miss mode the paper describes for its five misses. Rule-4
 reference for phases 1–3: recall must stay ≥ 21/27 on this harness.
+
+## Expansion run (2026-10-19)
+
+Scoring code, weights, curves and gates unchanged; new regions only.
+`scripts/build_expansion_config.py` added 164 NC census-designated places
+(tier `cdp`) and the 400 most populous conterminous US places outside NC
+(tier `city`) to `scripts/regions.json`; existing regions were byte-identical
+before and after. The overnight batch finished 11 of them cleanly before a
+multi-hour Overpass API outage (all public mirrors failing) stopped OSM fetches:
+
+| Tier | Region | Sites | Params varying |
+|---|---|---|---|
+| cdp | Murraysville, NC | 16 | 21/27 |
+| cdp | Piney Green, NC | 39 | 20/27 † |
+| cdp | Anderson Creek, NC | 115 | 22/27 † |
+| cdp | Lake Norman of Iredell, NC | 67 | 23/27 |
+| cdp | Myrtle Grove, NC | 11 | 18/27 † |
+| city | Phoenix, AZ | 77 | 21/27 † |
+| city | Philadelphia, PA | 101 | 22/27 |
+| city | San Antonio, TX | 153 | 20/27 |
+| city | San Diego, CA | 159 | 21/27 † |
+| city | Dallas, TX | 109 | 20/27 † |
+| city | Lake Charles, LA | 72 | 21/27 |
+
+† OSM leisure/tourism query failed during the run: `tourism_amenity_density`
+is the documented constant fallback (stamped in each file's provenance).
+Two more regions (Hampstead, Ogden) lost the OSM drive network and were
+discarded rather than shipped. Totals now 460 regions, 10,822 sites.
+
+Out-of-NC regions use the flood fallback, no parcel/litter/SWAP layer, and the
+nearest listed estuary/beach reference (straight-line; near-constant within a
+region, so it drops out of the ranking where far). Resume the remaining 553
+configured regions with `python3 scripts/run_regions.py --supervise --tier cdp`
+then `--tier city`; re-run a † region with `--force --only <slug>`.
