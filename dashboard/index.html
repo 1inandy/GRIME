@@ -338,7 +338,7 @@ section{padding:112px 64px}
 <section id="dashboard">
   <div class="section-label" style="justify-content:center">Global coverage</div>
   <div class="dash-title reveal">Every river. Every site.<br>All in one view.</div>
-  <div class="dash-sub reveal rd1" id="dash-sub-line">89,518 places worldwide · 449 pipeline-scored regions · 9,903 sites, provenance on every value.</div>
+  <div class="dash-sub reveal rd1" id="dash-sub-line">89,518 places worldwide · 460 pipeline-scored regions · 10,822 sites, provenance on every value.</div>
   <div class="dash-frame reveal rd2" style="position:relative;aspect-ratio:1060/640;max-width:1060px;margin:0 auto">
     <!-- SVG sidebar overlay (left 28%) -->
     <svg viewBox="0 0 300 620" xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:0;height:100%;width:28.3%;z-index:3">
@@ -826,7 +826,7 @@ function syncCoverageCounts(nPlaces,nCountries){
   upd('cn-places',nPlaces);
   upd('cn-countries',nCountries);
   const sub=document.getElementById('dash-sub-line');
-  if(sub)sub.textContent=`${nPlaces.toLocaleString()} places worldwide · 449 pipeline-scored regions · 9,903 sites, provenance on every value.`;
+  if(sub)sub.textContent=`${nPlaces.toLocaleString()} places worldwide · 460 pipeline-scored regions · 10,822 sites, provenance on every value.`;
 }
 
 function countUp(el){

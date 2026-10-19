@@ -1,5 +1,5 @@
 {
- "generated": "2026-07-17 11:41 UTC",
+ "generated": "2026-10-19 06:47 UTC",
  "regions": [
   {
    "bbox": [
@@ -13827,6 +13827,347 @@
     "lon": -79.2053,
     "rank": 1,
     "segment_id": 0
+   }
+  },
+  {
+   "bbox": [
+    -77.9028,
+    34.2448,
+    -77.7741,
+    34.3384
+   ],
+   "candidates_pre_gate": 16,
+   "center": [
+    -77.842337,
+    34.291629
+   ],
+   "gate_removed": 0,
+   "mask_removed": 7,
+   "name": "Murraysville, NC",
+   "params_varying": 21,
+   "runtime_min": 3.8,
+   "scored_date": "2026-10-19",
+   "site_count": 16,
+   "slug": "murraysville",
+   "state": "NC",
+   "status": "ok",
+   "tier": "cdp",
+   "top_site": {
+    "composite": 63.7593,
+    "lat": 34.2578,
+    "lon": -77.8831,
+    "rank": 1,
+    "segment_id": 15
+   }
+  },
+  {
+   "bbox": [
+    -77.3727,
+    34.7067,
+    -77.2294,
+    34.8244
+   ],
+   "candidates_pre_gate": 39,
+   "center": [
+    -77.301035,
+    34.765542
+   ],
+   "gate_removed": 0,
+   "mask_removed": 2,
+   "name": "Piney Green, NC",
+   "params_varying": 20,
+   "runtime_min": 4.0,
+   "scored_date": "2026-10-19",
+   "site_count": 39,
+   "slug": "piney-green",
+   "state": "NC",
+   "status": "ok",
+   "tier": "cdp",
+   "top_site": {
+    "composite": 52.186,
+    "lat": 34.7512,
+    "lon": -77.3314,
+    "rank": 1,
+    "segment_id": 28
+   }
+  },
+  {
+   "bbox": [
+    -79.1085,
+    35.2053,
+    -78.8723,
+    35.3632
+   ],
+   "candidates_pre_gate": 115,
+   "center": [
+    -78.960244,
+    35.277105
+   ],
+   "gate_removed": 0,
+   "mask_removed": 1,
+   "name": "Anderson Creek, NC",
+   "params_varying": 22,
+   "runtime_min": 5.4,
+   "scored_date": "2026-10-19",
+   "site_count": 115,
+   "slug": "anderson-creek",
+   "state": "NC",
+   "status": "ok",
+   "tier": "cdp",
+   "top_site": {
+    "composite": 48.0501,
+    "lat": 35.2341,
+    "lon": -78.9453,
+    "rank": 1,
+    "segment_id": 68
+   }
+  },
+  {
+   "bbox": [
+    -81.0924,
+    35.4667,
+    -80.8677,
+    35.6767
+   ],
+   "candidates_pre_gate": 67,
+   "center": [
+    -80.929939,
+    35.54431
+   ],
+   "gate_removed": 0,
+   "mask_removed": 5,
+   "name": "Lake Norman of Iredell, NC",
+   "params_varying": 23,
+   "runtime_min": 5.7,
+   "scored_date": "2026-10-19",
+   "site_count": 67,
+   "slug": "lake-norman-of-iredell",
+   "state": "NC",
+   "status": "ok",
+   "tier": "cdp",
+   "top_site": {
+    "composite": 51.3615,
+    "lat": 35.4728,
+    "lon": -81.0111,
+    "rank": 1,
+    "segment_id": 51
+   }
+  },
+  {
+   "bbox": [
+    -77.9392,
+    34.0856,
+    -77.839,
+    34.1682
+   ],
+   "candidates_pre_gate": 11,
+   "center": [
+    -77.888912,
+    34.126924
+   ],
+   "gate_removed": 0,
+   "mask_removed": 2,
+   "name": "Myrtle Grove, NC",
+   "params_varying": 18,
+   "runtime_min": 9.4,
+   "scored_date": "2026-10-19",
+   "site_count": 11,
+   "slug": "myrtle-grove",
+   "state": "NC",
+   "status": "ok",
+   "tier": "cdp",
+   "top_site": {
+    "composite": 64.4599,
+    "lat": 34.1593,
+    "lon": -77.9318,
+    "rank": 1,
+    "segment_id": 0
+   }
+  },
+  {
+   "bbox": [
+    -112.2091,
+    33.4731,
+    -111.9712,
+    33.6713
+   ],
+   "candidates_pre_gate": 77,
+   "center": [
+    -112.090132,
+    33.572154
+   ],
+   "gate_removed": 0,
+   "mask_removed": 134,
+   "name": "Phoenix, AZ",
+   "params_varying": 21,
+   "runtime_min": 3.4,
+   "scored_date": "2026-10-19",
+   "site_count": 77,
+   "slug": "phoenix-az",
+   "state": "AZ",
+   "status": "ok",
+   "tier": "city",
+   "top_site": {
+    "composite": 67.8131,
+    "lat": 33.4912,
+    "lon": -112.117,
+    "rank": 1,
+    "segment_id": 101
+   }
+  },
+  {
+   "bbox": [
+    -75.2627,
+    39.8892,
+    -75.004,
+    40.1085
+   ],
+   "candidates_pre_gate": 101,
+   "center": [
+    -75.133346,
+    40.009376
+   ],
+   "gate_removed": 0,
+   "mask_removed": 53,
+   "name": "Philadelphia, PA",
+   "params_varying": 22,
+   "runtime_min": 2.8,
+   "scored_date": "2026-10-19",
+   "site_count": 101,
+   "slug": "philadelphia-pa",
+   "state": "PA",
+   "status": "ok",
+   "tier": "city",
+   "top_site": {
+    "composite": 69.219,
+    "lat": 40.0145,
+    "lon": -75.0944,
+    "rank": 1,
+    "segment_id": 30
+   }
+  },
+  {
+   "bbox": [
+    -98.6385,
+    29.3637,
+    -98.4108,
+    29.5619
+   ],
+   "candidates_pre_gate": 153,
+   "center": [
+    -98.524635,
+    29.462809
+   ],
+   "gate_removed": 0,
+   "mask_removed": 33,
+   "name": "San Antonio, TX",
+   "params_varying": 20,
+   "runtime_min": 3.1,
+   "scored_date": "2026-10-19",
+   "site_count": 153,
+   "slug": "san-antonio-tx",
+   "state": "TX",
+   "status": "ok",
+   "tier": "city",
+   "top_site": {
+    "composite": 69.7118,
+    "lat": 29.3882,
+    "lon": -98.499,
+    "rank": 1,
+    "segment_id": 87
+   }
+  },
+  {
+   "bbox": [
+    -117.2535,
+    32.7159,
+    -116.9647,
+    32.9141
+   ],
+   "candidates_pre_gate": 159,
+   "center": [
+    -117.135562,
+    32.814977
+   ],
+   "gate_removed": 0,
+   "mask_removed": 39,
+   "name": "San Diego, CA",
+   "params_varying": 21,
+   "runtime_min": 4.9,
+   "scored_date": "2026-10-19",
+   "site_count": 159,
+   "slug": "san-diego-ca",
+   "state": "CA",
+   "status": "ok",
+   "tier": "city",
+   "top_site": {
+    "composite": 54.2733,
+    "lat": 32.7449,
+    "lon": -117.0891,
+    "rank": 1,
+    "segment_id": 119
+   }
+  },
+  {
+   "bbox": [
+    -96.8844,
+    32.6942,
+    -96.6486,
+    32.8924
+   ],
+   "candidates_pre_gate": 109,
+   "center": [
+    -96.766513,
+    32.793333
+   ],
+   "gate_removed": 0,
+   "mask_removed": 52,
+   "name": "Dallas, TX",
+   "params_varying": 20,
+   "runtime_min": 5.3,
+   "scored_date": "2026-10-19",
+   "site_count": 109,
+   "slug": "dallas-tx",
+   "state": "TX",
+   "status": "ok",
+   "tier": "city",
+   "top_site": {
+    "composite": 53.2266,
+    "lat": 32.7263,
+    "lon": -96.7364,
+    "rank": 1,
+    "segment_id": 77
+   }
+  },
+  {
+   "bbox": [
+    -93.3255,
+    30.0999,
+    -93.0962,
+    30.2981
+   ],
+   "candidates_pre_gate": 72,
+   "center": [
+    -93.210835,
+    30.19902
+   ],
+   "gate_removed": 0,
+   "mask_removed": 15,
+   "name": "Lake Charles, LA",
+   "params_varying": 21,
+   "runtime_min": 5.0,
+   "scored_date": "2026-10-19",
+   "site_count": 72,
+   "slug": "lake-charles-la",
+   "state": "LA",
+   "status": "ok",
+   "tier": "city",
+   "top_site": {
+    "composite": 52.3166,
+    "lat": 30.1791,
+    "lon": -93.2055,
+    "rank": 1,
+    "segment_id": 38
    }
   }
  ]
